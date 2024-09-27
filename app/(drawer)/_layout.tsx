@@ -6,13 +6,18 @@ import { DrawerContentComponentProps } from "@react-navigation/drawer"; // Type 
 import { router, usePathname } from "expo-router";
 import { AntDesign } from "@expo/vector-icons";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import useUser from "@/hooks/auth/useUser";
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   const pathname = usePathname();
+  const { user } = useUser();
 
-  useEffect(() => {
-    console.log(pathname);
-  }, [pathname]);
+   const logoutHandler = async () => {
+     await AsyncStorage.removeItem("access_token");
+     await AsyncStorage.removeItem("refresh_token");
+     router.push("/(routes)/login");
+   };
 
   return (
     <DrawerContentScrollView {...props}>
@@ -27,8 +32,8 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         <Image source={require("@/assets/images/profilepic.png")} />
 
         <View style={styles.draweruserdetailsbox}>
-          <Text style={styles.draweruserdetailstext}>Gary Joseph</Text>
-          <Text>9843378670</Text>
+          <Text style={styles.draweruserdetailstext}>{user?.fullname}</Text>
+          <Text>{user?.phonenumber}</Text>
           <TouchableOpacity
             onPress={() => {
               router.push("/(drawer)/profile"); // Replace with your URL
@@ -191,7 +196,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
           },
         ]}
         onPress={() => {
-          router.push("/(drawer)/logout");
+          logoutHandler();
         }}
       />
 

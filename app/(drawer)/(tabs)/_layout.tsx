@@ -5,7 +5,7 @@ import React from "react";
 import { Image } from "react-native";
 
 export default function TabsLayout() {
-  const { user } = useUser();
+
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}

@@ -24,6 +24,15 @@ import {
   Nunito_600SemiBold,
 } from "@expo-google-fonts/nunito";
 import Svg, { Line } from "react-native-svg";
+import useUser from "@/hooks/auth/useUser";
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from "react-native-responsive-screen";
+import {
+  responsiveHeight,
+  responsiveWidth,
+} from "react-native-responsive-dimensions";
 
 const { width } = Dimensions.get("window");
 
@@ -41,6 +50,9 @@ interface Testimonial {
 }
 
 const HomeScreen: React.FC = () => {
+
+  const { user } = useUser();
+  console.log(user);
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList<Testimonial>>(null);
@@ -164,23 +176,6 @@ const HomeScreen: React.FC = () => {
           source={require("@/assets/images/homepageshape.png")}
         />
 
-        {/* Header */}
-        {/* <View style={styles.header}>
-          <View style={styles.iconbox}>
-            <Image
-              style={styles.icon}
-              source={require("@/assets/icons/hamburger.png")}
-            />
-          </View>
-          <Image source={require("@/assets/images/header-logo.png")} />
-
-          <View>
-            <Image
-              style={styles.icon}
-              source={require("@/assets/images/userprofile.png")}
-            />
-          </View>
-        </View> */}
 
         <View style={styles.maincontent}>
           {/* Reanimated Carousel */}
@@ -370,7 +365,7 @@ const HomeScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.howcontainertext}>
-                  <Text style={styles.howitstitletext}>Book</Text>
+                  <Text style={styles.howitstitletext}>Match</Text>
                   <Text style={styles.howitstitledesc}>
                     Borem ipsum dolor sit amet, consectetur adipiscing elit.
                   </Text>
@@ -399,7 +394,7 @@ const HomeScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.howcontainertext}>
-                  <Text style={styles.howitstitletext}>Book</Text>
+                  <Text style={styles.howitstitletext}>Relax</Text>
                   <Text style={styles.howitstitledesc}>
                     Borem ipsum dolor sit amet, consectetur adipiscing elit.
                   </Text>
@@ -465,12 +460,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   carouselImage: {
-    width: "95%",
-    height: 220,
+    width: wp("95%"),
+    height: hp("30%"),
     resizeMode: "cover",
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: hp("2.3%"),
     fontFamily: "OtomanopeeOne",
     marginVertical: 20,
     paddingLeft: 20,
@@ -509,20 +504,20 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: hp("2.6%"),
     color: "#000",
     fontFamily: "Nunito_700Bold",
   },
   description: {
-    fontSize: 16,
+    fontSize: hp("2%"),
     color: "#000",
     marginVertical: 10,
     fontFamily: "Nunito_400Regular",
   },
 
   ctaButton: {
-    width: 200,
-    paddingVertical: 15,
+    width: responsiveWidth(60),
+    paddingVertical: 18,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#00D0C3",
@@ -531,7 +526,7 @@ const styles = StyleSheet.create({
   },
 
   ctaText: {
-    fontSize: 16,
+    fontSize: hp("2%"),
     color: "#fff",
     fontFamily: "OtomanopeeOne",
   },
@@ -548,14 +543,14 @@ const styles = StyleSheet.create({
   },
 
   testimonialTitle: {
-    fontSize: 18,
+    fontSize: hp("2.5%"),
     fontFamily: "OtomanopeeOne",
     marginVertical: 20,
     paddingLeft: 20,
   },
 
   testimonialCard: {
-    width: 350,
+    width: responsiveWidth(90),
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -575,17 +570,17 @@ const styles = StyleSheet.create({
   },
 
   image: {
-    width: 100,
-    height: 100,
+    width: responsiveWidth(30),
+    height: responsiveHeight(15),
     borderRadius: 10,
   },
   name: {
-    fontSize: 18,
+    fontSize: hp("2.2%"),
     fontWeight: "bold",
     color: "white",
   },
   location: {
-    fontSize: 14,
+    fontSize: hp("1.8%"),
     color: "white",
     marginBottom: 10,
   },
@@ -606,14 +601,15 @@ const styles = StyleSheet.create({
   },
 
   testimonialText: {
-    fontSize: 16,
+    fontSize: hp("2.2%"),
     color: "white",
     fontFamily: "OtomanopeeOne",
     marginBottom: 5,
+    lineHeight: 24,
   },
 
   testimonialdescription: {
-    fontSize: 16,
+    fontSize: hp("1.9%"),
     color: "white",
     fontFamily: "Nunito_500Medium",
   },
@@ -669,7 +665,7 @@ const styles = StyleSheet.create({
   },
 
   howtitle: {
-    fontSize: 18,
+    fontSize: hp("2.5%"),
     color: "#000",
     fontFamily: "OtomanopeeOne",
     marginBottom: 20, // Increased margin for better spacing
@@ -682,8 +678,8 @@ const styles = StyleSheet.create({
   },
 
   howiconContainer: {
-    width: 70,
-    height: 70,
+    width: responsiveWidth(18),
+    height: responsiveHeight(9),
     borderRadius: 50,
     borderColor: "#000",
     borderWidth: 1,
@@ -693,8 +689,8 @@ const styles = StyleSheet.create({
   },
 
   howicon: {
-    width: 24, // Adjust based on your image size
-    height: 24, // Adjust based on your image size
+    width: responsiveWidth(20), // Adjust based on your image size
+    height: responsiveHeight(3), // Adjust based on your image size
     objectFit: "contain",
   },
 

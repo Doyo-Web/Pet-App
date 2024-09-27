@@ -87,40 +87,56 @@ export default function SignUpScreen() {
     return null;
   }
 
-const handleSignup = async () => {
-  setButtonSpinner(true);
-  await axios
-    .post(`${SERVER_URI}/registration`, {
-      fullname: userInfo.fullname,
-      phonenumber: userInfo.phonenumber,
-      email: userInfo.email,
-      password: userInfo.password,
-      hearaboutus: userInfo.hearaboutus,
-      role: userInfo.role,
-    })
-    .then(async (res) => {
-      await AsyncStorage.setItem("activation_token", res.data.activationToken);
-      Toast.show(res.data.message, {
-        type: "success",
-      });
-      setUserInfo({
-        fullname: "",
-        phonenumber: "",
-        email: "",
-        password: "",
-        hearaboutus: "",
-        role: "pet parents",
-      });
-      setButtonSpinner(false);
-      router.push("/(routes)/verify");
-    })
-    .catch((error: any) => {
-      setButtonSpinner(false);
-      Toast.show(error.message, {
+  const handleSignup = async () => {
+    // Check if all the required fields are filled
+    if (
+      !userInfo.fullname ||
+      !userInfo.phonenumber ||
+      !userInfo.email ||
+      !userInfo.password
+    ) {
+      Toast.show("Please fill all the details", {
         type: "danger",
       });
-    });
-};
+      return;
+    }
+    
+    setButtonSpinner(true);
+    await axios
+      .post(`${SERVER_URI}/registration`, {
+        fullname: userInfo.fullname,
+        phonenumber: userInfo.phonenumber,
+        email: userInfo.email,
+        password: userInfo.password,
+        hearaboutus: userInfo.hearaboutus,
+        role: userInfo.role,
+      })
+      .then(async (res) => {
+        await AsyncStorage.setItem(
+          "activation_token",
+          res.data.activationToken
+        );
+        Toast.show(res.data.message, {
+          type: "success",
+        });
+        setUserInfo({
+          fullname: "",
+          phonenumber: "",
+          email: "",
+          password: "",
+          hearaboutus: "",
+          role: "pet parents",
+        });
+        setButtonSpinner(false);
+        router.push("/(routes)/verify");
+      })
+      .catch((error: any) => {
+        setButtonSpinner(false);
+        Toast.show(error.message, {
+          type: "danger",
+        });
+      });
+  };
 
   return (
     <View style={styles.container}>
