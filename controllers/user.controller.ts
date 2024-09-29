@@ -143,6 +143,11 @@ export const activateUser = catchAsyncError(async (req: Request, res: Response, 
     if (userAlreadyExist) {
       return next(new ErrorHandler("User Already Register with this email", 400));
     };
+
+    const placeholderAvatar = {
+      public_id: "1", // Replace with a real placeholder public ID from your image storage
+      url: "https://archive.org/download/placeholder-image/placeholder-image.jpg", // Replace with a real URL to the placeholder image
+    };
     
       const user = await userModel.create({
         fullname,
@@ -150,6 +155,7 @@ export const activateUser = catchAsyncError(async (req: Request, res: Response, 
         email,
         password,
         hearaboutus,
+        avatar: placeholderAvatar, // Assign placeholder avatar
         isVerified: true,
       });
 

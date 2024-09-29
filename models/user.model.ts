@@ -17,6 +17,7 @@ export interface IUser extends Document {
     url: string;
   };
   role: string;
+  profession: string;
   isVerified: boolean;
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
@@ -60,13 +61,23 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     },
 
     avatar: {
-      public_id: String,
-      url: String,
+      public_id: {
+        type: String,
+        default: "default_avatar_id", // Placeholder public ID
+      },
+      url: {
+        type: String,
+        default: "https://example.com/path-to-placeholder-image.jpg", // Placeholder URL
+      },
     },
 
     role: {
       type: String,
       default: "pet parents",
+    },
+
+    profession: {
+      type: String,
     },
 
     isVerified: {
