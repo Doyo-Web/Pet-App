@@ -52,7 +52,6 @@ interface Testimonial {
 const HomeScreen: React.FC = () => {
 
   const { user } = useUser();
-  console.log(user);
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList<Testimonial>>(null);

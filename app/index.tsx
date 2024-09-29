@@ -5,7 +5,6 @@ import React from "react";
 
 export default function TabsIndex() {
   const { loading, user } = useUser();
-  console.log(user);
   return (
     <>
       {loading ? (

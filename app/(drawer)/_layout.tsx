@@ -29,14 +29,25 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
       </TouchableOpacity>
 
       <View style={styles.draweruserdetailscontainer}>
-        <Image source={require("@/assets/images/profilepic.png")} />
+        {/* <Image source={require("@/assets/images/profilepic.png")} /> */}
+
+        <View style={styles.avatarbox}>
+          <Image
+            style={styles.avatar}
+            source={{
+              uri: user?.avatar.url
+                ? user.avatar.url
+                : "https://archive.org/download/placeholder-image/placeholder-image.jpg",
+            }}
+          />
+        </View>
 
         <View style={styles.draweruserdetailsbox}>
           <Text style={styles.draweruserdetailstext}>{user?.fullname}</Text>
           <Text>{user?.phonenumber}</Text>
           <TouchableOpacity
             onPress={() => {
-              router.push("/(drawer)/profile"); // Replace with your URL
+              router.push("/(tabs)/editprofile");
             }}
           >
             <Text style={styles.linkText}>Edit Profile</Text>
@@ -318,6 +329,22 @@ const styles = StyleSheet.create({
   draweruserdetailstext: {
     fontFamily: "OtomanopeeOne",
     fontSize: 22,
+  },
+
+  avatarbox: {
+    width: 80,
+    height: 80,
+    objectFit: "cover",
+    borderRadius: 50,
+    borderColor: "#F96247",
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 50,
+    height: 50,
   },
 
   linkText: {
