@@ -477,6 +477,36 @@ export const UpdateUser = catchAsyncError(
 );
 
 
+export const DeleteUser = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
+
+    // Check if userId exists
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID not found",
+      });
+    }
+
+    // Find user by id and delete
+    const user = await userModel.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  }
+);
+
+
 
 
 
