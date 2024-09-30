@@ -78,6 +78,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
 
     profession: {
       type: String,
+      default: "Freelancer",
     },
 
     isVerified: {
