@@ -35,8 +35,8 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
           <Image
             style={styles.avatar}
             source={{
-              uri: user?.avatar.url
-                ? user.avatar.url
+              uri: user?.avatar?.url
+                ? user?.avatar?.url
                 : "https://archive.org/download/placeholder-image/placeholder-image.jpg",
             }}
           />

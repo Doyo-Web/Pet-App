@@ -23,6 +23,8 @@ import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
+import { Toast } from "react-native-toast-notifications";
+import { router } from "expo-router";
 
 const EditProfileScreen = () => {
   const { user, loading, setRefetch } = useUser();
@@ -48,9 +50,9 @@ const EditProfileScreen = () => {
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      allowsEditing: true, // Allows resizing or cropping the image before selection
+      aspect: [4, 3], // Aspect ratio (optional)
+      quality: 0.2, // Reduce quality to 50%, you can adjust this
     });
 
     if (!result.canceled) {
@@ -74,20 +76,23 @@ const EditProfileScreen = () => {
         `${SERVER_URI}/update-user`,
         {
           avatar: image,
-          fullName,
-          phoneNumber,
-          email,
-          profession,
+          fullname: fullName,
+          phonenumber: phoneNumber,
+          email: email,
+          profession: profession,
         },
         {
           headers: {
-            "access-token": accessToken,
-            "refresh-token": refreshToken,
+            access_token: accessToken,
           },
         }
       );
       if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
         setRefetch(true);
+        router.push("/(drawer)/(tabs)/");
       }
     } catch (error) {
       console.log(error);
@@ -95,6 +100,7 @@ const EditProfileScreen = () => {
       setLoader(false);
     }
   };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <View style={{ flex: 1 }}>
