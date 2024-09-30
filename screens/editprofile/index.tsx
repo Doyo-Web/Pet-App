@@ -92,7 +92,7 @@ const EditProfileScreen = () => {
           type: "success",
         });
         setRefetch(true);
-        router.push("/(drawer)/(tabs)/");
+        router.push("/(tabs)/");
       }
     } catch (error) {
       console.log(error);
