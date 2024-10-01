@@ -414,6 +414,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+
+
 export const UpdateUser = catchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.user?._id; // Extract user ID from req.user
@@ -427,38 +429,43 @@ export const UpdateUser = catchAsyncError(
     // Initialize an object to hold updates
     const updateFields: any = { fullname, phonenumber, email, profession };
 
-    // Check if avatar is provided in the request body
-    if (avatar) {
-      try {
-        // Find the current user to get the existing avatar's public_id
-        const user = await userModel.findById(id);
-        if (!user) {
-          return res.status(404).json({ message: "User not found." });
-        }
-
-        // Delete the existing avatar from Cloudinary if it exists
-        if (user.avatar.public_id !== "default_avatar_id") {
-          await cloudinary.uploader.destroy(user.avatar.public_id);
-        }
-
-        // Upload new avatar to Cloudinary
-        const result = await cloudinary.uploader.upload(avatar, {
-          folder: "avatars", // Folder where avatars will be stored
-          transformation: { width: 300, height: 300, crop: "fill" }, // Resize image to fit in 300x300
-        });
-
-        // Add avatar info (public_id and URL) to the updateFields object
-        updateFields.avatar = {
-          public_id: result.public_id,
-          url: result.secure_url,
-        };
-      } catch (error) {
-        return res.status(500).json({ message: "Avatar upload failed.", error });
-      }
-    }
-
-    // Update user data in the database
     try {
+      // Find the current user from the database
+      const user = await userModel.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      // Check if avatar is provided in the request body and is different from the current one
+      if (avatar && avatar !== user.avatar.url) {
+        try {
+          // If the current avatar is not the default one, delete it from Cloudinary
+          if (
+            user.avatar.public_id &&
+            user.avatar.public_id !== "default_avatar_id"
+          ) {
+            await cloudinary.uploader.destroy(user.avatar.public_id);
+          }
+
+          // Upload the new avatar to Cloudinary
+          const result = await cloudinary.uploader.upload(avatar, {
+            folder: "avatars", // Folder where avatars will be stored
+            transformation: { width: 300, height: 300, crop: "fill" }, // Resize image to fit 300x300
+          });
+
+          // Add new avatar info (public_id and URL) to the updateFields object
+          updateFields.avatar = {
+            public_id: result.public_id,
+            url: result.secure_url,
+          };
+        } catch (error) {
+          return res
+            .status(500)
+            .json({ message: "Avatar upload failed.", error });
+        }
+      }
+
+      // Update the user's information in the database
       const updatedUser = await userModel.findByIdAndUpdate(
         id,
         { $set: updateFields },
@@ -469,7 +476,9 @@ export const UpdateUser = catchAsyncError(
         return res.status(404).json({ message: "User not found." });
       }
 
-      return res.status(200).json({ message: "User updated successfully.", user: updatedUser });
+      return res
+        .status(200)
+        .json({ message: "User updated successfully.", user: updatedUser });
     } catch (error) {
       return res.status(500).json({ message: "User update failed.", error });
     }
@@ -505,6 +514,78 @@ export const DeleteUser = catchAsyncError(
     });
   }
 );
+
+
+export const ChangeUserPassword = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.user?._id; // Extract user ID from req.user
+    const { avatar, oldpassword, newpassword } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "User ID is required." });
+    }
+
+    try {
+      const user = await userModel.findById(id).select("+password");;
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      // Compare old password
+      const isMatch = await bcrypt.compare(oldpassword, user.password);
+
+      if (!isMatch) {
+        return res.status(400).json({ message: "Old Password is Incorrect" });
+      }
+
+      const updateFields: any = {};
+      if (newpassword) {
+        const hashedPassword = await bcrypt.hash(newpassword, 10);
+        updateFields.password = hashedPassword;
+      }
+
+      if (avatar && avatar !== user.avatar.url) {
+        if (
+          user.avatar.public_id &&
+          user.avatar.public_id !== "default_avatar_id"
+        ) {
+          console.log("Deleting old avatar from Cloudinary...");
+          await cloudinary.uploader.destroy(user.avatar.public_id);
+        }
+        const result = await cloudinary.uploader.upload(avatar, {
+          folder: "avatars",
+          transformation: { width: 300, height: 300, crop: "fill" },
+        });
+        updateFields.avatar = {
+          public_id: result.public_id,
+          url: result.secure_url,
+        };
+      }
+
+      // Update user
+      const updatedUser = await userModel.findByIdAndUpdate(
+        id,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Password Change successfully.", user: updatedUser });
+    } catch (error) {
+      console.error("Caught an error:", error);
+      return res.status(500).json({ message: "User update failed.", error });
+    }
+  }
+);
+
+
+
 
 
 
