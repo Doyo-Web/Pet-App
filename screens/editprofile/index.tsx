@@ -1,7 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState } from "react";
 import MaterialIcon from "react-native-vector-icons/MaterialIcons";
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+} from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
 import {
   Nunito_400Regular,
   Nunito_500Medium,
@@ -18,16 +28,140 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "react-native-responsive-dimensions";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import { Toast } from "react-native-toast-notifications";
 import { router } from "expo-router";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
+import { Dimensions } from "react-native";
 
 const EditProfileScreen = () => {
+
+  const apiKey = "AIzaSyBA6ISJbuLn-LTjVppqZw1kMSapirMzMgk";
+
+  const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
+
+  type CurrentLocationType = Location.LocationObjectCoords | null;
+
+
+const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
+  const [isNewPasswordVisible, setNewPasswordVisible] = useState(false);
+  
+  const [UserPassword, setUserPassword] = useState({
+    oldpassword: "",
+    newpassword: "",
+  });
+
+
+  const handlePasswordChange = async () => {
+    setLoader(true);
+
+    const accessToken = await AsyncStorage.getItem("access_token");
+    const refreshToken = await AsyncStorage.getItem("refresh_token");
+
+    try {
+      const response = await axios.put(
+        `${SERVER_URI}/change-password`,
+        {
+          avatar: image,
+          oldpassword: UserPassword.oldpassword,
+          newpassword: UserPassword.newpassword,
+        },
+        {
+          headers: {
+            access_token: accessToken,
+          },
+        }
+      );
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        router.push("/(drawer)");
+      }
+    } catch (error: any) {
+      // Error handling
+      const errorMessage =
+        error.response && error.response.data && error.response.data.message
+          ? error.response.data.message
+          : "Something went wrong. Please try again.";
+
+      // Show error in toast with danger type
+      Toast.show(errorMessage, {
+        type: "danger",
+      });
+    } finally {
+      setLoader(false);
+    }
+  };
+  
+  const [currentLocation, setCurrentLocation] =
+    useState<CurrentLocationType>(null);
+  const [isMapVisible, setIsMapVisible] = useState(false);
+
+ useEffect(() => {
+   (async () => {
+     // Request permission to access location
+     let { status } = await Location.requestForegroundPermissionsAsync();
+     if (status !== "granted") {
+       console.log("Permission to access location was denied");
+     } else {
+       // Get current location
+       let location = await Location.getCurrentPositionAsync({});
+       setCurrentLocation(location.coords as Location.LocationObjectCoords);
+     }
+   })();
+ }, []);
+
+
+  const handleLocationSelect = () => {
+  setIsMapVisible(true);
+  };
+  
+  const handleMapLocationSelect = async (location: any) => {
+    console.log("location", location);
+    // Reverse geocoding to get the city and pincode
+    const { latitude, longitude } = location;
+
+    console.log(latitude, longitude);
+
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+    );
+
+    // Check if we received results
+    if (response.data.results.length > 0) {
+      const addressComponents = response.data.results[0].address_components;
+      const cityComponent = addressComponents.find(
+        (component: { types: string | string[]; }) =>
+          component.types.includes("locality") ||
+          component.types.includes("administrative_area_level_1")
+      );
+      const pincodeComponent = addressComponents.find((component: { types: string | string[]; }) =>
+        component.types.includes("postal_code")
+      );
+
+      setCity(cityComponent ? cityComponent.long_name : "");
+      setPincode(pincodeComponent ? pincodeComponent.long_name : "");
+      setIsMapVisible(false);
+    }
+  };
+
   const { user, loading, setRefetch } = useUser();
+  const [isPersonalInfo, setIsPersonalInfo] = useState(0);
+  const [isChangePassword, setIsChangePassword] = useState(false);
+
+   const [location, setLocation] = useState("Mumbai");
+   const [line1, setLine1] = useState("");
+   const [line2, setLine2] = useState("");
+   const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
+  
 
   // State for the profile image and input fields
   const [image, setImage] = useState<any>(null);
@@ -37,15 +171,42 @@ const EditProfileScreen = () => {
   const [email, setEmail] = useState("");
   const [profession, setProfession] = useState("");
 
-   useEffect(() => {
-     if (user) {
-       setFullName(user.fullname || "");
-       setPhoneNumber(user.phonenumber || "");
-       setEmail(user.email || "");
-       setProfession(user.profession || "");
-       setImage(user.avatar?.url || "");
-     }
-   }, [user]);
+  const addresses = [
+    {
+      id: "1",
+      label: "Home",
+      location: "Mumbai",
+      icon: require("@/assets/icons/managehomeicon.png"), // Replace with your icon
+      shadowColor: "#FFD700", // Gold
+      backgroundColor: "#FDCF00",
+    },
+    {
+      id: "2",
+      label: "Work",
+      location: "Mumbai",
+      icon: require("@/assets/icons/manageworkicon.png"), // Replace with your icon
+      shadowColor: "#00BFFF",
+      backgroundColor: "#00D0C3",
+    },
+    {
+      id: "3",
+      label: "Friend",
+      location: "Delhi",
+      icon: require("@/assets/icons/managefriendicon.png"), // Replace with your icon
+      shadowColor: "#FF6347",
+      backgroundColor: "#F96247",
+    },
+  ];
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.fullname || "");
+      setPhoneNumber(user.phonenumber || "");
+      setEmail(user.email || "");
+      setProfession(user.profession || "");
+      setImage(user.avatar?.url || "");
+    }
+  }, [user]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -101,6 +262,34 @@ const EditProfileScreen = () => {
     }
   };
 
+  const handleComponent = () => {
+    setIsPersonalInfo(prev => prev + 1);
+  }
+
+  const renderAddress = ({ item }: any) => (
+    <View style={[styles.addressCard, { shadowColor: item.shadowColor }]}>
+      <View
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: 50,
+          backgroundColor: item.backgroundColor,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Image source={item.icon} />
+      </View>
+      <View style={styles.addressText}>
+        <Text style={styles.label}>{item.label}</Text>
+        <View style={styles.locationbox}>
+          <Image source={require("@/assets/icons/managelocation.png")} />
+          <Text style={styles.location}>{item.location}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <View style={{ flex: 1 }}>
@@ -129,93 +318,356 @@ const EditProfileScreen = () => {
               <View style={styles.personalinfoiconbox}>
                 <Image source={require("@/assets/icons/personalleft.png")} />
               </View>
-              <Text style={styles.sectionTitle}>Personal Information</Text>
-              <View
-                style={[
-                  styles.personalinfoiconbox,
-                  { backgroundColor: "#FDCF00" },
-                ]}
-              >
-                <Image source={require("@/assets/icons/personalright.png")} />
-              </View>
-            </View>
-            <View style={styles.form}>
-              {/* Full Name Input */}
-              <Text style={styles.label}>Full Name</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Gary Joseph"
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
-                <Image
-                  source={require("@/assets/icons/fullnameicon.png")}
-                  style={styles.icon}
-                />
-              </View>
-
-              {/* Phone Number Input */}
-              <Text style={styles.label}>Phone no.</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="9843378670"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                />
-
-                <Image
-                  source={require("@/assets/icons/phonenumbericon.png")}
-                  style={styles.icon}
-                />
-              </View>
-
-              {/* Email Input */}
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="garyjosiee234@gmail.com"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-
-                <Image
-                  source={require("@/assets/icons/emailicon.png")}
-                  style={styles.icon}
-                />
-              </View>
-
-              {/* Profession Input */}
-
-              <Text style={styles.label}>Profession</Text>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Freelancer"
-                  value={profession}
-                  onChangeText={setProfession}
-                />
-
-                <Image
-                  source={require("@/assets/icons/freelancericon.png")}
-                  style={styles.icon}
-                />
-              </View>
-            </View>
-
-            {/* Update Button */}
-            <TouchableOpacity
-              style={styles.updateButton}
-              onPress={handleUpdate}
-            >
-              <Text style={styles.updateButtonText}>
-                Update
+              <Text style={styles.sectionTitle}>
+                {isPersonalInfo === 0 && "Personal Information"}
+                {isPersonalInfo === 1 && "Manage Address"}
+                {isPersonalInfo === 2 && "Change Password"}
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleComponent}>
+                <View
+                  style={[
+                    styles.personalinfoiconbox,
+                    { backgroundColor: "#FDCF00" },
+                  ]}
+                >
+                  <Image source={require("@/assets/icons/personalright.png")} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Manage Address Component*/}
+
+            {isPersonalInfo === 1 && (
+              <View style={{ justifyContent: "center" }}>
+                <FlatList
+                  data={addresses}
+                  renderItem={renderAddress}
+                  keyExtractor={(item) => item.id}
+                  numColumns={4}
+                  contentContainerStyle={styles.addressList}
+                />
+
+                {/* Add New Button */}
+                <TouchableOpacity style={styles.addButton}>
+                  <View style={styles.addCard}>
+                    <View
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 50,
+                        backgroundColor: "#FDCF00",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Image
+                        source={require("@/assets/icons/manageaddnew.png")}
+                      />
+                    </View>
+                    <Text style={styles.addText}>Add New</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Manage Address Form*/}
+
+                <View style={styles.managecontainer}>
+                  <View style={styles.manageline} />
+                  <View style={styles.manageheader}>
+                    <View style={styles.manageiconContainer}>
+                      <Image
+                        source={{
+                          uri: "https://img.icons8.com/ios-filled/100/000000/home.png",
+                        }} // Example home icon
+                        style={styles.manageicon}
+                      />
+                    </View>
+                  </View>
+
+                  {isMapVisible && (
+                    <MapView
+                      style={{ flex: 1, height: windowHeight * 0.4 }}
+                      initialRegion={{
+                        latitude: currentLocation
+                          ? currentLocation.latitude
+                          : 37.78825, // Default latitude
+                        longitude: currentLocation
+                          ? currentLocation.longitude
+                          : -122.4324, // Default longitude
+                        latitudeDelta: 0.0922,
+                        longitudeDelta: 0.0421,
+                      }}
+                      onPress={(e) =>
+                        handleMapLocationSelect(e.nativeEvent.coordinate)
+                      }
+                    >
+                      {currentLocation && (
+                        <Marker
+                          coordinate={currentLocation}
+                          title="Your Location"
+                        />
+                      )}
+                    </MapView>
+                  )}
+
+                  <Text style={styles.managelabel}>Pick Location</Text>
+                  <View style={styles.managelocationContainer}>
+                    <View style={styles.inputGroup}>
+                      <TextInput
+                        style={styles.input}
+                        value={location}
+                        editable={false} // Location picker could open a modal or map
+                      />
+                      <TouchableOpacity
+                        style={styles.managelocationIcon}
+                        onPress={handleLocationSelect}
+                      >
+                        <FontAwesome6
+                          name="location-crosshairs"
+                          size={24}
+                          color="black"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <Text style={styles.managelabel}>Line 1</Text>
+                  <TextInput
+                    style={styles.manageinput}
+                    placeholder="Sector 123, 6th Cross"
+                    value={line1}
+                    onChangeText={setLine1}
+                  />
+
+                  <Text style={styles.managelabel}>Line 2</Text>
+                  <TextInput
+                    style={styles.manageinput}
+                    placeholder="7th Extension"
+                    value={line2}
+                    onChangeText={setLine2}
+                  />
+
+                  <Text style={styles.managelabel}>City</Text>
+                  <TextInput
+                    style={styles.manageinput}
+                    value={city}
+                    onChangeText={setCity}
+                  />
+
+                  <Text style={styles.managelabel}>Pincode</Text>
+                  <TextInput
+                    style={styles.manageinput}
+                    placeholder="643123"
+                    value={pincode}
+                    keyboardType="numeric"
+                    onChangeText={setPincode}
+                  />
+                </View>
+
+                {/* Manage Address Form */}
+
+                {/* Update Button */}
+                <TouchableOpacity
+                  style={styles.updateButton}
+                  onPress={handleUpdate}
+                >
+                  <Text style={styles.updateButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Manage Address Component*/}
+
+            {/* Change Password Component*/}
+
+            {isPersonalInfo === 2 && (
+              <View style={{ justifyContent: "center" }}>
+                {/* Change Password Form*/}
+
+                <View style={styles.changepasscontainer}>
+                  <View>
+                    <TextInput
+                      style={[
+                        styles.changepassinput,
+                        { paddingLeft: 10, marginTop: 10 },
+                      ]}
+                      keyboardType="default"
+                      secureTextEntry={!isOldPasswordVisible}
+                      placeholder="Old Password"
+                      placeholderTextColor="#000000"
+                      onChangeText={(value) =>
+                        setUserPassword({ ...UserPassword, oldpassword: value })
+                      }
+                    />
+
+                    <TouchableOpacity
+                      style={styles.visibleIcon}
+                      onPress={() =>
+                        setOldPasswordVisible(!isOldPasswordVisible)
+                      }
+                    >
+                      {isOldPasswordVisible ? (
+                        // <Ionicons name="eye-off-outline" size={23} color={"#000"} />
+                        <Image
+                          style={{
+                            position: "absolute",
+                            right: 2,
+                            top: 8,
+                            width: 22,
+                            height: 22,
+                            objectFit: "contain",
+                          }}
+                          source={require("@/assets/icons/eyecuticon.png")}
+                        />
+                      ) : (
+                        <Ionicons
+                          style={{ position: "absolute", right: 2, top: 8 }}
+                          name="eye-outline"
+                          size={22}
+                          color={"#000"}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  <View>
+                    <TextInput
+                      style={[
+                        styles.changepassinput,
+                        { paddingLeft: 10, marginTop: 10 },
+                      ]}
+                      keyboardType="default"
+                      secureTextEntry={!isNewPasswordVisible}
+                      placeholder="New Password"
+                      placeholderTextColor="#000000"
+                      onChangeText={(value) =>
+                        setUserPassword({ ...UserPassword, newpassword: value })
+                      }
+                    />
+
+                    <TouchableOpacity
+                      style={styles.visibleIcon}
+                      onPress={() =>
+                        setNewPasswordVisible(!isNewPasswordVisible)
+                      }
+                    >
+                      {isNewPasswordVisible ? (
+                        // <Ionicons name="eye-off-outline" size={23} color={"#000"} />
+                        <Image
+                          style={{
+                            position: "absolute",
+                            right: 2,
+                            top: 8,
+                            width: 22,
+                            height: 22,
+                            objectFit: "contain",
+                          }}
+                          source={require("@/assets/icons/eyecuticon.png")}
+                        />
+                      ) : (
+                        <Ionicons
+                          style={{ position: "absolute", right: 2, top: 8 }}
+                          name="eye-outline"
+                          size={22}
+                          color={"#000"}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Change Password Form */}
+
+                {/* Update Button */}
+                <TouchableOpacity
+                  style={styles.resetbutton}
+                  onPress={handlePasswordChange}
+                >
+                  <Text style={styles.updateButtonText}>Reset Password</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Change Password Component*/}
+
+            {isPersonalInfo === 0 && (
+              <View>
+                <View style={styles.form}>
+                  {/* Full Name Input */}
+                  <Text style={styles.label}>Full Name</Text>
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Gary Joseph"
+                      value={fullName}
+                      onChangeText={setFullName}
+                    />
+                    <Image
+                      source={require("@/assets/icons/fullnameicon.png")}
+                      style={styles.icon}
+                    />
+                  </View>
+
+                  {/* Phone Number Input */}
+                  <Text style={styles.label}>Phone no.</Text>
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="9843378670"
+                      keyboardType="phone-pad"
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                    />
+
+                    <Image
+                      source={require("@/assets/icons/phonenumbericon.png")}
+                      style={styles.icon}
+                    />
+                  </View>
+
+                  {/* Email Input */}
+                  <Text style={styles.label}>Email</Text>
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="garyjosiee234@gmail.com"
+                      keyboardType="email-address"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+
+                    <Image
+                      source={require("@/assets/icons/emailicon.png")}
+                      style={styles.icon}
+                    />
+                  </View>
+
+                  {/* Profession Input */}
+
+                  <Text style={styles.label}>Profession</Text>
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Freelancer"
+                      value={profession}
+                      onChangeText={setProfession}
+                    />
+
+                    <Image
+                      source={require("@/assets/icons/freelancericon.png")}
+                      style={styles.icon}
+                    />
+                  </View>
+                </View>
+
+                {/* Update Button */}
+                <TouchableOpacity
+                  style={styles.updateButton}
+                  onPress={handleUpdate}
+                >
+                  <Text style={styles.updateButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -312,23 +764,33 @@ const styles = StyleSheet.create({
     marginBottom: 5, // Space between label and input group
   },
 
+  locationbox: {
+    flexDirection: "row",
+    gap: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#000",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 5,
     marginBottom: 12,
   },
-  icon: {
-    marginRight: 8,
-  },
+
   input: {
     flex: 1,
     paddingVertical: 10,
   },
+
+  icon: {
+    marginRight: 8,
+  },
+
   updateButton: {
     backgroundColor: "#FDCF00",
     paddingVertical: 15,
@@ -338,10 +800,155 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 20,
   },
+
+  resetbutton: {
+    backgroundColor: "#FDCF00",
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginHorizontal: 20,
+    alignItems: "center",
+    marginTop: 100,
+    marginBottom: 20,
+  },
+
   updateButtonText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#000",
+  },
+
+  addressList: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+
+  addressCard: {
+    width: 125,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    margin: 3,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: "#000",
+  },
+
+  addressText: {
+    alignItems: "center",
+  },
+
+  location: {
+    fontSize: 14,
+    color: "#777",
+  },
+
+  addButton: {
+    marginTop: 10,
+    marginLeft: 5,
+  },
+
+  managecontainer: {
+    marginTop: 100,
+    padding: 10,
+  },
+
+  manageheader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  manageline: {
+    borderBottomColor: "#FDCF00", // Color of the line
+    borderBottomWidth: 1,
+    marginBottom: 30, // Thickness of the line
+  },
+
+  manageiconContainer: {
+    backgroundColor: "#FFD700",
+    padding: 20,
+    borderRadius: 50,
+  },
+
+  manageicon: {
+    width: 50,
+    height: 50,
+    tintColor: "#000",
+  },
+
+  managelabel: {
+    fontFamily: "Nunito_500Medium",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+
+  manageinput: {
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 10,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 15,
+  },
+
+  managelocationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  managelocationIcon: {
+    position: "absolute",
+    right: 10,
+  },
+
+  addCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    width: 120,
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#000",
+    shadowColor: "#FDCF00",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  addText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+  },
+
+  changepasscontainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    padding: 10,
+  },
+
+  changepassinput: {
+    width: responsiveWidth(92),
+    height: responsiveHeight(8),
+    borderRadius: 8,
+    fontSize: 16,
+    backgroundColor: "white",
+    color: "#A1A1A1",
+    borderWidth: 1,
+    borderColor: "#000",
+  },
+
+  visibleIcon: {
+    position: "absolute",
+    right: 12,
+    top: 24,
   },
 });
 

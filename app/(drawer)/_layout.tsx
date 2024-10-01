@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Drawer } from "expo-router/drawer";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { DrawerContentComponentProps } from "@react-navigation/drawer"; // Type for drawer props
-import { router, usePathname } from "expo-router";
+import { router, useFocusEffect, usePathname } from "expo-router";
 import { AntDesign } from "@expo/vector-icons";
 import {
-  DrawerActions,
   useNavigation,
-  useFocusEffect,
+  DrawerActions,
+  NavigationProp,
 } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useUser from "@/hooks/auth/useUser";
@@ -18,15 +19,15 @@ import { Toast } from "react-native-toast-notifications";
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   const pathname = usePathname();
-  const { user, setRefetch } = useUser();
+  const { user, setRefetch, loading, error } = useUser();
   const [loader, setLoader] = useState(false);
 
-   useFocusEffect(
-     useCallback(() => {
-       setRefetch(true); // Fetch latest user data
-     }, [])
+  useFocusEffect(
+    useCallback(() => {
+      // This will ensure the user data is fetched whenever the drawer is focused
+      setRefetch(true);
+    }, [])
   );
-  
 
   const handleDelete = async () => {
     setLoader(true);
@@ -35,14 +36,11 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     const refreshToken = await AsyncStorage.getItem("refresh_token");
 
     try {
-      const response = await axios.delete(
-        `${SERVER_URI}/delete-user`,
-        {
-          headers: {
-            access_token: accessToken,
-          },
-        }
-      );
+      const response = await axios.delete(`${SERVER_URI}/delete-user`, {
+        headers: {
+          access_token: accessToken,
+        },
+      });
       if (response.data) {
         Toast.show(response.data.message, {
           type: "success",
@@ -56,11 +54,11 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     }
   };
 
-   const logoutHandler = async () => {
-     await AsyncStorage.removeItem("access_token");
-     await AsyncStorage.removeItem("refresh_token");
-     router.push("/(routes)/login");
-   };
+  const logoutHandler = async () => {
+    await AsyncStorage.removeItem("access_token");
+    await AsyncStorage.removeItem("refresh_token");
+    router.push("/(routes)/login");
+  };
 
   return (
     <DrawerContentScrollView {...props}>
@@ -412,4 +410,3 @@ const styles = StyleSheet.create({
     color: "rgba(0, 0, 0, 0.6)",
   },
 });
-

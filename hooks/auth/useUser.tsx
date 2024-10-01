@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function useUser() {
   const [loading, setLoading] = useState(true);
@@ -12,12 +14,12 @@ export default function useUser() {
   useEffect(() => {
     const subscription = async () => {
       const accessToken = await AsyncStorage.getItem("access_token");
-    const refreshToken = await AsyncStorage.getItem("refresh_token");
+      const refreshToken = await AsyncStorage.getItem("refresh_token");
 
       await axios
         .get(`${SERVER_URI}/me`, {
           headers: {
-            "access_token": accessToken,
+            access_token: accessToken,
           },
         })
         .then((res: any) => {

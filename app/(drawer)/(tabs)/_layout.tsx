@@ -1,17 +1,17 @@
+import React from "react";
 import { TabBar } from "@/components/loader/TabBar";
 import useUser from "@/hooks/auth/useUser";
 import { Tabs } from "expo-router";
-import React from "react";
 import { Image } from "react-native";
+import { RouteProp } from "@react-navigation/native";
 
 export default function TabsLayout() {
-
   return (
     <Tabs
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={({ route }) => {
+      tabBar={(props: any) => <TabBar {...props} />}
+      screenOptions={({ route }: { route: RouteProp<any> }) => {
         return {
-          tabBarIcon: ({ color }) => {
+          tabBarIcon: ({ color }: { color: string }) => {
             let iconName;
             if (route.name === "index") {
               iconName = require("@/assets/icons/homeicon.png");
