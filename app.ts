@@ -2,13 +2,16 @@ import cookieParser from "cookie-parser";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 export const app = express();
+import bodyParser from "body-parser";
 
 import { ErrorMiddleware } from "./middleware/error";
 import userRouter from "./routes/user.route";
 
 
-//body Parser
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // Adjust the size limit as needed
+
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
 
 //cookie parser
 app.use(cookieParser());

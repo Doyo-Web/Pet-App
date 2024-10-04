@@ -16,8 +16,19 @@ export interface IUser extends Document {
     public_id: string;
     url: string;
   };
+  aadhar: {
+    public_id: string;
+    url: string;
+    number: string;
+  };
   role: string;
   profession: string;
+  address: {
+    pickuplocation: string;
+    useraddress: string;
+    city: string;
+    pincode: string;
+  };
   isVerified: boolean;
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
@@ -71,6 +82,19 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       },
     },
 
+    aadhar: {
+      public_id: {
+        type: String,
+        default: "default_avatar_id", // Placeholder public ID
+      },
+      url: {
+        type: String,
+        default: "https://i.sstatic.net/y9DpT.jpg", // Placeholder URL
+      },
+
+      number: { type: String },
+    },
+
     role: {
       type: String,
       default: "pet parents",
@@ -79,6 +103,28 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     profession: {
       type: String,
       default: "Freelancer",
+    },
+
+    address: {
+      pickuplocation: {
+        type: String,
+        // required: [true, "Please enter your pickup location"],
+      },
+
+      useraddress: {
+        type: String,
+        // required: [true, "Please enter your address"],
+      },
+
+      city: {
+        type: String,
+        // required: [true, "Please enter your city"],
+      },
+      
+      pincode: {
+        type: String,
+        // required: [true, "Please enter your pincode"],
+      },
     },
 
     isVerified: {
