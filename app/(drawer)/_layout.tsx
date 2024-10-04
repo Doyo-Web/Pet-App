@@ -16,11 +16,17 @@ import useUser from "@/hooks/auth/useUser";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import { Toast } from "react-native-toast-notifications";
+import { useSelector } from "react-redux";
+
 
 const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
   const pathname = usePathname();
   const { user, setRefetch, loading, error } = useUser();
   const [loader, setLoader] = useState(false);
+  const ruser = useSelector((state: any) => state.user.user);
+
+  const rloading = useSelector((state: any) => state.user.loading);
+  const rerror = useSelector((state: any) => state.user.error);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,16 +82,19 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
           <Image
             style={styles.avatar}
             source={{
-              uri: user?.avatar.url
-                ? user?.avatar?.url
-                : "https://archive.org/download/placeholder-image/placeholder-image.jpg",
+              uri:
+                ruser?.avatar?.url || user?.avatar?.url
+                  ? ruser?.avatar?.url || user?.avatar?.url
+                  : "https://archive.org/download/placeholder-image/placeholder-image.jpg",
             }}
           />
         </View>
 
         <View style={styles.draweruserdetailsbox}>
-          <Text style={styles.draweruserdetailstext}>{user?.fullname}</Text>
-          <Text>{user?.phonenumber}</Text>
+          <Text style={styles.draweruserdetailstext}>
+            {ruser?.fullname || user?.fullname}
+          </Text>
+          <Text>{ruser?.phonenumber || user?.phonenumber}</Text>
           <TouchableOpacity
             onPress={() => {
               router.push("/(tabs)/editprofile");

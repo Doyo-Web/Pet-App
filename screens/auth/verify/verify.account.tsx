@@ -69,6 +69,37 @@ export default function VerifyAccountScreen() {
       });
   };
 
+  // const handleSumbit = async () => {
+  //   const otp = code.join("");
+  //   const activation_token = await AsyncStorage.getItem("activation_token");
+
+  //   const otpString = String(otp);
+  //   const activationTokenString = String(activation_token);
+
+  //   console.log("OTP:", otpString);
+  //   console.log("Activation Token:", activationTokenString);
+
+  //   await axios
+  //     .post(`${SERVER_URI}/activate-user`, {
+  //       activation_token: activationTokenString,
+  //       activation_code: otpString,
+  //     })
+  //     .then((res: any) => {
+  //       Toast.show("Your account activated successfully!", {
+  //         type: "success",
+  //       });
+  //       setCode(new Array(4).fill(""));
+  //       router.push("/(routes)/login");
+  //     })
+  //     .catch((error: any) => {
+  //       console.error("Activation Error:", error.response.data);
+  //       Toast.show(error.message, {
+  //         type: "danger",
+  //       });
+  //     });
+  // };
+
+
   const handleresendotp = async () => {
     const activation_token = await AsyncStorage.getItem("activation_token");
 

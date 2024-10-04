@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ScrollView,
   FlatList,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import {
@@ -35,20 +36,25 @@ import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import { Toast } from "react-native-toast-notifications";
 import { router } from "expo-router";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { Feather, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Dimensions } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import { useDispatch, useSelector } from "react-redux";
+import { setUser, setLoading, setError } from "@/store/userSlice";
 
 const EditProfileScreen = () => {
 
-  const apiKey = "AIzaSyBA6ISJbuLn-LTjVppqZw1kMSapirMzMgk";
+  const dispatch = useDispatch();
+  
+  const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
 
   const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
 
   type CurrentLocationType = Location.LocationObjectCoords | null;
 
-
+const [isPersonalInfo, setIsPersonalInfo] = useState(0);
 const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
   const [isNewPasswordVisible, setNewPasswordVisible] = useState(false);
   
@@ -104,21 +110,39 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
     useState<CurrentLocationType>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
 
- useEffect(() => {
-   (async () => {
-     // Request permission to access location
-     let { status } = await Location.requestForegroundPermissionsAsync();
-     if (status !== "granted") {
-       console.log("Permission to access location was denied");
-     } else {
-       // Get current location
-       let location = await Location.getCurrentPositionAsync({});
-       setCurrentLocation(location.coords as Location.LocationObjectCoords);
-     }
-   })();
- }, []);
+//  useEffect(() => {
+//    (async () => {
+//      // Request permission to access location
+//      let { status } = await Location.requestForegroundPermissionsAsync();
+//      if (status !== "granted") {
+//        console.log("Permission to access location was denied");
+//      } else {
+//        // Get current location
+//        let location = await Location.getCurrentPositionAsync({});
+//        setCurrentLocation(location.coords as Location.LocationObjectCoords);
+//      }
+//    })();
+//  }, []);
 
+const getLocation = async () => {
+  // Check for permissions
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status === "granted") {
+    const location = await Location.getCurrentPositionAsync({});
+    setCurrentLocation(location.coords as Location.LocationObjectCoords);
+  } else {
+    // Handle permission denial
+    Toast.show("Location permission denied", { type: "danger" });
+  }
+};
 
+useEffect(() => {
+  // Get location only when in Manage Address component
+  if (isPersonalInfo === 1) {
+    getLocation();
+  }
+}, [isPersonalInfo]);
+  
   const handleLocationSelect = () => {
   setIsMapVisible(true);
   };
@@ -127,6 +151,8 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
     console.log("location", location);
     // Reverse geocoding to get the city and pincode
     const { latitude, longitude } = location;
+
+    setCurrentLocation(location);
 
     console.log(latitude, longitude);
 
@@ -146,6 +172,17 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
         component.types.includes("postal_code")
       );
 
+      const formattedAddress = response.data.results[0].formatted_address;
+      const addressParts = formattedAddress.split(", ");
+
+      // Assuming the address has at least 2 lines, update line1 and line2
+      const line1Value = addressParts[0] || "";
+      const line2Value = addressParts[1] || "";
+
+      setLine1(line1Value);
+      setLine2(line2Value);
+      setPickupLocation(cityComponent ? cityComponent.long_name : "");
+
       setCity(cityComponent ? cityComponent.long_name : "");
       setPincode(pincodeComponent ? pincodeComponent.long_name : "");
       setIsMapVisible(false);
@@ -153,10 +190,9 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
   };
 
   const { user, loading, setRefetch } = useUser();
-  const [isPersonalInfo, setIsPersonalInfo] = useState(0);
   const [isChangePassword, setIsChangePassword] = useState(false);
 
-   const [location, setLocation] = useState("Mumbai");
+   const [pickuplocation, setPickupLocation] = useState("");
    const [line1, setLine1] = useState("");
    const [line2, setLine2] = useState("");
    const [city, setCity] = useState("");
@@ -165,6 +201,7 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
 
   // State for the profile image and input fields
   const [image, setImage] = useState<any>(null);
+   const [kycimage, setKycImage] = useState<any>(null);
   const [loader, setLoader] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -226,6 +263,131 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
     }
   };
 
+  const pickKycImage = async () => {
+    // Show options to the user to choose between camera, gallery, and documents
+    Alert.alert(
+      "Select KYC Source",
+      "Choose an option to upload an image or document.",
+      [
+        {
+          text: "Camera",
+          onPress: async () => {
+            // Open the camera
+            let result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.All,
+              allowsEditing: true,
+              quality: 1.0,
+            });
+
+            // If the user has not canceled the operation
+            if (!result.canceled) {
+              const base64 = await FileSystem.readAsStringAsync(
+                result.assets[0].uri,
+                {
+                  encoding: FileSystem.EncodingType.Base64,
+                }
+              );
+              setLoader(true);
+              const base64Image = `data:image/jpeg;base64,${base64}`;
+              setKycImage(base64Image);
+            }
+          },
+        },
+        {
+          text: "Gallery",
+          onPress: async () => {
+            // Open the gallery
+            let result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.All,
+              allowsEditing: true,
+              quality: 1.0,
+            });
+
+            // If the user has not canceled the operation
+            if (!result.canceled) {
+              const base64 = await FileSystem.readAsStringAsync(
+                result.assets[0].uri,
+                {
+                  encoding: FileSystem.EncodingType.Base64,
+                }
+              );
+              setLoader(true);
+              const base64Image = `data:image/jpeg;base64,${base64}`;
+              setKycImage(base64Image);
+            }
+          },
+        },
+        {
+          text: "Documents",
+          onPress: async () => {
+            // Open the document picker for PDF files
+            let result = await DocumentPicker.getDocumentAsync({
+              type: "application/pdf", // Only allow PDFs
+            });
+
+            // Check if the document was successfully picked or the operation was canceled
+            if (!result.canceled) {
+              const { uri, name, size } = result.assets[0];
+
+              // If the user picked a file, convert it to base64
+              const fileBase64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              setLoader(true);
+              const base64Pdf = `data:application/pdf;base64,${fileBase64}`;
+              setKycImage(base64Pdf);
+            } else {
+              // Handle the case where the user canceled the document picker
+              console.log("Document picking canceled");
+            }
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+
+  const handleLocationUpdate = async () => {
+    setLoader(true);
+
+    const accessToken = await AsyncStorage.getItem("access_token");
+    const refreshToken = await AsyncStorage.getItem("refresh_token");
+
+    try {
+      const response = await axios.put(
+        `${SERVER_URI}/update-location`,
+        {
+          pickuplocation,
+          line1,
+          line2,
+          city,
+          pincode,
+        },
+        {
+          headers: {
+            access_token: accessToken,
+          },
+        }
+      );
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        // setRefetch(true);
+        // router.push("/(tabs)/");
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoader(false);
+    }
+  };
+
   const handleUpdate = async () => {
     setLoader(true);
 
@@ -252,6 +414,7 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
         Toast.show(response.data.message, {
           type: "success",
         });
+        dispatch(setUser(response.data.user));
         setRefetch(true);
         router.push("/(tabs)/");
       }
@@ -262,9 +425,65 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
     }
   };
 
-  const handleComponent = () => {
-    setIsPersonalInfo(prev => prev + 1);
-  }
+  const handleKycUpdate = async () => {
+    setLoader(true);
+
+    const accessToken = await AsyncStorage.getItem("access_token");
+    const refreshToken = await AsyncStorage.getItem("refresh_token");
+
+    try {
+      const response = await axios.put(
+        `${SERVER_URI}/update-aadhar`,
+        {
+          aadhar: kycimage,
+        },
+        {
+          headers: {
+            access_token: accessToken,
+          },
+        }
+      );
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        // setRefetch(true);
+        // router.push("/(tabs)/");
+      }
+    } catch (error: any) {
+      // Error handling
+      const errorMessage =
+        error.response && error.response.data && error.response.data.message
+          ? error.response.data.message
+          : "Something went wrong. Please try again.";
+
+      // Show error in toast with danger type
+      Toast.show(errorMessage, {
+        type: "danger",
+      });
+    } finally {
+      setLoader(false);
+    }
+  };
+
+ const handleComponent = () => {
+   setIsPersonalInfo((prev) => {
+     if (prev < 3) {
+       return prev + 1;
+     }
+     return prev; // Return the previous value if it's already 3 or greater
+   });
+   
+  };
+  
+  const handledecrementComponent = () => {
+    setIsPersonalInfo((prev) => {
+      if (prev > 0) {
+        return prev - 1;
+      }
+      return prev; // Return the previous value if it's already 0
+    });
+  };
 
   const renderAddress = ({ item }: any) => (
     <View style={[styles.addressCard, { shadowColor: item.shadowColor }]}>
@@ -315,19 +534,37 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
           {/* Personal Information Section */}
           <View style={styles.personalinfo}>
             <View style={styles.personalinfoicon}>
-              <View style={styles.personalinfoiconbox}>
-                <Image source={require("@/assets/icons/personalleft.png")} />
-              </View>
+              <TouchableOpacity
+                onPress={handledecrementComponent}
+                disabled={isPersonalInfo === 0} // Disable if isPersonalInfo is 0
+              >
+                <View
+                  style={[
+                    styles.personalinfoiconbox,
+                    isPersonalInfo === 0 && {
+                      backgroundColor: "rgba(253, 207, 0, 0.4)",
+                    }, // Change background color if isPersonalInfo is 0
+                  ]}
+                >
+                  <Image source={require("@/assets/icons/personalleft.png")} />
+                </View>
+              </TouchableOpacity>
               <Text style={styles.sectionTitle}>
                 {isPersonalInfo === 0 && "Personal Information"}
                 {isPersonalInfo === 1 && "Manage Address"}
                 {isPersonalInfo === 2 && "Change Password"}
+                {isPersonalInfo === 3 && "KYC Details"}
               </Text>
-              <TouchableOpacity onPress={handleComponent}>
+              <TouchableOpacity
+                onPress={handleComponent}
+                disabled={isPersonalInfo === 3} // Disable if isPersonalInfo is 3
+              >
                 <View
                   style={[
                     styles.personalinfoiconbox,
-                    { backgroundColor: "#FDCF00" },
+                    isPersonalInfo === 3 && {
+                      backgroundColor: "rgba(253, 207, 0, 0.4)",
+                    }, // Change background color if isPersonalInfo is 3
                   ]}
                 >
                   <Image source={require("@/assets/icons/personalright.png")} />
@@ -414,8 +651,9 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
                     <View style={styles.inputGroup}>
                       <TextInput
                         style={styles.input}
-                        value={location}
-                        editable={false} // Location picker could open a modal or map
+                        value={pickuplocation}
+                        placeholder="Mumbai"
+                        onChangeText={setPickupLocation}
                       />
                       <TouchableOpacity
                         style={styles.managelocationIcon}
@@ -450,6 +688,7 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
                   <TextInput
                     style={styles.manageinput}
                     value={city}
+                    placeholder="Mumbai"
                     onChangeText={setCity}
                   />
 
@@ -468,7 +707,7 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
                 {/* Update Button */}
                 <TouchableOpacity
                   style={styles.updateButton}
-                  onPress={handleUpdate}
+                  onPress={handleLocationUpdate}
                 >
                   <Text style={styles.updateButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -589,6 +828,45 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
 
             {/* Change Password Component*/}
 
+            {/* KYC Details */}
+
+            {isPersonalInfo === 3 && (
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <View style={styles.kyctitle}>
+                  <Text style={styles.kyctext}>Aadhar Proof</Text>
+                </View>
+                <View style={styles.kycheader}>
+                  <View style={styles.kycavatarContainer}>
+                    <Image
+                      style={styles.kycavatar}
+                      source={{
+                        uri:
+                          kycimage ||
+                          user?.aadhar?.url ||
+                          "https://i.sstatic.net/y9DpT.jpg",
+                      }}
+                    />
+                    <TouchableOpacity
+                      style={styles.kyceditIcon}
+                      onPress={pickKycImage}
+                    >
+                      <Feather name="upload" size={30} color="black" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Update Button */}
+                <TouchableOpacity
+                  style={styles.kycupdateButton}
+                  onPress={handleKycUpdate}
+                >
+                  <Text style={styles.updateButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* KYC Details */}
+
             {isPersonalInfo === 0 && (
               <View>
                 <View style={styles.form}>
@@ -700,6 +978,33 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 60,
   },
+
+  kyctitle: {
+    backgroundColor: "#FDCF00",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 50,
+  },
+
+  kyctext: {
+    fontFamily: "OtomanopeeOne",
+    fontWeight: "600",
+  },
+
+  kycheader: {
+    width: 300,
+    height: 300,
+    justifyContent: "center",
+    alignItems: "center",
+    borderColor: "#000",
+    borderWidth: 2,
+    borderRadius: 18,
+  },
+
+  kycavatarContainer: {},
+
   avatarContainer: {
     position: "relative",
   },
@@ -711,6 +1016,12 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
   },
 
+  kycavatar: {
+    width: 290,
+    height: 295,
+    borderRadius: 15,
+  },
+
   editIcon: {
     position: "absolute",
     bottom: 0,
@@ -720,6 +1031,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 5,
     borderRadius: 20,
+  },
+
+  kyceditIcon: {
+    width: 60,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    bottom: -28,
+    right: 112,
+    backgroundColor: "#FDCF00",
+    borderColor: "#000",
+    borderWidth: 1,
+    borderRadius: 50,
   },
 
   personalinfo: {
@@ -745,7 +1070,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(253, 207, 0, 0.4)",
+    backgroundColor: "#FDCF00",
   },
 
   sectionTitle: {
@@ -799,6 +1124,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
     marginBottom: 20,
+  },
+
+  kycupdateButton: {
+    backgroundColor: "#FDCF00",
+    width: "90%",
+    height: 60,
+    justifyContent: "center",
+    borderRadius: 10,
+    marginHorizontal: 20,
+    alignItems: "center",
+    marginTop: 50,
+    marginBottom: 60,
   },
 
   resetbutton: {
