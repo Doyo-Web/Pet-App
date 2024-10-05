@@ -40,7 +40,10 @@ export default function TabsLayout() {
       <Tabs.Screen name="host/index" options={{ title: "Host" }} />
       <Tabs.Screen name="booknow/index" options={{ title: "BookNow" }} />
       <Tabs.Screen name="chat/index" options={{ title: "Chat" }} />
-      <Tabs.Screen name="profile/index" options={{ title: "Profile" }} />
+      <Tabs.Screen
+        name="profile/index"
+        options={{ title: "Profile" }}
+      />
     </Tabs>
   );
 }

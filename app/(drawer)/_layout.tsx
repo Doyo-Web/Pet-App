@@ -272,6 +272,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
 
 const Layout: React.FC = () => {
   const navigation = useNavigation();
+  const pathname = usePathname();
 
   // Function to open the drawer
   const openDrawer = () => {
@@ -290,21 +291,30 @@ const Layout: React.FC = () => {
 
         headerTransparent: true,
 
-        headerLeft: () => (
-          <TouchableOpacity
-            style={styles.customHamburgerContainer}
-            onPress={openDrawer} // Open the drawer when pressed
-          >
-            <Image source={require("@/assets/icons/hamburger.png")} />
-          </TouchableOpacity>
-        ),
-
-        headerRight: () => (
-          <Image
-            source={require("@/assets/images/header-logo.png")} // Replace with your logo image
-            style={styles.headerLogo} // Style the logo
-          />
-        ),
+        headerLeft: () => {
+          if (pathname === "/profile") {
+            return null; // Don't render anything for the profile screen
+          }
+          return (
+            <TouchableOpacity
+              style={styles.customHamburgerContainer}
+              onPress={openDrawer}
+            >
+              <Image source={require("@/assets/icons/hamburger.png")} />
+            </TouchableOpacity>
+          );
+        },
+        headerRight: () => {
+          if (pathname === "/profile") {
+            return null; // Don't render anything for the profile screen
+          }
+          return (
+            <Image
+              source={require("@/assets/images/header-logo.png")}
+              style={styles.headerLogo}
+            />
+          );
+        },
       }}
     />
   );
