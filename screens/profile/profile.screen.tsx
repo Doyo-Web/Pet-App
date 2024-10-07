@@ -13,37 +13,50 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { AntDesign } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
-
   const { height } = Dimensions.get("window");
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
   const [dateheat, setDateHeat] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(new Date());
 
-   const onChangeHeatCycleDate = (
-     event: DateTimePickerEvent,
-     selectedDate?: Date
-   ) => {
-     const currentDate = selectedDate || dateheat;
-     setShowHeatCycleDatePicker(Platform.OS === "ios"); // Hide the picker after selection for non-iOS
-     setDateHeat(currentDate);
-     updateFormState("lastHeatCycle", currentDate.toLocaleDateString()); // Format as needed
-   };
+  const handleTimeChange = (index: number, event: DateTimePickerEvent, selectedDate: Date | undefined) => {
+    const currentDate = selectedDate || selectedTime; // Use the selected time or current time
+    setShowTimePicker(false);
+    // Format the time as needed (e.g., "HH:mm")
+    const timeString = currentDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    handleDietChange(index, "time", timeString); // Update state with formatted time
+  };
 
-   const onChangeNeuteredDate = (
-     event: DateTimePickerEvent,
-     selectedDate?: Date
-   ) => {
-     const currentDate = selectedDate || date;
-     setShowNeuteredDatePicker(Platform.OS === "ios"); // Hide the picker after selection for non-iOS
-     setDate(currentDate);
-     updateFormState("neuteredDate", currentDate.toLocaleDateString()); // Format as needed
-   };
+  const onChangeHeatCycleDate = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    const currentDate = selectedDate || dateheat;
+    setShowHeatCycleDatePicker(Platform.OS === "ios"); // Hide the picker after selection for non-iOS
+    setDateHeat(currentDate);
+    updateFormState("lastHeatCycle", currentDate.toLocaleDateString()); // Format as needed
+  };
 
+  const onChangeNeuteredDate = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    const currentDate = selectedDate || date;
+    setShowNeuteredDatePicker(Platform.OS === "ios"); // Hide the picker after selection for non-iOS
+    setDate(currentDate);
+    updateFormState("neuteredDate", currentDate.toLocaleDateString()); // Format as needed
+  };
 
   const totalSteps = 4;
 
@@ -72,22 +85,16 @@ export default function ProfileScreen() {
   }
 
   const [isBathingMandatory, setIsBathingMandatory] = useState(false);
+  const [isDailyCombing, setIsDailyCombing] = useState(false);
   const [walkPreference, setWalkPreference] = useState("");
   const [bathingFrequency, setBathingFrequency] = useState("");
   const [dietSchedule, setDietSchedule] = useState([{ time: "", portion: "" }]);
 
-  const addDietEntry = () => {
-    setDietSchedule([...dietSchedule, { time: "", portion: "" }]);
-  };
-
-  const handleDietChange = (
-    index: number,
-    key: "time" | "portion",
-    value: string
-  ) => {
-    const updatedDiet = [...dietSchedule];
-    updatedDiet[index][key] = value;
-    setDietSchedule(updatedDiet);
+  const addMoreDietEntry = () => {
+    setFormState({
+      ...formState,
+      dietSchedule: [...formState.dietSchedule, { time: "", portion: "" }],
+    });
   };
 
   const Checkbox: React.FC<CheckboxProps> = ({ label, checked, onCheck }) => (
@@ -95,12 +102,12 @@ export default function ProfileScreen() {
       style={styles.checkboxContainerscreentwo}
       onPress={onCheck}
     >
+      <Text style={styles.checkboxlabelscreentwo}>{label}</Text>
       <View
         style={[styles.checkboxscreentwo, checked && styles.checkedscreentwo]}
       >
         {checked && <Text style={styles.checkmark}>✓</Text>}
       </View>
-      <Text style={styles.labelscreentwo}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -129,10 +136,44 @@ export default function ProfileScreen() {
     neuteredDate: "",
     pottyTraining: "",
     toiletBreaks: "",
+    walkPerDay: "",
+    bathingFrequency: "",
+    dailyCombing: false,
+    dietSchedule: [{ time: "", portion: "" }],
+    foodAllergy: "",
   });
+
+  interface DietEntry {
+    time: string;
+    portion: string;
+  }
+
+ const handleDietChange = (index: number, field: string, value: string) => {
+   // Create a new array based on the current diet schedule
+   const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
+     if (i === index) {
+       // Update the specific entry being changed
+       return { ...entry, [field]: value };
+     }
+     return entry; // Return the unchanged entry
+   });
+
+   // Update the form state with the new diet schedule
+   setFormState((prevState) => ({
+     ...prevState,
+     dietSchedule: updatedDietEntries, // Update the dietSchedule
+   }));
+ };
 
   const updateFormState = (key: string, value: string | boolean) => {
     setFormState((prevState) => ({ ...prevState, [key]: value }));
+  };
+
+  const addDietEntry = () => {
+    setFormState((prevState) => ({
+      ...prevState,
+      dietSchedule: [...prevState.dietSchedule, { time: "", portion: "" }],
+    }));
   };
 
   const renderStep = () => {
@@ -356,99 +397,138 @@ export default function ProfileScreen() {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.sectionTitle}>Pet's Preference</Text>
-
             <Text style={styles.subtitle}>Walks per day:*</Text>
-            <RadioButton
-              label="Not Trained"
-              checked={walkPreference === "not-trained"}
-              onCheck={() => setWalkPreference("not-trained")}
-            />
-            <RadioButton
-              label="Indoors"
-              checked={walkPreference === "indoors"}
-              onCheck={() => setWalkPreference("indoors")}
-            />
-            <RadioButton
-              label="Outdoors"
-              checked={walkPreference === "outdoors"}
-              onCheck={() => setWalkPreference("outdoors")}
-            />
-            <RadioButton
-              label="Both Indoors and Outdoors"
-              checked={walkPreference === "both"}
-              onCheck={() => setWalkPreference("both")}
-            />
-
+            <View style={styles.radiobuttonbbox}>
+              <RadioButton
+                label="Not Trained"
+                checked={formState.walkPerDay === "not trained"}
+                onCheck={() => updateFormState("walkPerDay", "not trained")}
+              />
+              <RadioButton
+                label="Indoors"
+                checked={formState.walkPerDay === "indoors"}
+                onCheck={() => updateFormState("walkPerDay", "indoors")}
+              />
+              <RadioButton
+                label="Outdoors"
+                checked={formState.walkPerDay === "outdoors"}
+                onCheck={() => updateFormState("walkPerDay", "outdoors")}
+              />
+              <RadioButton
+                label="Both Indoors and Outdoors"
+                checked={formState.walkPerDay === "both"}
+                onCheck={() => updateFormState("walkPerDay", "both")}
+              />
+            </View>
             <Checkbox
               label="Is bathing Mandatory"
               checked={isBathingMandatory}
               onCheck={() => setIsBathingMandatory(!isBathingMandatory)}
             />
-
             {isBathingMandatory && (
               <View style={styles.bathingFrequency}>
                 <Text style={styles.subtitle}>Bathing frequency:</Text>
-                <RadioButton
-                  label="Not Trained"
-                  checked={bathingFrequency === "not-trained"}
-                  onCheck={() => setBathingFrequency("not-trained")}
-                />
-                <RadioButton
-                  label="Indoors"
-                  checked={bathingFrequency === "indoors"}
-                  onCheck={() => setBathingFrequency("indoors")}
-                />
-                <RadioButton
-                  label="Outdoors"
-                  checked={bathingFrequency === "outdoors"}
-                  onCheck={() => setBathingFrequency("outdoors")}
-                />
-                <RadioButton
-                  label="Both Indoors and Outdoors"
-                  checked={bathingFrequency === "both"}
-                  onCheck={() => setBathingFrequency("both")}
-                />
+                <View style={styles.bathingFrequencyboxinnner}>
+                  <RadioButton
+                    label="Not Trained"
+                    checked={formState.bathingFrequency === "not trained"}
+                    onCheck={() =>
+                      updateFormState("bathingFrequency", "not trained")
+                    }
+                  />
+                  <RadioButton
+                    label="Indoors"
+                    checked={formState.bathingFrequency === "indoors"}
+                    onCheck={() =>
+                      updateFormState("bathingFrequency", "indoors")
+                    }
+                  />
+                  <RadioButton
+                    label="Outdoors"
+                    checked={formState.bathingFrequency === "outdoors"}
+                    onCheck={() =>
+                      updateFormState("bathingFrequency", "outdoors")
+                    }
+                  />
+                  <RadioButton
+                    label="Both Indoors and Outdoors"
+                    checked={formState.bathingFrequency === "both"}
+                    onCheck={() => updateFormState("bathingFrequency", "both")}
+                  />
+                </View>
               </View>
             )}
-
             <Checkbox
               label="Is daily combing required ?"
-              checked={false}
-              onCheck={() => {}}
+              checked={formState.dailyCombing}
+              onCheck={() =>
+                updateFormState("dailyCombing", !formState.dailyCombing)
+              }
             />
-
+            <View style={styles.horizontalLine} />
             <Text style={styles.sectionTitle}>Pet's Diet</Text>
-            <Text>
+            <Text style={styles.sectionDesc}>
               Please provide the diet schedule and the food portions below*
             </Text>
+            <View style={styles.dietEntrytitlebox}>
+              <Text style={styles.dietEntrytitleboxtext}>Time</Text>
+              <Text style={styles.dietEntrytitleboxtext}>Diet + Portion</Text>
+            </View>
 
-            {dietSchedule.map((entry, index) => (
-              <View key={index} style={styles.dietEntry}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Time"
-                  value={entry.time}
-                  onChangeText={(text) => handleDietChange(index, "time", text)}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Diet + Portion"
-                  value={entry.portion}
-                  onChangeText={(text) =>
-                    handleDietChange(index, "portion", text)
-                  }
-                />
-              </View>
-            ))}
+            {formState.dietSchedule &&
+              formState.dietSchedule.map((entry, index) => (
+                <View key={index} style={styles.dietEntry}>
+                  <TouchableOpacity
+                    onPress={() => setShowTimePicker(true)}
+                    style={styles.timePickerContainer}
+                  >
+                    <TextInput
+                      style={styles.dietEntryinput}
+                      placeholder="Time"
+                      value={entry.time} // Access entry.time directly
+                      editable={false} // Make TextInput non-editable
+                    />
 
+                    <AntDesign
+                      name="calendar"
+                      size={20}
+                      color="black"
+                      style={styles.timeicon}
+                    />
+                  </TouchableOpacity>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={selectedTime}
+                      mode="time"
+                      display="default"
+                      onChange={(event, selectedDate) =>
+                        handleTimeChange(index, event, selectedDate)
+                      }
+                    />
+                  )}
+                  <TextInput
+                    style={styles.dietEntryinput}
+                    placeholder="chicken -2kg + Rice 1/2 cup"
+                    value={entry.portion} // Access entry.portion directly
+                    onChangeText={(text) =>
+                      handleDietChange(index, "portion", text)
+                    } // Update state on change
+                  />
+                </View>
+              ))}
             <TouchableOpacity style={styles.addButton} onPress={addDietEntry}>
               <Text style={styles.addButtonText}>+ Add more</Text>
             </TouchableOpacity>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Does your pet have any food allergy?"
-            />
+            <View style={styles.foodallergybox}>
+              <Text style={styles.foodallergyboxtext}>
+                Does your pet have any food allergy ?
+              </Text>
+              <TextInput
+                style={styles.allergyinput}
+                placeholder="Does your pet have any food allergy?"
+                onChangeText={(text) => updateFormState("foodAllergy", text)}
+              />
+            </View>
           </View>
         );
       case 3:
@@ -470,43 +550,40 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          onPress={prevStep}
-          style={styles.arrowcontainer}
-        >
-          <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pet Profile</Text>
-        <View style={styles.progressContainer}>
-          {Array.from({ length: totalSteps }, (_, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && (
+      <TouchableOpacity onPress={prevStep}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={prevStep} style={styles.arrowcontainer}>
+            <Icon name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Pet Profile</Text>
+          <View style={styles.progressContainer}>
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && (
+                  <View
+                    style={[
+                      styles.progressLine,
+                      i < currentStep
+                        ? styles.progressLineCompleted
+                        : styles.progressLineFuture,
+                    ]}
+                  />
+                )}
                 <View
                   style={[
-                    styles.progressLine,
-                    i < currentStep
-                      ? styles.progressLineCompleted
-                      : styles.progressLineFuture,
+                    styles.progressDot,
+                    i + 1 === currentStep
+                      ? styles.progressDotCurrent
+                      : i + 1 < currentStep
+                      ? styles.progressDotCompleted
+                      : styles.progressDotFuture,
                   ]}
                 />
-              )}
-              <View
-                style={[
-                  styles.progressDot,
-                  i + 1 === currentStep
-                    ? styles.progressDotCurrent
-                    : i + 1 < currentStep
-                    ? styles.progressDotCompleted
-                    : styles.progressDotFuture,
-                ]}
-              />
-            </React.Fragment>
-          ))}
+              </React.Fragment>
+            ))}
+          </View>
         </View>
-      </View>
-
+      </TouchableOpacity>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -516,7 +593,10 @@ export default function ProfileScreen() {
         <View style={styles.bottomNavigation}>
           {currentStep < totalSteps ? (
             <TouchableOpacity style={styles.button} onPress={nextStep}>
-              <Text style={styles.buttonText}>Next to Preferences</Text>
+              <Text style={styles.buttonText}>
+                {currentStep === 1 && "Next to Preferences"}{" "}
+                {currentStep === 2 && "Next to Pet’s Medication"}
+              </Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -554,6 +634,7 @@ const styles = StyleSheet.create({
   },
 
   arrowcontainer: {
+    zIndex: 999,
     backgroundColor: "#FDCF00",
     justifyContent: "center",
     alignItems: "center",
@@ -833,8 +914,6 @@ const styles = StyleSheet.create({
 
   bottomNavigation: {
     backgroundColor: "#fff",
-    paddingVertical: 20,
-    paddingHorizontal: 20,
   },
 
   navigationContainer: {
@@ -853,16 +932,39 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
+    color: "#000",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "OtomanopeeOne",
+  },
+
+  horizontalLine: {
+    borderBottomColor: "rgba(253, 207, 0, 0.6)",
+    borderBottomWidth: 2,
+    marginVertical: 16,
   },
 
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
     marginTop: 16,
     marginBottom: 8,
+    fontFamily: "OtomanopeeOne",
+  },
+
+  sectionDesc: {
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
+    marginBottom: 10,
+  },
+
+  dietEntrytitlebox: {
+    flexDirection: "row",
+    gap: 110,
+    marginBottom: 10,
+  },
+
+  dietEntrytitleboxtext: {
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
   },
 
   dietEntry: {
@@ -871,8 +973,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  timePickerContainer: {
+    width: "40%",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  dietEntryinput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 4,
+    backgroundColor: "#fff",
+  },
+
   addButton: {
-    backgroundColor: "#FFD700",
+    width: "40%",
+    backgroundColor: "rgba(253, 207, 0, 0.6)",
     padding: 12,
     borderRadius: 8,
     marginVertical: 16,
@@ -883,20 +1002,38 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  foodallergybox: {
+    gap: 10,
+  },
+
+  foodallergyboxtext: {
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
+  },
+
   subtitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "Nunito_700Bold",
     marginTop: 12,
     marginBottom: 8,
   },
+
+  radiobuttonbbox: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 20,
+    marginTop: 10,
+  },
+
   checkboxContainerscreentwo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 20,
+    gap: 10,
   },
   checkboxscreentwo: {
-    width: 20,
-    height: 20,
+    width: 30,
+    height: 30,
     borderWidth: 1,
     borderColor: "black",
     marginRight: 8,
@@ -910,6 +1047,7 @@ const styles = StyleSheet.create({
     color: "black",
   },
   radioContainerscreentwo: {
+    width: "50%",
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
@@ -925,22 +1063,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   radioChecked: {
-    borderColor: "yellow",
+    borderColor: "#000",
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "yellow",
+    backgroundColor: "#FDCF00",
   },
   labelscreentwo: {
     fontSize: 16,
   },
+
+  checkboxlabelscreentwo: {
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
+  },
+
   bathingFrequency: {
     backgroundColor: "#FFFFE0",
     padding: 16,
     borderRadius: 8,
     marginTop: 8,
     marginBottom: 16,
+  },
+
+  bathingFrequencyboxinnner: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  allergyinput: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    paddingVertical: 8,
+  },
+
+  timeicon: {
+    position: 'absolute',
+    right: 10,
   },
 });
