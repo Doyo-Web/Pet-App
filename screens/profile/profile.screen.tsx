@@ -19,23 +19,112 @@ import { AntDesign } from "@expo/vector-icons";
 export default function ProfileScreen() {
   const { height } = Dimensions.get("window");
 
+  const [formState, setFormState] = useState({
+    petType: "",
+    petName: "",
+    petBreed: "",
+    petAgeYears: "",
+    petAgeMonths: "",
+    petGender: "",
+    lastHeatCycle: "",
+    isNeutered: false,
+    neuteredDate: "",
+    pottyTraining: "",
+    toiletBreaks: "",
+    walkPerDay: "",
+    bathingFrequency: "",
+    dailyCombing: false,
+    dietSchedule: [{ time: "", portion: "" }],
+    foodAllergy: "",
+    vaccinationDate: new Date(),
+    dewormingDate: new Date(),
+    tickTreatmentDate: new Date(),
+    medicalHistory: false,
+    medicationDetails: {
+      nameFrequency: "",
+      reason: "",
+      administration: "",
+    },
+    aggressiveTendencies: {
+      maleDog: false,
+      femaleDog: false,
+      human: false,
+      otherAnimals: false,
+    },
+    resourceGuarding: false,
+    groomingAggression: false,
+    collarAggression: false,
+    foodAggression: false,
+  });
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
   const [dateheat, setDateHeat] = useState(new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const [showTimePickers, setShowTimePickers] = useState(
+    formState.dietSchedule.map(() => false) // Array to track time picker visibility
+  );
+
   const [selectedTime, setSelectedTime] = useState(new Date());
 
-  const handleTimeChange = (index: number, event: DateTimePickerEvent, selectedDate: Date | undefined) => {
-    const currentDate = selectedDate || selectedTime; // Use the selected time or current time
-    setShowTimePicker(false);
-    // Format the time as needed (e.g., "HH:mm")
+  const handleDietChange = (index: number, field: string, value: string) => {
+    const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
+      if (i === index) {
+        return { ...entry, [field]: value };
+      }
+      return entry;
+    });
+    setFormState((prevState) => ({
+      ...prevState,
+      dietSchedule: updatedDietEntries,
+    }));
+  };
+
+  const handleTimeChange = (
+    index: number,
+    event: any,
+    selectedDate: Date | undefined
+  ) => {
+    const currentDate = selectedDate || selectedTime;
+    setShowTimePickers((prevState) =>
+      prevState.map((show, i) => (i === index ? false : show))
+    ); // Hide the time picker for the current entry
+
     const timeString = currentDate.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
-    handleDietChange(index, "time", timeString); // Update state with formatted time
+
+    handleDietChange(index, "time", timeString); // Update the specific entry
+  };
+
+  // Function to format the date as dd/MM/yyyy
+  const formatDate = (date: Date) => {
+    if (!date || !(date instanceof Date)) {
+      return "Select Date"; // Show default text if date is not selected
+    }
+    const day = ("0" + date.getDate()).slice(-2);
+    const month = ("0" + (date.getMonth() + 1)).slice(-2); // Months are zero-indexed
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateChange = (key: string, selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setFormState((prevState) => ({
+        ...prevState,
+        [key]: selectedDate, // Use the key to dynamically set the value
+      }));
+    }
+    // Close the picker based on the key
+    if (key === "vaccinationDate") {
+      setShowVaccinationPicker(false);
+    } else if (key === "dewormingDate") {
+      setShowDewormingPicker(false);
+    }
   };
 
   const onChangeHeatCycleDate = (
@@ -85,17 +174,6 @@ export default function ProfileScreen() {
   }
 
   const [isBathingMandatory, setIsBathingMandatory] = useState(false);
-  const [isDailyCombing, setIsDailyCombing] = useState(false);
-  const [walkPreference, setWalkPreference] = useState("");
-  const [bathingFrequency, setBathingFrequency] = useState("");
-  const [dietSchedule, setDietSchedule] = useState([{ time: "", portion: "" }]);
-
-  const addMoreDietEntry = () => {
-    setFormState({
-      ...formState,
-      dietSchedule: [...formState.dietSchedule, { time: "", portion: "" }],
-    });
-  };
 
   const Checkbox: React.FC<CheckboxProps> = ({ label, checked, onCheck }) => (
     <TouchableOpacity
@@ -124,49 +202,34 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
-  const [formState, setFormState] = useState({
-    petType: "",
-    petName: "",
-    petBreed: "",
-    petAgeYears: "",
-    petAgeMonths: "",
-    petGender: "",
-    lastHeatCycle: "",
-    isNeutered: false,
-    neuteredDate: "",
-    pottyTraining: "",
-    toiletBreaks: "",
-    walkPerDay: "",
-    bathingFrequency: "",
-    dailyCombing: false,
-    dietSchedule: [{ time: "", portion: "" }],
-    foodAllergy: "",
-  });
-
   interface DietEntry {
     time: string;
     portion: string;
   }
 
- const handleDietChange = (index: number, field: string, value: string) => {
-   // Create a new array based on the current diet schedule
-   const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
-     if (i === index) {
-       // Update the specific entry being changed
-       return { ...entry, [field]: value };
-     }
-     return entry; // Return the unchanged entry
-   });
-
-   // Update the form state with the new diet schedule
-   setFormState((prevState) => ({
-     ...prevState,
-     dietSchedule: updatedDietEntries, // Update the dietSchedule
-   }));
- };
-
-  const updateFormState = (key: string, value: string | boolean) => {
+  const updateFormState = (key: string, value: string | boolean | Date) => {
     setFormState((prevState) => ({ ...prevState, [key]: value }));
+  };
+
+  const handleAggressiveTendenciesChange = (type: any, value: any) => {
+    setFormState((prevState) => ({
+      ...prevState,
+      aggressiveTendencies: {
+        ...prevState.aggressiveTendencies,
+        [type]: value,
+      },
+    }));
+  };
+
+  // For Medication Details:
+  const handleMedicationChange = (field: any, value: any) => {
+    setFormState((prevState) => ({
+      ...prevState,
+      medicationDetails: {
+        ...prevState.medicationDetails,
+        [field]: value,
+      },
+    }));
   };
 
   const addDietEntry = () => {
@@ -174,7 +237,26 @@ export default function ProfileScreen() {
       ...prevState,
       dietSchedule: [...prevState.dietSchedule, { time: "", portion: "" }],
     }));
+    setShowTimePickers((prevState) => [...prevState, false]); // Add a new time picker state
   };
+
+  const [vaccinationDate, setVaccinationDate] = useState(new Date());
+  const [dewormingDate, setDewormingDate] = useState(new Date());
+  const [tickTreatmentDate, setTickTreatmentDate] = useState(new Date());
+  const [showVaccinationPicker, setShowVaccinationPicker] = useState(false);
+  const [showDewormingPicker, setShowDewormingPicker] = useState(false);
+  const [showTickTreatmentPicker, setShowTickTreatmentPicker] = useState(false);
+  const [medicalHistory, setMedicalHistory] = useState(false);
+  const [aggressiveTendencies, setAggressiveTendencies] = useState({
+    maleDog: false,
+    femaleDog: false,
+    human: false,
+    otherAnimals: false,
+  });
+  const [resourceGuarding, setResourceGuarding] = useState(false);
+  const [groomingAggression, setGroomingAggression] = useState(false);
+  const [collarAggression, setCollarAggression] = useState(false);
+  const [foodAggression, setFoodAggression] = useState(false);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -475,50 +557,61 @@ export default function ProfileScreen() {
               <Text style={styles.dietEntrytitleboxtext}>Diet + Portion</Text>
             </View>
 
-            {formState.dietSchedule &&
-              formState.dietSchedule.map((entry, index) => (
-                <View key={index} style={styles.dietEntry}>
-                  <TouchableOpacity
-                    onPress={() => setShowTimePicker(true)}
-                    style={styles.timePickerContainer}
-                  >
+            <>
+              {formState.dietSchedule &&
+                formState.dietSchedule.map((entry, index) => (
+                  <View key={index} style={styles.dietEntry}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        // Show the time picker only for the respective entry
+                        setShowTimePickers((prevState) =>
+                          prevState.map((show, i) =>
+                            i === index ? true : show
+                          )
+                        );
+                      }}
+                      style={styles.timePickerContainer}
+                    >
+                      <TextInput
+                        style={styles.dietEntryinput}
+                        placeholder="Time"
+                        value={entry.time} // Access entry.time directly
+                        editable={false} // Make TextInput non-editable
+                      />
+                      <AntDesign
+                        name="calendar"
+                        size={20}
+                        color="black"
+                        style={styles.timeicon}
+                      />
+                    </TouchableOpacity>
+
+                    {showTimePickers[index] && (
+                      <DateTimePicker
+                        value={selectedTime}
+                        mode="time"
+                        display="default"
+                        onChange={(event, selectedDate) =>
+                          handleTimeChange(index, event, selectedDate)
+                        }
+                      />
+                    )}
+
                     <TextInput
                       style={styles.dietEntryinput}
-                      placeholder="Time"
-                      value={entry.time} // Access entry.time directly
-                      editable={false} // Make TextInput non-editable
-                    />
-
-                    <AntDesign
-                      name="calendar"
-                      size={20}
-                      color="black"
-                      style={styles.timeicon}
-                    />
-                  </TouchableOpacity>
-                  {showTimePicker && (
-                    <DateTimePicker
-                      value={selectedTime}
-                      mode="time"
-                      display="default"
-                      onChange={(event, selectedDate) =>
-                        handleTimeChange(index, event, selectedDate)
+                      placeholder="chicken - 2kg + Rice 1/2 cup"
+                      value={entry.portion} // Access entry.portion directly
+                      onChangeText={(text) =>
+                        handleDietChange(index, "portion", text)
                       }
                     />
-                  )}
-                  <TextInput
-                    style={styles.dietEntryinput}
-                    placeholder="chicken -2kg + Rice 1/2 cup"
-                    value={entry.portion} // Access entry.portion directly
-                    onChangeText={(text) =>
-                      handleDietChange(index, "portion", text)
-                    } // Update state on change
-                  />
-                </View>
-              ))}
-            <TouchableOpacity style={styles.addButton} onPress={addDietEntry}>
-              <Text style={styles.addButtonText}>+ Add more</Text>
-            </TouchableOpacity>
+                  </View>
+                ))}
+
+              <TouchableOpacity style={styles.addButton} onPress={addDietEntry}>
+                <Text style={styles.addButtonText}>+ Add more</Text>
+              </TouchableOpacity>
+            </>
             <View style={styles.foodallergybox}>
               <Text style={styles.foodallergyboxtext}>
                 Does your pet have any food allergy ?
@@ -534,7 +627,287 @@ export default function ProfileScreen() {
       case 3:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Step 3</Text>
+            <View style={styles.stepthreesection}>
+              <Text style={styles.sectionTitle}>Pet's Medication</Text>
+
+              <Text style={styles.stepthreelabel}>Last Vaccination date ?</Text>
+              <TouchableOpacity
+                style={styles.stepthreedateInput}
+                onPress={() => setShowVaccinationPicker(true)}
+              >
+                <Text>{formatDate(formState.vaccinationDate)}</Text>
+                <Ionicons name="calendar-outline" size={24} color="black" />
+              </TouchableOpacity>
+
+              <Text style={styles.stepthreelabel}>Last Deworming date ?</Text>
+              <TouchableOpacity
+                style={styles.stepthreedateInput}
+                onPress={() => setShowDewormingPicker(true)}
+              >
+                <Text>{formatDate(formState.dewormingDate)}</Text>
+                <Ionicons name="calendar-outline" size={24} color="black" />
+              </TouchableOpacity>
+
+              <Text style={styles.stepthreelabel}>
+                When was the last anti tick treatment done ?
+              </Text>
+              <TouchableOpacity
+                style={styles.stepthreedateInput}
+                onPress={() => setShowTickTreatmentPicker(true)}
+              >
+                <Text>{formatDate(formState.tickTreatmentDate)}</Text>
+                <Ionicons name="calendar-outline" size={24} color="black" />
+              </TouchableOpacity>
+
+              <View style={styles.stepthreecheckboxContainer}>
+                <Text style={styles.stepthreelabel}>
+                  Does your pet have any Medical history ?
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    medicalHistory && styles.stepthreecheckboxChecked,
+                  ]}
+                  onPress={() => setMedicalHistory(!medicalHistory)}
+                >
+                  {medicalHistory && (
+                    <Ionicons name="checkmark" size={24} color="#000" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {medicalHistory && (
+                <View>
+                  <TextInput
+                    style={styles.stepthreetextInput}
+                    placeholder="Name and Frequency of medication:"
+                    value={formState.medicationDetails.nameFrequency}
+                    onChangeText={(text) =>
+                      handleMedicationChange("nameFrequency", text)
+                    }
+                  />
+                  <TextInput
+                    style={styles.stepthreetextInput}
+                    placeholder="Reason for medication:"
+                    value={formState.medicationDetails.reason}
+                    onChangeText={(text) =>
+                      handleMedicationChange("reason", text)
+                    }
+                  />
+                  <TextInput
+                    style={styles.stepthreetextInput}
+                    placeholder="How to administer the medication ?"
+                    value={formState.medicationDetails.administration}
+                    onChangeText={(text) =>
+                      handleMedicationChange("administration", text)
+                    }
+                  />
+                </View>
+              )}
+            </View>
+
+            <View style={styles.horizontalLine} />
+
+            <View style={styles.stepthreesection}>
+              <Text style={styles.sectionTitle}>Pet's Behavioral Analysis</Text>
+
+              <Text style={styles.label}>
+                Any aggressive tendencies towards
+              </Text>
+              <View style={styles.stepthreecheckboxGroup}>
+                <View style={styles.stepthreecheckboxItem}>
+                  <Text style={styles.stepthreelabeltext}>Male dog</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      aggressiveTendencies.maleDog && styles.checkboxChecked,
+                    ]}
+                    onPress={() =>
+                      setAggressiveTendencies({
+                        ...aggressiveTendencies,
+                        maleDog: !aggressiveTendencies.maleDog,
+                      })
+                    }
+                  >
+                    {aggressiveTendencies.maleDog && (
+                      <Ionicons name="checkmark" size={24} color="#000" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.stepthreecheckboxItem}>
+                  <Text style={styles.stepthreelabeltext}>Female dog</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      aggressiveTendencies.femaleDog && styles.checkboxChecked,
+                    ]}
+                    onPress={() =>
+                      setAggressiveTendencies({
+                        ...aggressiveTendencies,
+                        femaleDog: !aggressiveTendencies.femaleDog,
+                      })
+                    }
+                  >
+                    {aggressiveTendencies.femaleDog && (
+                      <Ionicons name="checkmark" size={24} color="#000" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.stepthreecheckboxItem}>
+                  <Text style={styles.stepthreelabeltext}>Human</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      aggressiveTendencies.human && styles.checkboxChecked,
+                    ]}
+                    onPress={() =>
+                      setAggressiveTendencies({
+                        ...aggressiveTendencies,
+                        human: !aggressiveTendencies.human,
+                      })
+                    }
+                  >
+                    {aggressiveTendencies.human && (
+                      <Ionicons name="checkmark" size={24} color="#000" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.stepthreecheckboxItem}>
+                  <Text style={styles.stepthreelabeltext}>Other animals</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      aggressiveTendencies.otherAnimals &&
+                        styles.checkboxChecked,
+                    ]}
+                    onPress={() =>
+                      setAggressiveTendencies({
+                        ...aggressiveTendencies,
+                        otherAnimals: !aggressiveTendencies.otherAnimals,
+                      })
+                    }
+                  >
+                    {aggressiveTendencies.otherAnimals && (
+                      <Ionicons name="checkmark" size={24} color="#000" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.stepthreecheckboxContainer}>
+                <Text style={styles.stepthreelabelwidth}>
+                  Does your pet have any tendencies of resource guarding?
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    resourceGuarding && styles.checkboxChecked,
+                  ]}
+                  onPress={() => setResourceGuarding(!resourceGuarding)}
+                >
+                  {resourceGuarding && (
+                    <Ionicons name="checkmark" size={24} color="#000" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.stepthreecheckboxContainer}>
+                <Text style={styles.stepthreelabelwidth}>
+                  Any aggression while grooming?
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    groomingAggression && styles.checkboxChecked,
+                  ]}
+                  onPress={() => setGroomingAggression(!groomingAggression)}
+                >
+                  {groomingAggression && (
+                    <Ionicons name="checkmark" size={24} color="#000" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.stepthreecheckboxContainer}>
+                <Text style={styles.stepthreelabelwidth}>
+                  Does he/she have aggression while putting on collar or leash?
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    collarAggression && styles.checkboxChecked,
+                  ]}
+                  onPress={() => setCollarAggression(!collarAggression)}
+                >
+                  {collarAggression && (
+                    <Ionicons name="checkmark" size={24} color="#000" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.stepthreecheckboxContainer}>
+                <Text style={styles.stepthreelabelwidth}>
+                  Does your pet have any food aggression?
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    foodAggression && styles.checkboxChecked,
+                  ]}
+                  onPress={() => setFoodAggression(!foodAggression)}
+                >
+                  {foodAggression && (
+                    <Ionicons name="checkmark" size={24} color="#000" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {showVaccinationPicker && (
+              <DateTimePicker
+                value={
+                  formState.vaccinationDate
+                    ? new Date(formState.vaccinationDate)
+                    : new Date()
+                }
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowVaccinationPicker(false); // Close the picker first
+                  handleDateChange("vaccinationDate", selectedDate); // Update state after
+                }}
+              />
+            )}
+            {showDewormingPicker && (
+              <DateTimePicker
+                value={
+                  formState.dewormingDate
+                    ? new Date(formState.dewormingDate)
+                    : new Date()
+                }
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDewormingPicker(false);
+                  handleDateChange("dewormingDate", selectedDate);
+                }}
+              />
+            )}
+            {showTickTreatmentPicker && (
+              <DateTimePicker
+                value={
+                  formState.tickTreatmentDate
+                    ? new Date(formState.tickTreatmentDate)
+                    : new Date()
+                }
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowTickTreatmentPicker(false);
+                  handleDateChange("tickTreatmentDate", selectedDate);
+                }}
+              />
+            )}
           </View>
         );
       case 4:
@@ -596,7 +969,9 @@ export default function ProfileScreen() {
               <Text style={styles.buttonText}>
                 {currentStep === 1 && "Next to Preferences"}{" "}
                 {currentStep === 2 && "Next to Pet’s Medication"}
+                {currentStep === 3 && "Next to Pet’s Gallery"}
               </Text>
+              <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -869,7 +1244,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   checkboxChecked: {
-    backgroundColor: "#000",
+    backgroundColor: "#FDCF00",
   },
 
   rowContainer: {
@@ -923,12 +1298,14 @@ const styles = StyleSheet.create({
   },
 
   button: {
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FDCF00",
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 5,
+    gap: 5,
   },
 
   buttonText: {
@@ -1100,7 +1477,73 @@ const styles = StyleSheet.create({
   },
 
   timeicon: {
-    position: 'absolute',
+    position: "absolute",
     right: 10,
+  },
+
+  stepthreesection: {
+    // padding: 5,
+  },
+
+  stepthreelabel: {
+    fontSize: 15,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+
+  stepthreecheckboxChecked: {
+    backgroundColor: "#FDCF00",
+  },
+
+  stepthreedateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 4,
+    padding: 8,
+    marginBottom: 16,
+  },
+
+  stepthreetextInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    borderRadius: 4,
+    padding: 8,
+    marginBottom: 16,
+  },
+
+  stepthreecheckboxContainer: {
+    gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+
+  stepthreecheckboxGroup: {
+    flexWrap: "wrap",
+    marginBottom: 16,
+    paddingLeft: 10,
+  },
+
+  stepthreecheckboxItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "70%",
+    marginBottom: 8,
+  },
+
+  stepthreelabeltext: {
+    color: "rgba(0, 0, 0, 0.6)",
+  },
+
+  stepthreelabelwidth: {
+    width: "80%",
+    fontSize: 15,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
 });
