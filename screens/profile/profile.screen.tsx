@@ -15,6 +15,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 export default function ProfileScreen() {
   const { height } = Dimensions.get("window");
@@ -39,7 +40,6 @@ export default function ProfileScreen() {
     vaccinationDate: new Date(),
     dewormingDate: new Date(),
     tickTreatmentDate: new Date(),
-    medicalHistory: false,
     medicationDetails: {
       nameFrequency: "",
       reason: "",
@@ -55,6 +55,7 @@ export default function ProfileScreen() {
     groomingAggression: false,
     collarAggression: false,
     foodAggression: false,
+    petImages: ["", "", "", ""],
   });
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -68,6 +69,24 @@ export default function ProfileScreen() {
   );
 
   const [selectedTime, setSelectedTime] = useState(new Date());
+
+  const pickImage = async (index: number) => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newPetImages = [...formState.petImages];
+      newPetImages[index] = result.assets[0].uri;
+      setFormState((prevState) => ({
+        ...prevState,
+        petImages: newPetImages,
+      }));
+    }
+  };
 
   const handleDietChange = (index: number, field: string, value: string) => {
     const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
@@ -720,16 +739,17 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
-                      aggressiveTendencies.maleDog && styles.checkboxChecked,
+                      formState.aggressiveTendencies.maleDog &&
+                        styles.checkboxChecked,
                     ]}
                     onPress={() =>
-                      setAggressiveTendencies({
-                        ...aggressiveTendencies,
-                        maleDog: !aggressiveTendencies.maleDog,
-                      })
+                      handleAggressiveTendenciesChange(
+                        "maleDog",
+                        !formState.aggressiveTendencies.maleDog
+                      )
                     }
                   >
-                    {aggressiveTendencies.maleDog && (
+                    {formState.aggressiveTendencies.maleDog && (
                       <Ionicons name="checkmark" size={24} color="#000" />
                     )}
                   </TouchableOpacity>
@@ -739,16 +759,17 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
-                      aggressiveTendencies.femaleDog && styles.checkboxChecked,
+                      formState.aggressiveTendencies.femaleDog &&
+                        styles.checkboxChecked,
                     ]}
                     onPress={() =>
-                      setAggressiveTendencies({
-                        ...aggressiveTendencies,
-                        femaleDog: !aggressiveTendencies.femaleDog,
-                      })
+                      handleAggressiveTendenciesChange(
+                        "femaleDog",
+                        !formState.aggressiveTendencies.femaleDog
+                      )
                     }
                   >
-                    {aggressiveTendencies.femaleDog && (
+                    {formState.aggressiveTendencies.femaleDog && (
                       <Ionicons name="checkmark" size={24} color="#000" />
                     )}
                   </TouchableOpacity>
@@ -758,16 +779,17 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
-                      aggressiveTendencies.human && styles.checkboxChecked,
+                      formState.aggressiveTendencies.human &&
+                        styles.checkboxChecked,
                     ]}
                     onPress={() =>
-                      setAggressiveTendencies({
-                        ...aggressiveTendencies,
-                        human: !aggressiveTendencies.human,
-                      })
+                      handleAggressiveTendenciesChange(
+                        "human",
+                        !formState.aggressiveTendencies.human
+                      )
                     }
                   >
-                    {aggressiveTendencies.human && (
+                    {formState.aggressiveTendencies.human && (
                       <Ionicons name="checkmark" size={24} color="#000" />
                     )}
                   </TouchableOpacity>
@@ -777,17 +799,17 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
-                      aggressiveTendencies.otherAnimals &&
+                      formState.aggressiveTendencies.otherAnimals &&
                         styles.checkboxChecked,
                     ]}
                     onPress={() =>
-                      setAggressiveTendencies({
-                        ...aggressiveTendencies,
-                        otherAnimals: !aggressiveTendencies.otherAnimals,
-                      })
+                      handleAggressiveTendenciesChange(
+                        "otherAnimals",
+                        !formState.aggressiveTendencies.otherAnimals
+                      )
                     }
                   >
-                    {aggressiveTendencies.otherAnimals && (
+                    {formState.aggressiveTendencies.otherAnimals && (
                       <Ionicons name="checkmark" size={24} color="#000" />
                     )}
                   </TouchableOpacity>
@@ -801,11 +823,16 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
-                    resourceGuarding && styles.checkboxChecked,
+                    formState.resourceGuarding && styles.checkboxChecked,
                   ]}
-                  onPress={() => setResourceGuarding(!resourceGuarding)}
+                  onPress={() =>
+                    updateFormState(
+                      "resourceGuarding",
+                      !formState.resourceGuarding
+                    )
+                  }
                 >
-                  {resourceGuarding && (
+                  {formState.resourceGuarding && (
                     <Ionicons name="checkmark" size={24} color="#000" />
                   )}
                 </TouchableOpacity>
@@ -818,11 +845,16 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
-                    groomingAggression && styles.checkboxChecked,
+                    formState.groomingAggression && styles.checkboxChecked,
                   ]}
-                  onPress={() => setGroomingAggression(!groomingAggression)}
+                  onPress={() =>
+                    updateFormState(
+                      "groomingAggression",
+                      !formState.groomingAggression
+                    )
+                  }
                 >
-                  {groomingAggression && (
+                  {formState.groomingAggression && (
                     <Ionicons name="checkmark" size={24} color="#000" />
                   )}
                 </TouchableOpacity>
@@ -835,11 +867,16 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
-                    collarAggression && styles.checkboxChecked,
+                    formState.collarAggression && styles.checkboxChecked,
                   ]}
-                  onPress={() => setCollarAggression(!collarAggression)}
+                  onPress={() =>
+                    updateFormState(
+                      "collarAggression",
+                      !formState.collarAggression
+                    )
+                  }
                 >
-                  {collarAggression && (
+                  {formState.collarAggression && (
                     <Ionicons name="checkmark" size={24} color="#000" />
                   )}
                 </TouchableOpacity>
@@ -852,11 +889,13 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
-                    foodAggression && styles.checkboxChecked,
+                    formState.foodAggression && styles.checkboxChecked,
                   ]}
-                  onPress={() => setFoodAggression(!foodAggression)}
+                  onPress={() =>
+                    updateFormState("foodAggression", !formState.foodAggression)
+                  }
                 >
-                  {foodAggression && (
+                  {formState.foodAggression && (
                     <Ionicons name="checkmark" size={24} color="#000" />
                   )}
                 </TouchableOpacity>
@@ -913,7 +952,25 @@ export default function ProfileScreen() {
       case 4:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Step 4</Text>
+            <Text style={styles.stepfourgalleryText}>Pet's Gallery</Text>
+            <View style={styles.stepfourimageContainer}>
+              {formState.petImages.map((image, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.stepfourimagePicker}
+                  onPress={() => pickImage(index)}
+                >
+                  {image ? (
+                    <Image
+                      source={{ uri: image }}
+                      style={styles.stepfourimage}
+                    />
+                  ) : (
+                    <Text style={styles.stepfourplusIcon}>+</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         );
       default:
@@ -978,7 +1035,7 @@ export default function ProfileScreen() {
               style={styles.button}
               onPress={() => console.log(formState)}
             >
-              <Text style={styles.buttonText}>Submit</Text>
+              <Text style={styles.buttonText}>Almost done</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1518,7 +1575,7 @@ const styles = StyleSheet.create({
     gap: 8,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: 12,
   },
 
@@ -1545,5 +1602,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     marginBottom: 8,
+  },
+
+  stepfourgalleryText: {
+    fontSize: 18,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  stepfourimageContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+
+  stepfourimagePicker: {
+    width: 150,
+    height: 150,
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    borderRadius: 10,
+    margin: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  stepfourimage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 8,
+  },
+  stepfourplusIcon: {
+    fontSize: 40,
+    color: "#FFD700",
   },
 });
