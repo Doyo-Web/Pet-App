@@ -3,15 +3,22 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 export const app = express();
 import bodyParser from "body-parser";
-
+import multer from "multer";
 import { ErrorMiddleware } from "./middleware/error";
 import userRouter from "./routes/user.route";
+import petprofileRouter from "./routes/petprofile.route";
 
 
 app.use(express.json({ limit: "10mb" })); // Adjust the size limit as needed
 
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // limit file size to 10MB
+});
+
+app.use(upload.fields([{ name: 'petImages', maxCount: 10 }]));
 
 //cookie parser
 app.use(cookieParser());
@@ -22,6 +29,7 @@ app.use(cors());
 //routes
 
 app.use("/api/v1", userRouter);
+app.use("/api/v1", petprofileRouter);
 
 //testing api
 app.get("/testing", (req: Request, res: Response, next: NextFunction) => {

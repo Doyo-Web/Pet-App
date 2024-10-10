@@ -44,4 +44,5 @@ userRouter.put("/update-aadhar", isAuthenticated, UpdateAadhar);
 
 userRouter.put("/update-location", isAuthenticated, UpdateLocation);
 
+
 export default userRouter;
