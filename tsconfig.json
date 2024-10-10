@@ -1,6 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "lib": ["es6", "dom"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "react",

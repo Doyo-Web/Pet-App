@@ -9,16 +9,79 @@ import {
   SafeAreaView,
   Dimensions,
   Image,
-  Platform
+  Platform,
+  Alert
 } from "react-native";
+import * as FileSystem from "expo-file-system";
 import Icon from "react-native-vector-icons/Ionicons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SERVER_URI } from "@/utils/uri";
+import axios from "axios";
+import { Toast } from "react-native-toast-notifications";
+import { router } from "expo-router";
 
 export default function ProfileScreen() {
   const { height } = Dimensions.get("window");
+
+  // Define the ImageFile interface to represent the structure of pet images
+  interface ImageFile {
+    uri: string; // You can include other properties as necessary
+  }
+
+  // Define the structure for the diet schedule entries
+  interface DietScheduleEntry {
+    time: string;
+    portion: string;
+  }
+
+  // Define the structure for medication details
+  interface MedicationDetails {
+    nameFrequency: string;
+    reason: string;
+    administration: string;
+  }
+
+  // Define the structure for aggressive tendencies
+  interface AggressiveTendencies {
+    maleDog: boolean;
+    femaleDog: boolean;
+    human: boolean;
+    otherAnimals: boolean;
+  }
+
+  // Define the FormState interface
+  interface FormState {
+    petType: string;
+    petName: string;
+    petBreed: string;
+    petAgeYears: string;
+    petAgeMonths: string;
+    petGender: string;
+    lastHeatCycle: string;
+    isNeutered: boolean;
+    neuteredDate: string;
+    pottyTraining: string;
+    toiletBreaks: string;
+    walkPerDay: string;
+    bathingFrequency: string;
+    dailyCombing: boolean;
+    dietSchedule: DietScheduleEntry[];
+    foodAllergy: string;
+    vaccinationDate: Date;
+    dewormingDate: Date;
+    tickTreatmentDate: Date;
+    medicationDetails: MedicationDetails;
+    aggressiveTendencies: AggressiveTendencies;
+    resourceGuarding: boolean;
+    groomingAggression: boolean;
+    collarAggression: boolean;
+    foodAggression: boolean;
+    petImages: ImageFile[]; // Ensure this is an array of ImageFile
+  }
 
   const [formState, setFormState] = useState({
     petType: "",
@@ -70,23 +133,22 @@ export default function ProfileScreen() {
 
   const [selectedTime, setSelectedTime] = useState(new Date());
 
-  const pickImage = async (index: number) => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+  // Define your ImageFile interface
+  interface ImageFile {
+    uri: string;
+    type: string;
+    name: string;
+  }
 
-    if (!result.canceled) {
-      const newPetImages = [...formState.petImages];
-      newPetImages[index] = result.assets[0].uri;
-      setFormState((prevState) => ({
-        ...prevState,
-        petImages: newPetImages,
-      }));
-    }
+  const isImageFile = (obj: any): obj is ImageFile => {
+    return obj && typeof obj.uri === "string" && typeof obj.name === "string";
   };
+
+  // Define the structure for the diet schedule
+  interface DietScheduleEntry {
+    time: string;
+    portion: string;
+  }
 
   const handleDietChange = (index: number, field: string, value: string) => {
     const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
@@ -276,6 +338,96 @@ export default function ProfileScreen() {
   const [groomingAggression, setGroomingAggression] = useState(false);
   const [collarAggression, setCollarAggression] = useState(false);
   const [foodAggression, setFoodAggression] = useState(false);
+
+  const handlePetProfile = async () => {
+    console.log("Form State:", formState); // Log formState
+
+    const accessToken = await AsyncStorage.getItem("access_token");
+    const refreshToken = await AsyncStorage.getItem("refresh_token");
+
+    try {
+      const response = await axios.post(
+        `${SERVER_URI}/petprofile-create`,
+        formState,
+        {
+          headers: {
+            access_token: accessToken,
+          },
+        }
+      );
+
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        console.log(response.data.petProfile);
+        router.push("/(tabs)/editprofile");
+      }
+    } catch (error: any) {
+      // Log error details
+      if (error.response) {
+        console.log("Error Response Data:", error.response.data); // Logs the response from the server
+        console.log("Error Response Status:", error.response.status); // Logs the status code
+      } else {
+        console.log("Error Message:", error.message); // Logs general error messages
+      }
+    } finally {
+      // setLoader(false);
+    }
+  };
+
+  // Function to pick an image
+  const pickImage = async (index: number) => {
+    // Request permission to access the media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Please allow access to your photo library to select images."
+      );
+      return;
+    }
+
+    // Launch the image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.2,
+    });
+
+    // Handle cancellation or errors
+    if (result.canceled) {
+      console.log("Image picker was canceled");
+      return; // Exit if the user cancels the image picker
+    }
+
+    try {
+      // Convert the selected image to base64
+      const base64 = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Determine the image's MIME type
+      const mimeType = result.assets[0].uri.endsWith(".png")
+        ? "image/png"
+        : "image/jpeg";
+
+      // Update the state with the base64 image
+      const updatedImages = [...formState.petImages];
+      updatedImages[index] = `data:${mimeType};base64,${base64}`; // Use appropriate MIME type
+      setFormState((prevState) => ({
+        ...prevState,
+        petImages: updatedImages,
+        
+      }));
+    } catch (error) {
+      console.error("Error reading image file:", error);
+      Alert.alert("Error", "There was an error processing the image.");
+    }
+  };
+
 
   const renderStep = () => {
     switch (currentStep) {
@@ -963,7 +1115,11 @@ export default function ProfileScreen() {
                   {image ? (
                     <Image
                       source={{ uri: image }}
-                      style={styles.stepfourimage}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
                     />
                   ) : (
                     <Text style={styles.stepfourplusIcon}>+</Text>
@@ -1033,7 +1189,7 @@ export default function ProfileScreen() {
           ) : (
             <TouchableOpacity
               style={styles.button}
-              onPress={() => console.log(formState)}
+              onPress={() => handlePetProfile()}
             >
               <Text style={styles.buttonText}>Almost done</Text>
             </TouchableOpacity>
@@ -1637,3 +1793,7 @@ const styles = StyleSheet.create({
     color: "#FFD700",
   },
 });
+function setPetImages(updatedImages: any[]) {
+  throw new Error("Function not implemented.");
+}
+
