@@ -78,90 +78,92 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View style={styles.tabbar}>
       <View style={styles.tabbarItembox}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const label =
-            options.tabBarLabel !== undefined
-              ? (options.tabBarLabel as string)
-              : options.title !== undefined
-              ? (options.title as string)
-              : route.name;
+        {state.routes
+          .filter((route) => route.name !== "editprofile/index")
+          .map((route, index) => {
+            const { options } = descriptors[route.key];
+            const label =
+              options.tabBarLabel !== undefined
+                ? (options.tabBarLabel as string)
+                : options.title !== undefined
+                ? (options.title as string)
+                : route.name;
 
-          const isFocused = state.index === index;
+            const isFocused = state.index === index;
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
+            const onPress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
-            }
-            setSelectedIndex(index);
-          };
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name, route.params);
+              }
+              setSelectedIndex(index);
+            };
 
-          const onLongPress = () => {
-            navigation.emit({
-              type: "tabLongPress",
-              target: route.key,
-            });
-          };
+            const onLongPress = () => {
+              navigation.emit({
+                type: "tabLongPress",
+                target: route.key,
+              });
+            };
 
-          const IconComponent = icons[route.name];
+            const IconComponent = icons[route.name];
 
-          const customIconStyle =
-            route.name === "booknow/index" ? styles.bookNowIcon : {};
+            const customIconStyle =
+              route.name === "booknow/index" ? styles.bookNowIcon : {};
 
-          return (
-            <View key={route.name} style={styles.tabbarItem}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  customIconStyle,
-                  route.name === "booknow/index" && styles.bookNowFocused,
-                ]}
-              >
-                <TouchableOpacity
-                  onPress={onPress}
-                  accessibilityRole="button"
-                  accessibilityState={isFocused ? { selected: true } : {}}
-                  accessibilityLabel={options.tabBarAccessibilityLabel}
-                  testID={options.tabBarTestID}
-                  onLongPress={onLongPress}
-                  style={styles.iconTouchable}
+            return (
+              <View key={route.name} style={styles.tabbarItem}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    customIconStyle,
+                    route.name === "booknow/index" && styles.bookNowFocused,
+                  ]}
                 >
-                  <View
-                    style={
-                      route.name === "booknow/index"
-                        ? styles.innerBlackBorder
-                        : null
-                    }
+                  <TouchableOpacity
+                    onPress={onPress}
+                    accessibilityRole="button"
+                    accessibilityState={isFocused ? { selected: true } : {}}
+                    accessibilityLabel={options.tabBarAccessibilityLabel}
+                    testID={options.tabBarTestID}
+                    onLongPress={onLongPress}
+                    style={styles.iconTouchable}
                   >
-                    {IconComponent ? (
-                      <IconComponent color={isFocused ? "#fff" : "#fff"} />
-                    ) : (
-                      <Feather name="alert-circle" size={24} color="#fff" />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-              <Text
-                style={{
-                  color: isFocused ? "#fff" : "#fff",
-                  fontSize: 10,
-                  marginTop: route.name === "booknow/index" ? 58 : 10,
-                }}
-              >
-                {label}
-              </Text>
+                    <View
+                      style={
+                        route.name === "booknow/index"
+                          ? styles.innerBlackBorder
+                          : null
+                      }
+                    >
+                      {IconComponent ? (
+                        <IconComponent color={isFocused ? "#fff" : "#fff"} />
+                      ) : (
+                        <Feather name="alert-circle" size={24} color="#fff" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                <Text
+                  style={{
+                    color: isFocused ? "#fff" : "#fff",
+                    fontSize: 10,
+                    marginTop: route.name === "booknow/index" ? 58 : 10,
+                  }}
+                >
+                  {label}
+                </Text>
 
-              {/* Conditionally render the white half-circle icon for the selected tab */}
-              {selectedIndex === index && <View style={styles.halfCircle} />}
-            </View>
-          );
-        })}
+                {/* Conditionally render the white half-circle icon for the selected tab */}
+                {selectedIndex === index && <View style={styles.halfCircle} />}
+              </View>
+            );
+          })}
       </View>
     </View>
   );
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
   },
   tabbarItembox: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     height: "75%",
     width: "95%",

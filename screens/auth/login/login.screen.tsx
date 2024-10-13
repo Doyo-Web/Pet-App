@@ -7,6 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import {
   Entypo,
@@ -103,6 +105,17 @@ export default function LoginScreen() {
   // };
 
   const handleSignIn = async () => {
+
+    if (
+      !userInfo.email ||
+      !userInfo.password
+    ) {
+      Toast.show("Please fill all the details", {
+        type: "danger",
+      });
+      return;
+    }
+
     await axios
       .post(`${SERVER_URI}/login`, {
         email: userInfo.email,
@@ -122,148 +135,156 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Image
-        style={styles.signInImage}
-        source={require("@/assets/images/loginshape.png")}
-      />
-      <Text style={[styles.welcomeText, { fontFamily: "OtomanopeeOne" }]}>
-        Log in
-      </Text>
-      <Text style={styles.learningText}>Hello, Welcome back!</Text>
-
-      <Image
-        style={styles.puppyImage}
-        source={require("@/assets/images/Log_In_Image.png")}
-      />
-
-      <View style={styles.inputContainer}>
-        <View>
-          <TextInput
-            style={[styles.input, { paddingLeft: 10 }]}
-            keyboardType="email-address"
-            value={userInfo.email}
-            placeholder="Email"
-            placeholderTextColor="#000000"
-            onChangeText={(value) => setUserInfo({ ...userInfo, email: value })}
+    <KeyboardAvoidingView
+      style={styles.keyboardcontainer}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={30} // adjust based on your layout
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.container}>
+          <Image
+            style={styles.signInImage}
+            source={require("@/assets/images/loginshape.png")}
           />
+          <Text style={[styles.welcomeText, { fontFamily: "OtomanopeeOne" }]}>
+            Log in
+          </Text>
+          <Text style={styles.learningText}>Hello, Welcome back!</Text>
 
           <Image
-            style={{
-              position: "absolute",
-              right: 12,
-              top: 22,
-              width: 20,
-              height: 16,
-              objectFit: "contain",
-            }}
-            source={require("@/assets/icons/emailicon.png")}
+            style={styles.puppyImage}
+            source={require("@/assets/images/Log_In_Image.png")}
           />
 
-          {/* <Fontisto
+          <View style={styles.inputContainer}>
+            <View>
+              <TextInput
+                style={[styles.input, { paddingLeft: 10 }]}
+                keyboardType="email-address"
+                value={userInfo.email}
+                placeholder="Email"
+                placeholderTextColor="#000000"
+                onChangeText={(value) =>
+                  setUserInfo({ ...userInfo, email: value })
+                }
+              />
+
+              <Image
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: 22,
+                  width: 20,
+                  height: 16,
+                  objectFit: "contain",
+                }}
+                source={require("@/assets/icons/emailicon.png")}
+              />
+
+              {/* <Fontisto
             style={{ position: "absolute", right: 12, top: 17.8 }}
             name="email"
             size={20}
             color={"#A1A1A1"}
           /> */}
-          {required && (
-            <View style={commonStyles.errorContainer}>
-              <Entypo name="cross" size={18} color={"red"} />
-            </View>
-          )}
-          <View style={{ marginTop: 15 }}>
-            <TextInput
-              style={[styles.input, { paddingLeft: 10 }]}
-              keyboardType="default"
-              secureTextEntry={!isPasswordVisible}
-              defaultValue=""
-              placeholder="Password"
-              placeholderTextColor="#000000"
-              onChangeText={(value) =>
-                setUserInfo({ ...userInfo, password: value })
-              }
-              // onChangeText={handlePasswordValidation}
-            />
-            <TouchableOpacity
-              style={styles.visibleIcon}
-              onPress={() => setPasswordVisible(!isPasswordVisible)}
-            >
-              {isPasswordVisible ? (
-                <Image
-                  style={{
-                    position: "absolute",
-                    right: 2,
-                    top: 5,
-                    width: 22,
-                    height: 22,
-                    objectFit: "contain",
-                  }}
-                  source={require("@/assets/icons/eyecuticon.png")}
-                />
-              ) : (
-                // <Ionicons name="eye-off-outline" size={23} color={"#747474"} />
-                <Ionicons
-                  style={{ position: "absolute", right: 2, top: 5 }}
-                  name="eye-outline"
-                  size={23}
-                  color={"#747474"}
-                />
+              {required && (
+                <View style={commonStyles.errorContainer}>
+                  <Entypo name="cross" size={18} color={"red"} />
+                </View>
               )}
-            </TouchableOpacity>
-          </View>
-          {error.password && (
-            <View style={[commonStyles.errorContainer, { top: 145 }]}>
-              <Entypo name="cross" size={18} color={"red"} />
-              <Text style={{ color: "red", fontSize: 11, marginTop: -1 }}>
-                {error.password}
-              </Text>
-            </View>
-          )}
+              <View style={{ marginTop: 15 }}>
+                <TextInput
+                  style={[styles.input, { paddingLeft: 10 }]}
+                  keyboardType="default"
+                  secureTextEntry={!isPasswordVisible}
+                  defaultValue=""
+                  placeholder="Password"
+                  placeholderTextColor="#000000"
+                  onChangeText={(value) =>
+                    setUserInfo({ ...userInfo, password: value })
+                  }
+                  // onChangeText={handlePasswordValidation}
+                />
+                <TouchableOpacity
+                  style={styles.visibleIcon}
+                  onPress={() => setPasswordVisible(!isPasswordVisible)}
+                >
+                  {isPasswordVisible ? (
+                    <Image
+                      style={{
+                        position: "absolute",
+                        right: 2,
+                        top: 5,
+                        width: 22,
+                        height: 22,
+                        objectFit: "contain",
+                      }}
+                      source={require("@/assets/icons/eyecuticon.png")}
+                    />
+                  ) : (
+                    // <Ionicons name="eye-off-outline" size={23} color={"#747474"} />
+                    <Ionicons
+                      style={{ position: "absolute", right: 2, top: 5 }}
+                      name="eye-outline"
+                      size={23}
+                      color={"#747474"}
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {error.password && (
+                <View style={[commonStyles.errorContainer, { top: 145 }]}>
+                  <Entypo name="cross" size={18} color={"red"} />
+                  <Text style={{ color: "red", fontSize: 11, marginTop: -1 }}>
+                    {error.password}
+                  </Text>
+                </View>
+              )}
 
-          <TouchableOpacity
-            style={{
-              padding: 16,
-              borderRadius: 8,
-              backgroundColor: "#FDCF00",
-              marginTop: 35,
-              width: responsiveWidth(90),
-              height: responsiveHeight(8),
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            onPress={handleSignIn}
-          >
-            {buttonSpinner ? (
-              <ActivityIndicator size="small" color={"white"} />
-            ) : (
-              <Text
+              <TouchableOpacity
                 style={{
-                  color: "white",
-                  textAlign: "center",
-                  fontSize: 16,
-                  fontFamily: "OtomanopeeOne",
+                  padding: 16,
+                  borderRadius: 8,
+                  backgroundColor: "#FDCF00",
+                  marginTop: 35,
+                  width: responsiveWidth(90),
+                  height: responsiveHeight(8),
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
+                onPress={handleSignIn}
               >
-                Log In
-              </Text>
-            )}
-          </TouchableOpacity>
+                {buttonSpinner ? (
+                  <ActivityIndicator size="small" color={"white"} />
+                ) : (
+                  <Text
+                    style={{
+                      color: "white",
+                      textAlign: "center",
+                      fontSize: 16,
+                      fontFamily: "OtomanopeeOne",
+                    }}
+                  >
+                    Log In
+                  </Text>
+                )}
+              </TouchableOpacity>
 
-          <View style={styles.signinbtnbox}>
-            <TouchableOpacity
-              onPress={() => router.push("/(routes)/forgotpassword")}
-            >
-              <Text
-                style={[
-                  styles.forgotSection,
-                  { fontFamily: "Nunito_500Medium", color: "#FDCF00" },
-                ]}
-              >
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
+              <View style={styles.signinbtnbox}>
+                <TouchableOpacity
+                  onPress={() => router.push("/(routes)/forgotpassword")}
+                >
+                  <Text
+                    style={[
+                      styles.forgotSection,
+                      { fontFamily: "Nunito_500Medium", color: "#FDCF00" },
+                    ]}
+                  >
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
 
-            {/* <View
+                {/* <View
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -280,35 +301,48 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View> */}
 
-            <View style={styles.signupRedirect}>
-              <Text
-                style={{ fontSize: hp("2.2%"), fontFamily: "Nunito_500Medium" }}
-              >
-                Don’t have a Doyo account?
-              </Text>
-              <TouchableOpacity onPress={() => router.push("/(routes)/signup")}>
-                <Text
-                  style={{
-                    fontSize: hp("2.2%"),
-                    fontFamily: "Nunito_500Medium",
-                    color: "#FDCF00",
-                    marginLeft: 2,
+                <View style={styles.signupRedirect}>
+                  <Text
+                    style={{
+                      fontSize: hp("2.2%"),
+                      fontFamily: "Nunito_500Medium",
+                    }}
+                  >
+                    Don’t have a Doyo account?
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push("/(routes)/signup")}
+                  >
+                    <Text
+                      style={{
+                        fontSize: hp("2.2%"),
+                        fontFamily: "Nunito_500Medium",
+                        color: "#FDCF00",
+                        marginLeft: 2,
 
-                    textDecorationLine: "underline",
-                  }}
-                >
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
+                        textDecorationLine: "underline",
+                      }}
+                    >
+                      Sign Up
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardcontainer: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+  },
+
   container: {
     width: "100%",
     height: "100%",

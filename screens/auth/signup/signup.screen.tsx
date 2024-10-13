@@ -93,9 +93,17 @@ export default function SignUpScreen() {
       !userInfo.fullname ||
       !userInfo.phonenumber ||
       !userInfo.email ||
-      !userInfo.password
+      !userInfo.password ||
+      !userInfo.hearaboutus
     ) {
       Toast.show("Please fill all the details", {
+        type: "danger",
+      });
+      return;
+    }
+
+    if (userInfo.password.length < 6) {
+      Toast.show("Password must be at least 6 characters", {
         type: "danger",
       });
       return;

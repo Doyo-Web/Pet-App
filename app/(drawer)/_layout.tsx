@@ -285,6 +285,7 @@ const Layout: React.FC = () => {
       screenOptions={{
         drawerStyle: {
           width: "100%", // Full-screen drawer
+          
         },
 
         headerTitle: "",

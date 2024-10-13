@@ -1138,8 +1138,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity onPress={prevStep}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={prevStep} style={styles.arrowcontainer}>
-            <Icon name="arrow-back" size={24} color="#000" />
+          <TouchableOpacity onPress={prevStep} style={styles.arrowTouchable}>
+            <View style={styles.arrowcontainer}>
+              <Icon name="arrow-back" size={24} color="#000" />
+            </View>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Pet Profile</Text>
           <View style={styles.progressContainer}>
@@ -1221,14 +1223,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
+  arrowTouchable: {
+    padding: 5, // Increase the clickable area
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   arrowcontainer: {
-    zIndex: 999,
+    zIndex: 99,
     backgroundColor: "#FDCF00",
     justifyContent: "center",
     alignItems: "center",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 50,
     borderColor: "#000",
     borderWidth: 2,
   },

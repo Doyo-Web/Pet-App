@@ -33,6 +33,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "react-native-responsive-dimensions";
+import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
@@ -175,7 +176,6 @@ const HomeScreen: React.FC = () => {
           source={require("@/assets/images/homepageshape.png")}
         />
 
-
         <View style={styles.maincontent}>
           {/* Reanimated Carousel */}
           <Carousel
@@ -191,21 +191,25 @@ const HomeScreen: React.FC = () => {
           <View style={styles.servicecontainer}>
             <Text style={styles.sectionTitle}>Services</Text>
             <View style={styles.iconupperbox}>
-              <View style={styles.iconboxitem}>
-                <Image
-                  style={styles.icon}
-                  source={require("@/assets/icons/Boarding.png")} // Ensure correct image path
-                />
-                <Text>Boarding</Text>
-              </View>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/booknow")}>
+                <View style={styles.iconboxitem}>
+                  <Image
+                    style={styles.icon}
+                    source={require("@/assets/icons/Boarding.png")} // Ensure correct image path
+                  />
+                  <Text>Boarding</Text>
+                </View>
+              </TouchableOpacity>
 
-              <View style={styles.iconboxitem}>
-                <Image
-                  style={styles.icon}
-                  source={require("@/assets/icons/daycare.png")} // Ensure correct image path
-                />
-                <Text>Day Care</Text>
-              </View>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/booknow")}>
+                <View style={styles.iconboxitem}>
+                  <Image
+                    style={styles.icon}
+                    source={require("@/assets/icons/daycare.png")} // Ensure correct image path
+                  />
+                  <Text>Day Care</Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -232,7 +236,7 @@ const HomeScreen: React.FC = () => {
             <View style={styles.imageContainer}>
               <Image
                 source={require("@/assets/images/hostbannerimage.png")} // Ensure correct image path
-                style={styles.image}
+                style={styles.hostimage}
               />
             </View>
           </View>
@@ -503,20 +507,20 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   title: {
-    fontSize: hp("2.6%"),
+    fontSize: hp("2.4%"),
     color: "#000",
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "OtomanopeeOne",
   },
   description: {
-    fontSize: hp("2%"),
+    fontSize: hp("1.4%"),
     color: "#000",
     marginVertical: 10,
     fontFamily: "Nunito_400Regular",
   },
 
   ctaButton: {
-    width: responsiveWidth(60),
-    paddingVertical: 18,
+    width: responsiveWidth(38),
+    height: responsiveHeight(5),
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#00D0C3",
@@ -525,7 +529,7 @@ const styles = StyleSheet.create({
   },
 
   ctaText: {
-    fontSize: hp("2%"),
+    fontSize: hp("1.5%"),
     color: "#fff",
     fontFamily: "OtomanopeeOne",
   },
@@ -533,6 +537,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 12,
+  },
+
+  hostimage: {
+    width: "100%",
+    objectFit: "contain",
   },
 
   testimonialcontainer: {
