@@ -78,7 +78,8 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       },
       url: {
         type: String,
-        default: "https://example.com/path-to-placeholder-image.jpg", // Placeholder URL
+        default:
+          "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=", // Placeholder URL
       },
     },
 
@@ -120,7 +121,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
         type: String,
         // required: [true, "Please enter your city"],
       },
-      
+
       pincode: {
         type: String,
         // required: [true, "Please enter your pincode"],

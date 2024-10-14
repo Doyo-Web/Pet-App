@@ -181,7 +181,7 @@ export const activateUser = catchAsyncError(
 
       const placeholderAvatar = {
         public_id: "1", // Replace with a real placeholder public ID from your image storage
-        url: "https://archive.org/download/placeholder-image/placeholder-image.jpg", // Replace with a real URL to the placeholder image
+        url: "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=", // Replace with a real URL to the placeholder image
       };
 
       const user = await userModel.create({
