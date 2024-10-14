@@ -85,7 +85,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
               uri:
                 ruser?.avatar?.url || user?.avatar?.url
                   ? ruser?.avatar?.url || user?.avatar?.url
-                  : "https://archive.org/download/placeholder-image/placeholder-image.jpg",
+                  : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
             }}
           />
         </View>
@@ -296,6 +296,9 @@ const Layout: React.FC = () => {
           if (pathname === "/profile") {
             return null; // Don't render anything for the profile screen
           }
+          if (pathname === "/booknow") {
+            return null; // Don't render anything for the profile screen
+          }
           return (
             <TouchableOpacity
               style={styles.customHamburgerContainer}
@@ -307,6 +310,10 @@ const Layout: React.FC = () => {
         },
         headerRight: () => {
           if (pathname === "/profile") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/booknow") {
             return null; // Don't render anything for the profile screen
           }
           return (
@@ -403,8 +410,8 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 74,
-    height: 74,
+    width: 76,
+    height: 76,
     borderRadius: 50,
   },
 

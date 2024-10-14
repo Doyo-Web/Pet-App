@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import React, { useRef, useState } from "react";
 import { router } from "expo-router";
@@ -60,6 +61,7 @@ export default function VerifyAccountScreen() {
           type: "success",
         });
         setCode(new Array(4).fill(""));
+        Keyboard.dismiss();
         router.push("/(routes)/login");
       })
       .catch((error: any) => {
