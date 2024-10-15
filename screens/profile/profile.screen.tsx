@@ -1801,6 +1801,7 @@ const styles = StyleSheet.create({
     color: "#FFD700",
   },
 });
+
 function setPetImages(updatedImages: any[]) {
   throw new Error("Function not implemented.");
 }

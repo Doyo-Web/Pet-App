@@ -299,6 +299,10 @@ const Layout: React.FC = () => {
           if (pathname === "/booknow") {
             return null; // Don't render anything for the profile screen
           }
+
+          if (pathname === "/host") {
+            return null; // Don't render anything for the profile screen
+          }
           return (
             <TouchableOpacity
               style={styles.customHamburgerContainer}
@@ -314,6 +318,10 @@ const Layout: React.FC = () => {
           }
 
           if (pathname === "/booknow") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/host") {
             return null; // Don't render anything for the profile screen
           }
           return (
