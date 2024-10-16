@@ -8,6 +8,8 @@ import {
   ScrollView,
   Modal,
   SafeAreaView,
+  DimensionValue,
+  FlatList,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -15,6 +17,7 @@ import MapView, { Marker } from "react-native-maps";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { CheckBox, Input, Button } from "@rneui/themed";
 
 export default function HostScreen() {
 
@@ -30,7 +33,36 @@ export default function HostScreen() {
     longitudeDelta: 0.0421,
   });
 
-  const [profile, setProfile] = useState({
+  interface Profile {
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    age: string;
+    gender: string;
+    dateOfBirth: Date;
+    profession: string;
+    location: string;
+    line1: string;
+    line2: string;
+    city: string;
+    pincode: string;
+    residenceType: string;
+    builtUpArea: string;
+    petSize: string;
+    petGender: string;
+    petCount: string;
+    willingToWalk: string;
+    hasAreaRestrictions: string;
+    areaRestrictions: string;
+    walkFrequency: string;
+    walkDuration: string;
+    willingToCook: string;
+    cookingOptions: string[];
+  }
+
+type ProfileValue = string | Date | string[];
+
+  const [profile, setProfile] = useState<Profile>({
     fullName: "",
     phoneNumber: "",
     email: "",
@@ -45,11 +77,109 @@ export default function HostScreen() {
     pincode: "",
     residenceType: "",
     builtUpArea: "",
+    petSize: "",
+    petGender: "",
+    petCount: "",
+    willingToWalk: "",
+    hasAreaRestrictions: "",
+    areaRestrictions: "",
+    walkFrequency: "",
+    walkDuration: "",
+    willingToCook: "",
+    cookingOptions: [],
   });
 
-  const handleInputChange = (name: string, value: string) => {
+
+  const CircularCheckbox = ({
+    title,
+    checked,
+    onPress,
+    width = "48%",
+  }: {
+    title: string;
+    checked: boolean;
+    onPress: () => void;
+    width?: string;
+  }) => (
+    <View style={{ width: width as DimensionValue }}>
+      <TouchableOpacity style={[styles.checkboxContainer]} onPress={onPress}>
+        <View style={[styles.checkbox, checked && styles.checkedCheckbox]}>
+          {checked && <View style={styles.innerCircle} />}
+        </View>
+        <Text style={styles.checkboxLabel}>{title}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const SelectBox = ({
+    options,
+    selectedValue,
+    onSelect,
+    placeholder,
+  }: {
+    options: string[];
+    selectedValue: string;
+    onSelect: (value: string) => void;
+    placeholder: string;
+  }) => {
+    const [modalVisible, setModalVisible] = useState(false);
+
+    return (
+      <View>
+        <TouchableOpacity
+          style={styles.selectBox}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text
+            style={
+              selectedValue ? styles.selectBoxText : styles.placeholderText
+            }
+          >
+            {selectedValue || placeholder}
+          </Text>
+          <Ionicons name="chevron-down-outline" size={24} color="#00CED1" />
+        </TouchableOpacity>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <FlatList
+                data={options}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.optionItem}
+                    onPress={() => {
+                      onSelect(item);
+                      setModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.optionText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
+  const handleInputChange = (name: keyof Profile, value: ProfileValue) => {
     setProfile((prevProfile) => ({ ...prevProfile, [name]: value }));
   };
+
+  
+    const toggleOption = (option: string, field: keyof Profile) => {
+      const updatedOptions = (profile[field] as string[]).includes(option)
+        ? (profile[field] as string[]).filter((item) => item !== option)
+        : [...(profile[field] as string[]), option];
+      handleInputChange(field, updatedOptions);
+    };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -119,7 +249,7 @@ export default function HostScreen() {
  };
 
 
-  const totalSteps = 3;
+  const totalSteps = 5;
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
@@ -396,7 +526,181 @@ export default function HostScreen() {
       case 2:
         return (
           <View>
-            <Text>Step 2</Text>
+            <View style={styles.casetwosection}>
+              <Text style={styles.casetwosectionTitle}>Your Preference</Text>
+
+              <Text style={styles.label}>
+                What size of pet do you wish to host?*
+              </Text>
+              <View style={styles.casetwooptionsContainer}>
+                {[
+                  "Small (<8 Kgs)",
+                  "Medium (8-20 Kgs)",
+                  "Large (20-40 Kgs)",
+                  "Giant (>40 Kgs)",
+                ].map((size) => (
+                  <CircularCheckbox
+                    key={size}
+                    title={size}
+                    checked={profile.petSize === size}
+                    onPress={() => handleInputChange("petSize", size)}
+                    width="50%"
+                  />
+                ))}
+              </View>
+
+              <Text style={styles.label}>
+                What gender of pet do you wish to host?*
+              </Text>
+              <View style={styles.casetwooptionsContainer}>
+                {["Male", "Female", "Both"].map((gender) => (
+                  <CircularCheckbox
+                    key={gender}
+                    title={gender}
+                    checked={profile.petGender === gender}
+                    onPress={() => handleInputChange("petGender", gender)}
+                    width="33%"
+                  />
+                ))}
+              </View>
+
+              <Text style={styles.label}>
+                How many pets can you board at a time?*
+              </Text>
+              <View style={styles.casetwooptionsContainer}>
+                {["1", "2", "3", "4", "5", ">5"].map((count) => (
+                  <CircularCheckbox
+                    key={count}
+                    title={count}
+                    checked={profile.petCount === count}
+                    onPress={() => handleInputChange("petCount", count)}
+                    width="33%"
+                  />
+                ))}
+              </View>
+
+              <Text style={styles.label}>Willing to take pet on walks?*</Text>
+              <View style={styles.casetwooptionsContainer}>
+                <CircularCheckbox
+                  title="Yes"
+                  checked={profile.willingToWalk === "Yes"}
+                  onPress={() => handleInputChange("willingToWalk", "Yes")}
+                  width="48%"
+                />
+                <CircularCheckbox
+                  title="No"
+                  checked={profile.willingToWalk === "No"}
+                  onPress={() => handleInputChange("willingToWalk", "No")}
+                  width="48%"
+                />
+              </View>
+
+              {profile.willingToWalk === "Yes" && (
+                <View style={styles.coloredBox}>
+                  <Text style={styles.label}>How many times in a day?</Text>
+                  <SelectBox
+                    options={[
+                      "1 time",
+                      "2 times",
+                      "3 times",
+                      "4 times",
+                      "5+ times",
+                    ]}
+                    selectedValue={profile.walkFrequency}
+                    onSelect={(value) =>
+                      handleInputChange("walkFrequency", value)
+                    }
+                    placeholder="Select frequency"
+                  />
+                  <Text style={styles.label}>For how long?</Text>
+                  <SelectBox
+                    options={[
+                      "15 minutes",
+                      "30 minutes",
+                      "45 minutes",
+                      "1 hour",
+                      "1+ hours",
+                    ]}
+                    selectedValue={profile.walkDuration}
+                    onSelect={(value) =>
+                      handleInputChange("walkDuration", value)
+                    }
+                    placeholder="Select duration"
+                  />
+                </View>
+              )}
+
+              <Text style={styles.label}>
+                Any area restrictions for pets at home?*
+              </Text>
+              <View style={styles.casetwooptionsContainer}>
+                <CircularCheckbox
+                  title="Yes"
+                  checked={profile.hasAreaRestrictions === "Yes"}
+                  onPress={() =>
+                    handleInputChange("hasAreaRestrictions", "Yes")
+                  }
+                  width="48%"
+                />
+                <CircularCheckbox
+                  title="No"
+                  checked={profile.hasAreaRestrictions === "No"}
+                  onPress={() => handleInputChange("hasAreaRestrictions", "No")}
+                  width="48%"
+                />
+              </View>
+
+              {profile.hasAreaRestrictions === "Yes" && (
+                <View style={styles.casetwocoloredBox}>
+                  <Text style={styles.label}>Please mention in brief</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    multiline={true}
+                    numberOfLines={4} // Adjust the number of lines as needed
+                    placeholder="Type here"
+                    value={profile.areaRestrictions}
+                    onChangeText={(text) =>
+                      handleInputChange("areaRestrictions", text)
+                    }
+                  />
+                </View>
+              )}
+
+              <Text style={styles.label}>Willing to cook food?*</Text>
+              <View style={styles.casetwooptionsContainer}>
+                <CircularCheckbox
+                  title="Yes"
+                  checked={profile.willingToCook === "Yes"}
+                  onPress={() => handleInputChange("willingToCook", "Yes")}
+                  width="48%"
+                />
+                <CircularCheckbox
+                  title="No"
+                  checked={profile.willingToCook === "No"}
+                  onPress={() => handleInputChange("willingToCook", "No")}
+                  width="48%"
+                />
+              </View>
+
+              {profile.willingToCook === "Yes" && (
+                <View style={styles.casetwocoloredBox}>
+                  <Text style={styles.label}>Select cooking options:</Text>
+                  <View style={styles.checkboxRow}>
+                    {["Vegetarian", "Non-vegetarian", "Eggs", "Others"].map(
+                      (option, index) => (
+                        <CircularCheckbox
+                          key={option}
+                          title={option}
+                          checked={profile.cookingOptions.includes(option)}
+                          onPress={() => toggleOption(option, "cookingOptions")}
+                          width="48%" // Use 48% to fit two in a row with space
+                        />
+                      )
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
           </View>
         );
       case 3:
@@ -459,7 +763,7 @@ export default function HostScreen() {
             <TouchableOpacity style={styles.button} onPress={nextStep}>
               <Text style={styles.buttonText}>
                 {currentStep === 1 && "Next to Preferences"}{" "}
-                {currentStep === 2 && "Next to Pet’s Medication"}
+                {currentStep === 2 && "Next to Pet’s"}
               </Text>
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
@@ -601,6 +905,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
+  textInput: {
+    height: 50, // Adjust the height to your needs
+    borderColor: "#000",
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: "#f9f9f9",
+  },
+
   inputWithIconContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -710,15 +1023,17 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
   },
   checkbox: {
-    width: 30,
-    height: 30,
+    height: 24,
+    width: 24,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#000",
-    marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 10,
   },
   checked: {
     backgroundColor: "#FFD700",
@@ -1148,5 +1463,114 @@ const styles = StyleSheet.create({
   multilineInput: {
     height: 100,
     textAlignVertical: "top",
+  },
+
+  casetwosection: {
+    padding: 16,
+  },
+
+  casetwosectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  casetwooptionsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  casetwocoloredBox: {
+    backgroundColor: "#00D0C366",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+
+  checkboxRow: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Distributes space evenly
+    flexWrap: "wrap", // Allows items to wrap to the next line if necessary
+  },
+
+  checkedCheckbox: {
+    backgroundColor: "#00CED1",
+  },
+  innerCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+  },
+
+  selectBoxContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 16,
+  },
+  selectOption: {
+    borderWidth: 1,
+    borderColor: "#00CED1",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  selectedOption: {
+    backgroundColor: "#00CED1",
+  },
+  selectOptionText: {
+    color: "#00CED1",
+  },
+  selectedOptionText: {
+    color: "white",
+  },
+
+  selectBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#00CED1",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  selectBoxText: {
+    fontSize: 16,
+    color: "#000",
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: "#999",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    maxHeight: "50%",
+  },
+  optionItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  optionText: {
+    fontSize: 16,
+  },
+
+  coloredBox: {
+    backgroundColor: "#FFF9C4",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
   },
 });
