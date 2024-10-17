@@ -20,7 +20,6 @@ import axios from "axios";
 import { CheckBox, Input, Button } from "@rneui/themed";
 
 export default function HostScreen() {
-
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -32,6 +31,42 @@ export default function HostScreen() {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
+
+  const dogBreeds = [
+    "Beagle",
+    "Labrador",
+    "German Shepherd",
+    "Golden Retriever",
+    "Poodle",
+  ];
+
+  type Pet = {
+    name: string;
+    breed: string;
+    age: string;
+    gender: "Male" | "Female" | "";
+    isSterlized: boolean;
+    temperament: {
+      dogs: boolean;
+      human: boolean;
+      cats: boolean;
+    };
+    uncomfortableWith: string;
+  };
+
+  const initialPet: Pet = {
+    name: "",
+    breed: "",
+    age: "",
+    gender: "",
+    isSterlized: false,
+    temperament: {
+      dogs: false,
+      human: false,
+      cats: false,
+    },
+    uncomfortableWith: "",
+  };
 
   interface Profile {
     fullName: string;
@@ -58,9 +93,19 @@ export default function HostScreen() {
     walkDuration: string;
     willingToCook: string;
     cookingOptions: string[];
+    groomPet: boolean;
+    hasPet: string;
+    pets: Pet[];
+    hasVetNearby: string;
+    vetInfo: {
+      name: string;
+      clinic: string;
+      phone: string;
+      address: string;
+    };
   }
 
-type ProfileValue = string | Date | string[];
+  type ProfileValue = string | Date | string[] | boolean;
 
   const [profile, setProfile] = useState<Profile>({
     fullName: "",
@@ -87,8 +132,19 @@ type ProfileValue = string | Date | string[];
     walkDuration: "",
     willingToCook: "",
     cookingOptions: [],
+    groomPet: false,
+    hasPet: "",
+    pets: [{ ...initialPet }],
+    hasVetNearby: "",
+    vetInfo: {
+      name: "",
+      clinic: "",
+      phone: "",
+      address: "",
+    },
   });
 
+  const [activeTab, setActiveTab] = useState(0); // Track active tab
 
   const CircularCheckbox = ({
     title,
@@ -137,7 +193,7 @@ type ProfileValue = string | Date | string[];
           >
             {selectedValue || placeholder}
           </Text>
-          <Ionicons name="chevron-down-outline" size={24} color="#00CED1" />
+          <Ionicons name="chevron-down-outline" size={24} color="#000" />
         </TouchableOpacity>
         <Modal
           animationType="slide"
@@ -169,17 +225,36 @@ type ProfileValue = string | Date | string[];
     );
   };
 
+  interface CheckboxProps {
+    label: string;
+    checked: boolean;
+    onCheck: () => void;
+  }
+
+  const Checkbox: React.FC<CheckboxProps> = ({ label, checked, onCheck }) => (
+    <TouchableOpacity
+      style={styles.checkboxContainerscreentwo}
+      onPress={onCheck}
+    >
+      <Text style={styles.checkboxlabelscreentwo}>{label}</Text>
+      <View
+        style={[styles.checkboxscreentwo, checked && styles.checkedscreentwo]}
+      >
+        {checked && <Text style={styles.checkmark}>✓</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+
   const handleInputChange = (name: keyof Profile, value: ProfileValue) => {
     setProfile((prevProfile) => ({ ...prevProfile, [name]: value }));
   };
 
-  
-    const toggleOption = (option: string, field: keyof Profile) => {
-      const updatedOptions = (profile[field] as string[]).includes(option)
-        ? (profile[field] as string[]).filter((item) => item !== option)
-        : [...(profile[field] as string[]), option];
-      handleInputChange(field, updatedOptions);
-    };
+  const toggleOption = (option: string, field: keyof Profile) => {
+    const updatedOptions = (profile[field] as string[]).includes(option)
+      ? (profile[field] as string[]).filter((item) => item !== option)
+      : [...(profile[field] as string[]), option];
+    handleInputChange(field, updatedOptions);
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -191,63 +266,62 @@ type ProfileValue = string | Date | string[];
     }
   };
 
- const handleMapPress = async (event: any) => {
-   const { latitude, longitude } = event.nativeEvent.coordinate;
+  const handleMapPress = async (event: any) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
 
-   // Update the map region with the new marker position
-   setMapRegion({
-     latitude,
-     longitude,
-     latitudeDelta: 0.0922,
-     longitudeDelta: 0.0421,
-   });
+    // Update the map region with the new marker position
+    setMapRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    });
 
-   try {
-     // Use reverse geocoding to get the address based on lat/lng
-     const response = await axios.get(
-       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-     );
+    try {
+      // Use reverse geocoding to get the address based on lat/lng
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+      );
 
-     if (response.data.results.length > 0) {
-       const addressComponents = response.data.results[0].address_components;
+      if (response.data.results.length > 0) {
+        const addressComponents = response.data.results[0].address_components;
 
-       // Get city and pincode from the response
-       const cityComponent = addressComponents.find(
-         (component: { types: string | string[] }) =>
-           component.types.includes("locality") ||
-           component.types.includes("administrative_area_level_1")
-       );
-       const pincodeComponent = addressComponents.find(
-         (component: { types: string | string[] }) =>
-           component.types.includes("postal_code")
-       );
+        // Get city and pincode from the response
+        const cityComponent = addressComponents.find(
+          (component: { types: string | string[] }) =>
+            component.types.includes("locality") ||
+            component.types.includes("administrative_area_level_1")
+        );
+        const pincodeComponent = addressComponents.find(
+          (component: { types: string | string[] }) =>
+            component.types.includes("postal_code")
+        );
 
-       const formattedAddress = response.data.results[0].formatted_address;
-       const addressParts = formattedAddress.split(", ");
+        const formattedAddress = response.data.results[0].formatted_address;
+        const addressParts = formattedAddress.split(", ");
 
-       // Assuming the address has at least 2 lines
-       const line1Value = addressParts[0] || "";
-       const line2Value = addressParts[1] || "";
+        // Assuming the address has at least 2 lines
+        const line1Value = addressParts[0] || "";
+        const line2Value = addressParts[1] || "";
 
-       // Update profile with location details
-       setProfile((prevProfile) => ({
-         ...prevProfile,
-         location: cityComponent ? cityComponent.long_name : "",
-         line1: line1Value,
-         line2: line2Value,
-         city: cityComponent ? cityComponent.long_name : "",
-         pincode: pincodeComponent ? pincodeComponent.long_name : "",
-       }));
+        // Update profile with location details
+        setProfile((prevProfile) => ({
+          ...prevProfile,
+          location: cityComponent ? cityComponent.long_name : "",
+          line1: line1Value,
+          line2: line2Value,
+          city: cityComponent ? cityComponent.long_name : "",
+          pincode: pincodeComponent ? pincodeComponent.long_name : "",
+        }));
 
-       setShowMap(false);
-     }
-   } catch (error) {
-     console.error("Error getting location data:", error);
-   }
+        setShowMap(false);
+      }
+    } catch (error) {
+      console.error("Error getting location data:", error);
+    }
 
-   setShowMap(false);
- };
-
+    setShowMap(false);
+  };
 
   const totalSteps = 5;
 
@@ -261,6 +335,37 @@ type ProfileValue = string | Date | string[];
     if (currentStep > 1) {
       setCurrentStep((prevStep) => prevStep - 1); // Use functional state update for reliable results
     }
+  };
+
+  const addPet = () => {
+    setProfile((prev) => ({
+      ...prev,
+      pets: [...prev.pets, { ...initialPet }],
+    }));
+  };
+
+  const updatePet = (index: number, field: keyof Pet, value: any) => {
+    setProfile((prev) => ({
+      ...prev,
+      pets: prev.pets.map((pet, i) =>
+        i === index ? { ...pet, [field]: value } : pet
+      ),
+    }));
+  };
+
+  const updateTemperament = (
+    index: number,
+    field: keyof Pet["temperament"],
+    value: boolean
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      pets: prev.pets.map((pet, i) =>
+        i === index
+          ? { ...pet, temperament: { ...pet.temperament, [field]: value } }
+          : pet
+      ),
+    }));
   };
 
   const renderStep = () => {
@@ -700,13 +805,312 @@ type ProfileValue = string | Date | string[];
                   </View>
                 </View>
               )}
+
+              <Checkbox
+                label="Will you be able to groom the pet?"
+                checked={profile.groomPet}
+                onCheck={() => handleInputChange("groomPet", !profile.groomPet)}
+              />
             </View>
           </View>
         );
       case 3:
         return (
           <View>
-            <Text>Step 3</Text>
+            <View style={styles.casethreesection}>
+              <Text style={styles.casethreesectionTitle}>About your pet</Text>
+              <Text>Do you have a pet at home?</Text>
+              <View style={styles.casethreerow}>
+                <CircularCheckbox
+                  title="Yes"
+                  checked={profile.hasPet === "Yes"}
+                  onPress={() =>
+                    setProfile((prev) => ({ ...prev, hasPet: "Yes" }))
+                  }
+                  width="48%"
+                />
+                <CircularCheckbox
+                  title="No"
+                  checked={profile.hasPet === "No"}
+                  onPress={() =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      hasPet: "No",
+                      pets: [{ ...initialPet }],
+                    }))
+                  }
+                  width="48%"
+                />
+              </View>
+            </View>
+
+            {profile.hasPet === "Yes" && (
+              <View style={styles.petFormContainer3}>
+                {/* Tab Navigation */}
+                <View style={styles.tabContainer3}>
+                  {profile.pets.map((_, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.tabButton,
+                        activeTab === index && styles.activeTabButton, // Highlight active tab
+                      ]}
+                      onPress={() => setActiveTab(index)} // Switch tab
+                    >
+                      <Text style={styles.tabButtonText}>Pet #{index + 1}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.addPetButton}
+                    onPress={addPet}
+                  >
+                    <Text style={styles.addPetButtonText}>
+                      + Add another pet
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Render the form for the active tab */}
+                <View key={activeTab} style={styles.petForm}>
+                  <View style={styles.inputContainer3}>
+                    <Text style={styles.label}>Name</Text>
+                    <TextInput
+                      style={styles.input3}
+                      value={profile.pets[activeTab].name}
+                      onChangeText={(text) =>
+                        updatePet(activeTab, "name", text)
+                      }
+                      placeholder="Enter pet name"
+                    />
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Breed</Text>
+                    <View style={styles.pickerContainer3}>
+                      <Picker
+                        selectedValue={profile.pets[activeTab].breed}
+                        onValueChange={(value) =>
+                          updatePet(activeTab, "breed", value)
+                        }
+                        style={styles.picker3}
+                      >
+                        <Picker.Item label="Select breed" value="" />
+                        {dogBreeds.map((breed) => (
+                          <Picker.Item
+                            key={breed}
+                            label={breed}
+                            value={breed}
+                          />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Age</Text>
+                    <TextInput
+                      style={styles.input3}
+                      value={profile.pets[activeTab].age}
+                      onChangeText={(text) => updatePet(activeTab, "age", text)}
+                      placeholder="Enter pet age"
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Gender</Text>
+                    <View style={styles.genderContainer}>
+                      <CircularCheckbox
+                        title="Male"
+                        checked={profile.pets[activeTab].gender === "Male"}
+                        onPress={() =>
+                          updatePet(
+                            activeTab,
+                            "gender",
+                            profile.pets[activeTab].gender === "Male"
+                              ? ""
+                              : "Male"
+                          )
+                        }
+                        width="48%"
+                      />
+
+                      <CircularCheckbox
+                        title="Female"
+                        checked={profile.pets[activeTab].gender === "Female"}
+                        onPress={() =>
+                          updatePet(
+                            activeTab,
+                            "gender",
+                            profile.pets[activeTab].gender === "Female"
+                              ? ""
+                              : "Female"
+                          )
+                        }
+                        width="48%"
+                      />
+                    </View>
+                  </View>
+
+                  <Checkbox
+                    label="Is your pet sterilized?"
+                    checked={profile.pets[activeTab].isSterlized}
+                    onCheck={() =>
+                      updatePet(
+                        activeTab,
+                        "isSterlized",
+                        !profile.pets[activeTab].isSterlized
+                      )
+                    }
+                  />
+
+                  <Text style={styles.label}>Temperament towards</Text>
+                  <View style={styles.temperamentContainer3}>
+                    <CircularCheckbox
+                      title="Dogs"
+                      checked={profile.pets[activeTab].temperament.dogs}
+                      onPress={() =>
+                        updateTemperament(
+                          activeTab,
+                          "dogs",
+                          !profile.pets[activeTab].temperament.dogs
+                        )
+                      }
+                      width="33%"
+                    />
+
+                    <CircularCheckbox
+                      title="Human"
+                      checked={profile.pets[activeTab].temperament.human}
+                      onPress={() =>
+                        updateTemperament(
+                          activeTab,
+                          "human",
+                          !profile.pets[activeTab].temperament.human
+                        )
+                      }
+                      width="33%"
+                    />
+
+                    <CircularCheckbox
+                      title="Cats"
+                      checked={profile.pets[activeTab].temperament.cats}
+                      onPress={() =>
+                        updateTemperament(
+                          activeTab,
+                          "cats",
+                          !profile.pets[activeTab].temperament.cats
+                        )
+                      }
+                      width="33%"
+                    />
+                  </View>
+
+                  <View style={styles.inputContainer3}>
+                    <Text style={styles.label}>
+                      Is there anything your pet uncomfortable with?
+                    </Text>
+                    <TextInput
+                      style={[styles.input3, styles.multilineInput3]}
+                      value={profile.pets[activeTab].uncomfortableWith}
+                      onChangeText={(text) =>
+                        updatePet(activeTab, "uncomfortableWith", text)
+                      }
+                      placeholder="Type here"
+                      multiline
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.submitButton3}
+                  onPress={() => {}} // Define your submit logic here
+                >
+                  <Text style={styles.submitButtonText3}>Submit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.casethreesection}>
+              <Text>Do you have any veterinary clinic nearby?</Text>
+              <View style={styles.casethreerow}>
+                <CircularCheckbox
+                  title="Yes"
+                  checked={profile.hasVetNearby === "Yes"}
+                  onPress={() =>
+                    setProfile((prev) => ({ ...prev, hasVetNearby: "Yes" }))
+                  }
+                  width="48%"
+                />
+                <CircularCheckbox
+                  title="No"
+                  checked={profile.hasVetNearby === "No"}
+                  onPress={() =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      hasVetNearby: "No",
+                      vetInfo: { name: "", clinic: "", phone: "", address: "" },
+                    }))
+                  }
+                  width="48%"
+                />
+              </View>
+            </View>
+
+            {profile.hasVetNearby === "Yes" && (
+              <View style={styles.casethreevetForm}>
+                <Text style={styles.label}>Name of the vet</Text>
+                <TextInput
+                  style={styles.input3}
+                  placeholder="Name of the vet"
+                  value={profile.vetInfo.name}
+                  onChangeText={(value) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      vetInfo: { ...prev.vetInfo, name: value },
+                    }))
+                  }
+                />
+                <Text style={styles.label}>Name of the clinic</Text>
+                <TextInput
+                  style={styles.input3}
+                  placeholder="Name of the clinic"
+                  value={profile.vetInfo.clinic}
+                  onChangeText={(value) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      vetInfo: { ...prev.vetInfo, clinic: value },
+                    }))
+                  }
+                />
+                <Text style={styles.label}>Phone number (Doctor/Clinic)</Text>
+                <TextInput
+                  style={styles.input3}
+                  placeholder="Phone number (Doctor/Clinic)"
+                  value={profile.vetInfo.phone}
+                  onChangeText={(value) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      vetInfo: { ...prev.vetInfo, phone: value },
+                    }))
+                  }
+                  keyboardType="phone-pad"
+                />
+                <Text style={styles.label}>Address</Text>
+                <TextInput
+                  style={styles.input3}
+                  placeholder="Address"
+                  value={profile.vetInfo.address}
+                  onChangeText={(value) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      vetInfo: { ...prev.vetInfo, address: value },
+                    }))
+                  }
+                  multiline
+                />
+              </View>
+            )}
           </View>
         );
       default:
@@ -764,6 +1168,7 @@ type ProfileValue = string | Date | string[];
               <Text style={styles.buttonText}>
                 {currentStep === 1 && "Next to Preferences"}{" "}
                 {currentStep === 2 && "Next to Pet’s"}
+                {currentStep === 3 && "next to your profile"}
               </Text>
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
@@ -1280,7 +1685,7 @@ const styles = StyleSheet.create({
   checkboxContainerscreentwo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginTop: 10,
     gap: 10,
   },
   checkboxscreentwo: {
@@ -1293,7 +1698,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkedscreentwo: {
-    backgroundColor: "yellow",
+    backgroundColor: "#00D0C3",
   },
   checkmark: {
     color: "black",
@@ -1533,7 +1938,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#00CED1",
+    borderColor: "#000",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -1568,9 +1973,175 @@ const styles = StyleSheet.create({
   },
 
   coloredBox: {
-    backgroundColor: "#FFF9C4",
+    backgroundColor: "#00D0C366",
     padding: 16,
     borderRadius: 8,
     marginTop: 8,
+  },
+
+  casethreesection: {
+    marginBottom: 20,
+  },
+
+  casethreesectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  casethreerow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 10,
+  },
+
+  casethreebutton: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+  },
+  casethreeselectedButton: {
+    backgroundColor: "#00CED1",
+  },
+
+  casethreepetForm: {
+    marginTop: 20,
+  },
+
+  casethreepetSection: {
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+  },
+  casethreepetTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  casethreevetForm: {
+    padding: 20,
+    marginVertical: 20,
+    backgroundColor: "#E0F7F9",
+  },
+
+  petFormContainer3: {
+    padding: 20,
+    backgroundColor: "#E0F7F9", // light blue background similar to the UI
+    borderRadius: 10,
+  },
+  tabContainer3: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderColor: "#00B4D8", // Tab border color
+  },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent", // Default color for inactive tabs
+  },
+  activeTabButton: {
+    borderBottomColor: "#00B4D8", // Active tab border color
+  },
+  tabButtonText: {
+    fontSize: 16,
+    color: "#007EA7", // Tab text color
+    fontWeight: "bold",
+  },
+  addPetButton: {
+    backgroundColor: "#00B4D8", // Button background color
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  addPetButtonText: {
+    color: "#fff", // Button text color
+    fontSize: 16,
+  },
+  petForm: {
+    borderRadius: 10,
+  },
+  inputContainer3: {
+    width: "100%",
+    marginBottom: 15,
+  },
+  label3: {
+    fontSize: 14,
+    color: "#007EA7",
+    marginBottom: 5,
+  },
+  input3: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: 15,
+  },
+  pickerContainer3: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#007EA7",
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    justifyContent: "center",
+  },
+  picker3: {
+    height: 40,
+    width: "100%",
+  },
+  genderContainer3: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  genderButton3: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: "#007EA7",
+    borderRadius: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedGender3: {
+    backgroundColor: "#00B4D8",
+  },
+  genderButtonText3: {
+    color: "#007EA7",
+    fontWeight: "bold",
+  },
+  temperamentContainer3: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 15,
+  },
+  multilineInput3: {
+    height: 80,
+    textAlignVertical: "top",
+  },
+
+  submitButton3: {
+    backgroundColor: "#00E0D3", // Teal button background color
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+
+  submitButtonText3: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
