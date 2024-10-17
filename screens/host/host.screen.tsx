@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   DimensionValue,
   FlatList,
+  Image,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -18,6 +19,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { CheckBox, Input, Button } from "@rneui/themed";
+import * as ImagePicker from "expo-image-picker";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -103,7 +105,70 @@ export default function HostScreen() {
       phone: string;
       address: string;
     };
+
+    HostProfile: {
+      profileImage: string;
+      bio: string;
+      idProof: string;
+      facilityPictures: string[];
+      petPictures: string[];
+      pricingDaycare: string;
+      pricingBoarding: string;
+      pricingVegMeal: string;
+      pricingNonVegMeal: string;
+    };
+    paymentDetails: {
+      accountHolderName: string;
+      accountNumber: string;
+      ifscCode: string;
+      bankName: string;
+      upiid: string;
+    };
   }
+
+  const pickImage = async (
+    field: keyof typeof profile.HostProfile,
+    index?: number
+  ) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+
+      setProfile((prev) => {
+        if (typeof index === "number") {
+          // Handle array fields like facilityPictures and petPictures
+          return {
+            ...prev,
+            HostProfile: {
+              ...prev.HostProfile,
+              [field]: (prev.HostProfile[field] as string[]).map((img, i) =>
+                i === index ? base64Image : img
+              ),
+            },
+          };
+        } else {
+          // Handle single image fields like profileImage or idProof
+          return {
+            ...prev,
+            HostProfile: {
+              ...prev.HostProfile,
+              [field]: base64Image,
+            },
+          };
+        }
+      });
+    }
+  };
+
+
+
 
   type ProfileValue = string | Date | string[] | boolean;
 
@@ -142,7 +207,45 @@ export default function HostScreen() {
       phone: "",
       address: "",
     },
+
+    HostProfile: {
+      profileImage: "",
+      bio: "",
+      idProof: "",
+      facilityPictures: ["", "", "", ""],
+      petPictures: ["", ""],
+      pricingDaycare: "",
+      pricingBoarding: "",
+      pricingVegMeal: "",
+      pricingNonVegMeal: "",
+    },
+    paymentDetails: {
+      accountHolderName: "",
+      accountNumber: "",
+      ifscCode: "",
+      bankName: "",
+      upiid: "",
+    },
   });
+
+  const updatePaymentDetails = (
+    field: keyof Profile["paymentDetails"],
+    value: string
+  ) => {
+    setProfile((prevProfile) => ({
+      ...prevProfile,
+      paymentDetails: {
+        ...prevProfile.paymentDetails,
+        [field]: value,
+      },
+    }));
+  };
+
+  const [isPetFormOpen, setIsPetFormOpen] = useState(true);
+
+  const handleSubmitPetForm = () => {
+    setIsPetFormOpen(false);
+  };
 
   const [activeTab, setActiveTab] = useState(0); // Track active tab
 
@@ -824,9 +927,10 @@ export default function HostScreen() {
                 <CircularCheckbox
                   title="Yes"
                   checked={profile.hasPet === "Yes"}
-                  onPress={() =>
-                    setProfile((prev) => ({ ...prev, hasPet: "Yes" }))
-                  }
+                  onPress={() => {
+                    setProfile((prev) => ({ ...prev, hasPet: "Yes" }));
+                    setIsPetFormOpen(true); // Reopen the form if the user says "Yes"
+                  }}
                   width="48%"
                 />
                 <CircularCheckbox
@@ -844,7 +948,7 @@ export default function HostScreen() {
               </View>
             </View>
 
-            {profile.hasPet === "Yes" && (
+            {profile.hasPet === "Yes" && isPetFormOpen && (
               <View style={styles.petFormContainer3}>
                 {/* Tab Navigation */}
                 <View style={styles.tabContainer3}>
@@ -1024,7 +1128,7 @@ export default function HostScreen() {
 
                 <TouchableOpacity
                   style={styles.submitButton3}
-                  onPress={() => {}} // Define your submit logic here
+                  onPress={handleSubmitPetForm} // Define your submit logic here
                 >
                   <Text style={styles.submitButtonText3}>Submit</Text>
                 </TouchableOpacity>
@@ -1113,6 +1217,213 @@ export default function HostScreen() {
             )}
           </View>
         );
+      case 4:
+        return (
+          <View>
+            <Text style={styles.sectionTitle}>Upload your Profile</Text>
+            <TouchableOpacity
+              style={styles.profileImageContainer}
+              onPress={() => pickImage("profileImage")}
+            >
+              {profile.HostProfile.profileImage ? (
+                <Image
+                  source={{ uri: profile.HostProfile.profileImage }}
+                  style={styles.profileImage}
+                />
+              ) : (
+                <View style={styles.profileImagePlaceholder}>
+                  <Ionicons name="person-outline" size={40} color="#00CED1" />
+                </View>
+              )}
+              <View style={styles.uploadIconContainer}>
+                <Ionicons name="cloud-upload-outline" size={20} color="white" />
+              </View>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Bio</Text>
+            <TextInput
+              style={styles.bioInput}
+              placeholder="Write about yourself and your Pup!"
+              multiline
+              value={profile.HostProfile.bio}
+              onChangeText={(text) =>
+                setProfile((prev) => ({
+                  ...prev,
+                  HostProfile: { ...prev.HostProfile, bio: text },
+                }))
+              }
+            />
+
+            <Text style={styles.sectionTitle}>KYC VERIFICATION</Text>
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={() => pickImage("idProof")}
+            >
+              <Text style={styles.uploadButtonText}>
+                Upload your ID Proof (Aadhar)
+              </Text>
+              <View style={styles.cloudbox}>
+                <Ionicons name="cloud-upload-outline" size={24} color="#000" />
+              </View>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Facility Picture</Text>
+            <View style={styles.imageGridone}>
+              {[...Array(4)].map((_, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.imageUploadBox}
+                  onPress={() => pickImage("facilityPictures", index)}
+                >
+                  {profile.HostProfile.facilityPictures[index] ? (
+                    <Image
+                      source={{
+                        uri: profile.HostProfile.facilityPictures[index],
+                      }}
+                      style={styles.uploadedImage}
+                    />
+                  ) : (
+                    <Ionicons name="add" size={40} color="#00CED1" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {profile.hasPet === "Yes" && (
+              <>
+                <Text style={styles.sectionTitle}>Your pet's picture</Text>
+                <View style={styles.imageGridtwo}>
+                  {profile.HostProfile.petPictures.map((img, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.imageUploadBox}
+                      onPress={() => pickImage("petPictures", index)}
+                    >
+                      {img ? (
+                        <Image
+                          source={{ uri: img }}
+                          style={styles.uploadedImage}
+                        />
+                      ) : (
+                        <Text style={styles.plusIcon}>+</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <Text style={styles.sectionTitle}>Pricing</Text>
+            <Text style={styles.pricingLabel}>Pricing for Daycare (8 hrs)</Text>
+            <TextInput
+              style={styles.pricingInput}
+              placeholder="Enter your pricing here"
+              keyboardType="numeric"
+              value={profile.HostProfile.pricingDaycare}
+              onChangeText={(text) =>
+                setProfile((prev) => ({
+                  ...prev,
+                  HostProfile: { ...prev.HostProfile, pricingDaycare: text },
+                }))
+              }
+            />
+            <Text style={styles.pricingRange}>
+              (Your price range varies form Rs. 400 - Rs.800 /day (Pricing based
+              on the city))
+            </Text>
+
+            <Text style={styles.pricingLabel}>
+              Pricing for Boarding (Overnight)
+            </Text>
+            <TextInput
+              style={styles.pricingInput}
+              placeholder="Enter your pricing here"
+              keyboardType="numeric"
+              value={profile.HostProfile.pricingBoarding}
+              onChangeText={(text) =>
+                setProfile((prev) => ({ ...prev, pricingBoarding: text }))
+              }
+            />
+            <Text style={styles.pricingRange}>
+              (Your price range varies form Rs. 600 - Rs.1200 /day (Pricing
+              based on the city))
+            </Text>
+
+            <Text style={styles.pricingLabel}>
+              Pricing for Home cooked Food
+            </Text>
+            <TextInput
+              style={styles.pricingInput}
+              placeholder="Veg Meal (Range: Rs.50 - Rs.120)"
+              keyboardType="numeric"
+              value={profile.HostProfile.pricingVegMeal}
+              onChangeText={(text) =>
+                setProfile((prev) => ({ ...prev, pricingVegMeal: text }))
+              }
+            />
+            <TextInput
+              style={styles.pricingInput}
+              placeholder="Non- Veg Meal (Range: Rs.100 - Rs.200)"
+              keyboardType="numeric"
+              value={profile.HostProfile.pricingNonVegMeal}
+              onChangeText={(text) =>
+                setProfile((prev) => ({ ...prev, pricingNonVegMeal: text }))
+              }
+            />
+          </View>
+        );
+      case 5:
+        return (
+          <View style={styles.content}>
+            <Text style={styles.title}>Payment Details</Text>
+
+            <Text style={styles.label}>Beneficiary Name</Text>
+            <TextInput
+              style={styles.inputcasefive}
+              placeholder="Beneficiary Name"
+              value={profile.paymentDetails.accountHolderName}
+              onChangeText={(text) =>
+                updatePaymentDetails("accountHolderName", text)
+              }
+            />
+
+            <Text style={styles.label}>Bank Name</Text>
+            <TextInput
+              style={styles.inputcasefive}
+              placeholder="Bank Name"
+              keyboardType="numeric"
+              value={profile.paymentDetails.bankName}
+              onChangeText={(text) => updatePaymentDetails("bankName", text)}
+            />
+
+            <Text style={styles.label}>Account Number</Text>
+            <TextInput
+              style={styles.inputcasefive}
+              placeholder="Account Number"
+              autoCapitalize="characters"
+              value={profile.paymentDetails.accountNumber}
+              onChangeText={(text) =>
+                updatePaymentDetails("accountNumber", text)
+              }
+            />
+
+            <Text style={styles.label}>IFSC Code</Text>
+            <TextInput
+              style={styles.inputcasefive}
+              placeholder="IFSC Code"
+              value={profile.paymentDetails.ifscCode}
+              onChangeText={(text) => updatePaymentDetails("ifscCode", text)}
+            />
+
+            <Text style={styles.label}>UPI Id</Text>
+            <TextInput
+              style={styles.inputcasefive}
+              placeholder="UPI Id"
+              value={profile.paymentDetails.upiid}
+              onChangeText={(text) => updatePaymentDetails("upiid", text)}
+            />
+          </View>
+        );
       default:
         return null;
     }
@@ -1169,12 +1480,13 @@ export default function HostScreen() {
                 {currentStep === 1 && "Next to Preferences"}{" "}
                 {currentStep === 2 && "Next to Pet’s"}
                 {currentStep === 3 && "next to your profile"}
+                {currentStep === 4 && "Almost Done !"}
               </Text>
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.button} onPress={() => {}}>
-              <Text style={styles.buttonText}>Almost done</Text>
+              <Text style={styles.buttonText}>All done</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -2143,5 +2455,141 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 16,
     fontWeight: "bold",
+  },
+
+  profileImageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#E0FFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#E0FFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#00CED1",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bioInput: {
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 5,
+    padding: 10,
+    height: 100,
+    textAlignVertical: "top",
+  },
+  uploadButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    padding: 10,
+  },
+  uploadButtonText: {
+    color: "#000",
+  },
+
+  cloudbox: {
+    width: 45,
+    height: 45,
+    backgroundColor: "#FDCF0066",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: "#000",
+  },
+
+  imageGridone: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: -120, // Reduced gap after Facility Picture
+  },
+
+  imageGridtwo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: -45, // Reduced gap after Facility Picture
+  },
+
+  imageUploadBox: {
+    width: "48%",
+    aspectRatio: 1,
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#00CED1",
+  },
+  uploadedImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 10,
+  },
+
+  plusIcon: {
+    fontSize: 40,
+    color: "#00CED1",
+  },
+
+  pricingLabel: {
+    fontSize: 14,
+    marginTop: 10,
+  },
+  pricingInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  pricingRange: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 10,
+  },
+
+  content: {
+    padding: 8,
+  },
+  title: {
+    fontFamily: "OtomanopeeOne",
+    fontSize: 18,
+  },
+
+  inputcasefive: {
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 16,
   },
 });
