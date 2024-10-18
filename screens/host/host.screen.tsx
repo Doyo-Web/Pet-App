@@ -11,7 +11,9 @@ import {
   DimensionValue,
   FlatList,
   Image,
+  Alert,
 } from "react-native";
+import * as FileSystem from "expo-file-system";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
@@ -20,6 +22,9 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { CheckBox, Input, Button } from "@rneui/themed";
 import * as ImagePicker from "expo-image-picker";
+import { Toast } from "react-native-toast-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SERVER_URI } from "@/utils/uri";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -130,17 +135,45 @@ export default function HostScreen() {
     field: keyof typeof profile.HostProfile,
     index?: number
   ) => {
+    // Request permission to access the media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Please allow access to your photo library to select images."
+      );
+      return;
+    }
+
+    // Launch the image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
-      base64: true,
     });
 
-    if (!result.canceled && result.assets[0].base64) {
-      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+    // Handle cancellation or errors
+    if (result.canceled) {
+      console.log("Image picker was canceled");
+      return; // Exit if the user cancels the image picker
+    }
 
+    try {
+      // Convert the selected image to base64
+      const base64 = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Determine the image's MIME type
+      const mimeType = result.assets[0].uri.endsWith(".png")
+        ? "image/png"
+        : "image/jpeg";
+
+      const base64Image = `data:${mimeType};base64,${base64}`;
+
+      // Update the state with the base64 image
       setProfile((prev) => {
         if (typeof index === "number") {
           // Handle array fields like facilityPictures and petPictures
@@ -164,11 +197,11 @@ export default function HostScreen() {
           };
         }
       });
+    } catch (error) {
+      console.error("Error reading image file:", error);
+      Alert.alert("Error", "There was an error processing the image.");
     }
   };
-
-
-
 
   type ProfileValue = string | Date | string[] | boolean;
 
@@ -227,6 +260,7 @@ export default function HostScreen() {
       upiid: "",
     },
   });
+
 
   const updatePaymentDetails = (
     field: keyof Profile["paymentDetails"],
@@ -348,8 +382,18 @@ export default function HostScreen() {
     </TouchableOpacity>
   );
 
-  const handleInputChange = (name: keyof Profile, value: ProfileValue) => {
-    setProfile((prevProfile) => ({ ...prevProfile, [name]: value }));
+  // const handleInputChange = (name: keyof Profile, value: ProfileValue) => {
+  //   setProfile((prevProfile) => ({ ...prevProfile, [name]: value }));
+  // };
+
+  const handleInputChange = (
+    name: keyof typeof profile,
+    value: string | Date | string[] | boolean
+  ) => {
+    setProfile((prevProfile) => ({
+      ...prevProfile,
+      [name]: value,
+    }));
   };
 
   const toggleOption = (option: string, field: keyof Profile) => {
@@ -470,6 +514,45 @@ export default function HostScreen() {
       ),
     }));
   };
+
+  const handleHostProfile = async () => {
+    console.log("Host Profile State:", profile); // Log profile state
+
+    const accessToken = await AsyncStorage.getItem("access_token");
+    const refreshToken = await AsyncStorage.getItem("refresh_token");
+
+    try {
+      // Send the profile data directly as JSON
+      const response = await axios.post(
+        `${SERVER_URI}/hostprofile-create`,
+        profile, // Send profile object directly
+        {
+          headers: {
+            "Content-Type": "application/json", // Indicate JSON content
+            access_token: accessToken,
+          },
+        }
+      );
+
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        console.log(response.data.hostProfile);
+      }
+    } catch (error: any) {
+      // Log error details
+      if (error.response) {
+        console.log("Error Response Data:", error.response.data); // Logs the response from the server
+        console.log("Error Response Status:", error.response.status); // Logs the status code
+      } else {
+        console.log("Error Message:", error.message); // Logs general error messages
+      }
+    } finally {
+      // setLoader(false); // Handle loader state if applicable
+    }
+  };
+
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1341,7 +1424,13 @@ export default function HostScreen() {
               keyboardType="numeric"
               value={profile.HostProfile.pricingBoarding}
               onChangeText={(text) =>
-                setProfile((prev) => ({ ...prev, pricingBoarding: text }))
+                setProfile((prev) => ({
+                  ...prev,
+                  HostProfile: {
+                    ...prev.HostProfile, // Spread the previous HostProfile object
+                    pricingBoarding: text, // Update the specific field
+                  },
+                }))
               }
             />
             <Text style={styles.pricingRange}>
@@ -1358,16 +1447,29 @@ export default function HostScreen() {
               keyboardType="numeric"
               value={profile.HostProfile.pricingVegMeal}
               onChangeText={(text) =>
-                setProfile((prev) => ({ ...prev, pricingVegMeal: text }))
+                setProfile((prev) => ({
+                  ...prev,
+                  HostProfile: {
+                    ...prev.HostProfile,
+                    pricingVegMeal: text,
+                  },
+                }))
               }
             />
+
             <TextInput
               style={styles.pricingInput}
-              placeholder="Non- Veg Meal (Range: Rs.100 - Rs.200)"
+              placeholder="Non-Veg Meal (Range: Rs.100 - Rs.200)"
               keyboardType="numeric"
               value={profile.HostProfile.pricingNonVegMeal}
               onChangeText={(text) =>
-                setProfile((prev) => ({ ...prev, pricingNonVegMeal: text }))
+                setProfile((prev) => ({
+                  ...prev,
+                  HostProfile: {
+                    ...prev.HostProfile,
+                    pricingNonVegMeal: text,
+                  },
+                }))
               }
             />
           </View>
@@ -1485,7 +1587,10 @@ export default function HostScreen() {
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.button} onPress={() => {}}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleHostProfile()}
+            >
               <Text style={styles.buttonText}>All done</Text>
             </TouchableOpacity>
           )}
@@ -2526,14 +2631,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: -120, // Reduced gap after Facility Picture
+    marginBottom: 0, // Reduced gap after Facility Picture
   },
 
   imageGridtwo: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: -45, // Reduced gap after Facility Picture
+    marginBottom: 0, // Reduced gap after Facility Picture
   },
 
   imageUploadBox: {

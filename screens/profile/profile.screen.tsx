@@ -121,6 +121,7 @@ export default function ProfileScreen() {
     petImages: ["", "", "", ""],
   });
 
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
