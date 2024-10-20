@@ -47,6 +47,8 @@ import { setUser, setLoading, setError } from "@/store/userSlice";
 const EditProfileScreen = () => {
 
   const dispatch = useDispatch();
+
+  
   
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
 
@@ -207,6 +209,73 @@ useEffect(() => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [profession, setProfession] = useState("");
+
+  const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
+
+  // Validation functions for each screen
+  const validatePersonalInfo = () => {
+    return (
+      fullName.trim() !== "" &&
+      phoneNumber.trim() !== "" &&
+      email.trim() !== "" &&
+      profession.trim() !== ""
+    );
+  };
+
+  const validateAddress = () => {
+    return (
+      pickuplocation.trim() !== "" &&
+      line1.trim() !== "" &&
+      city.trim() !== "" &&
+      pincode.trim() !== ""
+    );
+  };
+
+  const validatePassword = () => {
+    return (
+      UserPassword.oldpassword.trim() !== "" &&
+      UserPassword.newpassword.trim() !== ""
+    );
+  };
+
+  const validateKYC = () => {
+    return kycimage !== null;
+  };
+
+  // Effect to check validation on each step change or form state update
+  useEffect(() => {
+    let isValid = false;
+    switch (isPersonalInfo) {
+      case 0:
+        isValid = validatePersonalInfo();
+        break;
+      case 1:
+        isValid = validateAddress();
+        break;
+      case 2:
+        isValid = validatePassword();
+        break;
+      case 3:
+        isValid = validateKYC();
+        break;
+      default:
+        isValid = false;
+    }
+    setIsNextButtonDisabled(!isValid);
+  }, [
+    isPersonalInfo,
+    fullName,
+    phoneNumber,
+    email,
+    profession,
+    pickuplocation,
+    line1,
+    city,
+    pincode,
+    UserPassword,
+    kycimage,
+  ]);
+
 
   const addresses = [
     {
@@ -706,8 +775,12 @@ useEffect(() => {
 
                 {/* Update Button */}
                 <TouchableOpacity
-                  style={styles.updateButton}
+                  style={[
+                    styles.updateButton,
+                    isNextButtonDisabled && styles.disabledButton,
+                  ]}
                   onPress={handleLocationUpdate}
+                  disabled={isNextButtonDisabled}
                 >
                   <Text style={styles.updateButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -818,8 +891,12 @@ useEffect(() => {
 
                 {/* Update Button */}
                 <TouchableOpacity
-                  style={styles.resetbutton}
+                  style={[
+                    styles.resetbutton,
+                    isNextButtonDisabled && styles.disabledButton,
+                  ]}
                   onPress={handlePasswordChange}
+                  disabled={isNextButtonDisabled}
                 >
                   <Text style={styles.updateButtonText}>Reset Password</Text>
                 </TouchableOpacity>
@@ -857,8 +934,12 @@ useEffect(() => {
 
                 {/* Update Button */}
                 <TouchableOpacity
-                  style={styles.kycupdateButton}
+                  style={[
+                    styles.kycupdateButton,
+                    isNextButtonDisabled && styles.disabledButton,
+                  ]}
                   onPress={handleKycUpdate}
+                  disabled={isNextButtonDisabled}
                 >
                   <Text style={styles.updateButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -939,8 +1020,12 @@ useEffect(() => {
 
                 {/* Update Button */}
                 <TouchableOpacity
-                  style={styles.updateButton}
+                  style={[
+                    styles.updateButton,
+                    isNextButtonDisabled && styles.disabledButton,
+                  ]}
                   onPress={handleUpdate}
+                  disabled={isNextButtonDisabled}
                 >
                   <Text style={styles.updateButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -1124,6 +1209,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
     marginBottom: 20,
+  },
+
+  disabledButton: {
+    opacity: 0.5,
   },
 
   kycupdateButton: {

@@ -55,6 +55,7 @@ import React from "react";
 export default function SignUpScreen() {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [buttonSpinner, setButtonSpinner] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({
     fullname: "",
     phonenumber: "",
@@ -71,6 +72,9 @@ export default function SignUpScreen() {
 
   const data = [
     { title: "social media" },
+    { title: "friend" },
+    { title: "advertisement" },
+    { title: "other" },
   ];
 
 
@@ -87,64 +91,91 @@ export default function SignUpScreen() {
     return null;
   }
 
-  const handleSignup = async () => {
-    // Check if all the required fields are filled
-    if (
-      !userInfo.fullname ||
-      !userInfo.phonenumber ||
-      !userInfo.email ||
-      !userInfo.password ||
-      !userInfo.hearaboutus
-    ) {
-      Toast.show("Please fill all the details", {
-        type: "danger",
-      });
-      return;
-    }
+   const validateEmail = (email: string) => {
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     return emailRegex.test(email);
+   };
 
-    if (userInfo.password.length < 6) {
-      Toast.show("Password must be at least 6 characters", {
-        type: "danger",
-      });
-      return;
-    }
-    
-    setButtonSpinner(true);
-    await axios
-      .post(`${SERVER_URI}/registration`, {
-        fullname: userInfo.fullname,
-        phonenumber: userInfo.phonenumber,
-        email: userInfo.email,
-        password: userInfo.password,
-        hearaboutus: userInfo.hearaboutus,
-        role: userInfo.role,
-      })
-      .then(async (res) => {
-        await AsyncStorage.setItem(
-          "activation_token",
-          res.data.activationToken
-        );
-        Toast.show(res.data.message, {
-          type: "success",
-        });
-        setUserInfo({
-          fullname: "",
-          phonenumber: "",
-          email: "",
-          password: "",
-          hearaboutus: "",
-          role: "pet parents",
-        });
-        setButtonSpinner(false);
-        router.push("/(routes)/verify");
-      })
-      .catch((error: any) => {
-        setButtonSpinner(false);
-        Toast.show(error.message, {
-          type: "danger",
-        });
-      });
-  };
+   const validatePhoneNumber = (phone: string) => {
+     const phoneRegex = /^\d{10}$/;
+     return phoneRegex.test(phone);
+   };
+
+   const handleSignup = async () => {
+     if (!userInfo.fullname.trim()) {
+       Toast.show("Please enter your full name", { type: "warning" });
+       return;
+     }
+
+     if (!validatePhoneNumber(userInfo.phonenumber)) {
+       Toast.show("Please enter a valid 10-digit phone number", {
+         type: "warning",
+       });
+       return;
+     }
+
+     if (!validateEmail(userInfo.email)) {
+       Toast.show("Please enter a valid email address", { type: "warning" });
+       return;
+     }
+
+     if (userInfo.password.length < 6) {
+       Toast.show("Password must be at least 6 characters long", {
+         type: "warning",
+       });
+       return;
+     }
+
+     if (!userInfo.hearaboutus) {
+       Toast.show("Please select how you heard about us", { type: "warning" });
+       return;
+     }
+
+     setIsLoading(true);
+
+     try {
+       const response = await axios.post(
+         `${SERVER_URI}/registration`,
+         userInfo
+       );
+       await AsyncStorage.setItem(
+         "activation_token",
+         response.data.activationToken
+       );
+       Toast.show(response.data.message, { type: "success" });
+       setUserInfo({
+         fullname: "",
+         phonenumber: "",
+         email: "",
+         password: "",
+         hearaboutus: "",
+         role: "pet parents",
+       });
+       router.push("/(routes)/verify");
+     } catch (error) {
+       if (axios.isAxiosError(error)) {
+         if (error.response) {
+           Toast.show(error.response.data.message || "Registration failed", {
+             type: "danger",
+           });
+         } else if (error.request) {
+           Toast.show("Network error. Please check your internet connection.", {
+             type: "danger",
+           });
+         } else {
+           Toast.show("An unexpected error occurred. Please try again.", {
+             type: "danger",
+           });
+         }
+       } else {
+         Toast.show("An unexpected error occurred. Please try again.", {
+           type: "danger",
+         });
+       }
+     } finally {
+       setIsLoading(false);
+     }
+   };
 
   return (
     <View style={styles.container}>
@@ -341,31 +372,14 @@ export default function SignUpScreen() {
           />
 
           <TouchableOpacity
-            style={{
-              padding: 16,
-              borderRadius: 8,
-              backgroundColor: "#00D0C3",
-              marginTop: 15,
-              width: responsiveWidth(90),
-              height: responsiveHeight(8),
-              justifyContent: "center",
-              alignItems: "center",
-            }}
+            style={[styles.signUpButton, isLoading && styles.disabledButton]}
             onPress={handleSignup}
+            disabled={isLoading}
           >
-            {buttonSpinner ? (
-              <ActivityIndicator size="small" color={"white"} />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text
-                style={{
-                  color: "white",
-                  textAlign: "center",
-                  fontSize: hp("2.2%"),
-                  fontFamily: "OtomanopeeOne",
-                }}
-              >
-                Sign Up
-              </Text>
+              <Text style={styles.signUpButtonText}>Sign Up</Text>
             )}
           </TouchableOpacity>
 
@@ -579,5 +593,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     marginBottom: 20,
+  },
+
+  signUpButton: {
+    backgroundColor: "#00D0C3",
+    borderRadius: 8,
+    paddingVertical: 20,
+    alignItems: "center",
+    marginTop: 15,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  signUpButtonText: {
+    color: "white",
+    fontSize: hp("2.2%"),
+    fontFamily: "OtomanopeeOne",
   },
 });

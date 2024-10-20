@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -38,6 +38,9 @@ export default function HostScreen() {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
+
+  // Add new state for button disabled status
+  const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
 
   const dogBreeds = [
     "Beagle",
@@ -261,6 +264,117 @@ export default function HostScreen() {
     },
   });
 
+  // Validation functions
+  const validateStep1 = (): boolean => {
+    return !!(
+      profile.fullName &&
+      profile.phoneNumber &&
+      profile.email &&
+      profile.age &&
+      profile.gender &&
+      profile.dateOfBirth &&
+      profile.profession &&
+      // profile.location &&
+      profile.line1 &&
+      profile.city &&
+      profile.pincode &&
+      profile.residenceType &&
+      profile.builtUpArea
+    );
+  };
+
+  const validateStep2 = (): boolean => {
+    return !!(
+      profile.petSize &&
+      profile.petGender &&
+      profile.petCount &&
+      profile.willingToWalk &&
+      (profile.willingToWalk === "No" ||
+        (profile.walkFrequency && profile.walkDuration)) &&
+      profile.hasAreaRestrictions &&
+      (profile.hasAreaRestrictions === "No" || profile.areaRestrictions) &&
+      profile.willingToCook &&
+      (profile.willingToCook === "No" || profile.cookingOptions.length > 0)
+    );
+  };
+
+  const validateStep3 = (): boolean => {
+    if (profile.hasPet === "Yes") {
+      return !!(
+        profile.pets.every(
+          (pet) =>
+            pet.name &&
+            pet.breed &&
+            pet.age &&
+            pet.gender &&
+            Object.values(pet.temperament).some((value) => value)
+        ) &&
+        profile.hasVetNearby &&
+        (profile.hasVetNearby === "No" ||
+          (profile.vetInfo.name &&
+            profile.vetInfo.clinic &&
+            profile.vetInfo.phone &&
+            profile.vetInfo.address))
+      );
+    }
+    return !!(profile.hasPet === "No" && profile.hasVetNearby);
+  };
+
+  const validateStep4 = (): boolean => {
+    const hasFacilityPicture = profile.HostProfile.facilityPictures.some(
+      (pic) => pic !== ""
+    );
+    const hasPetPicture = profile.HostProfile.petPictures.some(
+      (pic) => pic !== ""
+    );
+
+    return !!(
+      profile.HostProfile.profileImage &&
+      profile.HostProfile.bio &&
+      profile.HostProfile.idProof &&
+      hasFacilityPicture &&
+      (profile.hasPet === "No" || hasPetPicture) &&
+      profile.HostProfile.pricingDaycare &&
+      profile.HostProfile.pricingBoarding &&
+      profile.HostProfile.pricingVegMeal &&
+      profile.HostProfile.pricingNonVegMeal
+    );
+  };
+
+  const validateStep5 = (): boolean => {
+    return !!(
+      profile.paymentDetails.accountHolderName &&
+      profile.paymentDetails.bankName &&
+      profile.paymentDetails.accountNumber &&
+      profile.paymentDetails.ifscCode &&
+      profile.paymentDetails.upiid
+    );
+  };
+
+  // Effect to check validation on each step change or profile update
+  useEffect(() => {
+    let isValid = false;
+    switch (currentStep) {
+      case 1:
+        isValid = validateStep1();
+        break;
+      case 2:
+        isValid = validateStep2();
+        break;
+      case 3:
+        isValid = validateStep3();
+        break;
+      case 4:
+        isValid = validateStep4();
+        break;
+      case 5:
+        isValid = validateStep5();
+        break;
+      default:
+        isValid = false;
+    }
+    setIsNextButtonDisabled(!isValid);
+  }, [currentStep, profile]);
 
   const updatePaymentDetails = (
     field: keyof Profile["paymentDetails"],
@@ -473,7 +587,7 @@ export default function HostScreen() {
   const totalSteps = 5;
 
   const nextStep = () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < totalSteps && !isNextButtonDisabled) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -552,7 +666,6 @@ export default function HostScreen() {
       // setLoader(false); // Handle loader state if applicable
     }
   };
-
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1577,19 +1690,30 @@ export default function HostScreen() {
 
         <View style={styles.bottomNavigation}>
           {currentStep < totalSteps ? (
-            <TouchableOpacity style={styles.button} onPress={nextStep}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isNextButtonDisabled && styles.disabledButton,
+              ]}
+              onPress={nextStep}
+              disabled={isNextButtonDisabled}
+            >
               <Text style={styles.buttonText}>
-                {currentStep === 1 && "Next to Preferences"}{" "}
-                {currentStep === 2 && "Next to Pet’s"}
-                {currentStep === 3 && "next to your profile"}
+                {currentStep === 1 && "Next to Preferences"}
+                {currentStep === 2 && "Next to Pet's"}
+                {currentStep === 3 && "Next to your profile"}
                 {currentStep === 4 && "Almost Done !"}
               </Text>
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={styles.button}
+              style={[
+                styles.button,
+                isNextButtonDisabled && styles.disabledButton,
+              ]}
               onPress={() => handleHostProfile()}
+              disabled={isNextButtonDisabled}
             >
               <Text style={styles.buttonText}>All done</Text>
             </TouchableOpacity>
@@ -2009,6 +2133,10 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 16,
     fontFamily: "OtomanopeeOne",
+  },
+
+  disabledButton: {
+    opacity: 0.5,
   },
 
   horizontalLine: {

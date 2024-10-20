@@ -49,6 +49,7 @@ import React from "react";
 export default function LoginScreen() {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [buttonSpinner, setButtonSpinner] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({
     email: "",
     password: "",
@@ -57,6 +58,15 @@ export default function LoginScreen() {
   const [error, setError] = useState({
     password: "",
   });
+
+   const validateEmail = (email: string) => {
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+     return emailRegex.test(email);
+  };
+  
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
 
   let [fontsLoaded, fontError] = useFonts({
     Raleway_600SemiBold,
@@ -104,35 +114,74 @@ export default function LoginScreen() {
   //   }
   // };
 
-  const handleSignIn = async () => {
+   const handleSignIn = async () => {
+     if (!userInfo.email || !userInfo.password) {
+       Toast.show("Please fill in all fields", { type: "warning" });
+       return;
+     }
 
-    if (
-      !userInfo.email ||
-      !userInfo.password
-    ) {
-      Toast.show("Please fill all the details", {
-        type: "danger",
-      });
-      return;
-    }
+     if (!validateEmail(userInfo.email)) {
+       Toast.show("Please enter a valid email address", { type: "warning" });
+       return;
+     }
 
-    await axios
-      .post(`${SERVER_URI}/login`, {
-        email: userInfo.email,
-        password: userInfo.password,
-      })
-      .then(async (res) => {
-        await AsyncStorage.setItem("access_token", res.data.accessToken);
-         await AsyncStorage.setItem("refresh_token", res.data.refreshToken);
-        router.push("/(tabs)");
-      })
-      .catch((error) => {
-        console.log(error);
-        Toast.show("Email or password is not correct!", {
-          type: "danger",
-        });
-      });
-  };
+     if (!validatePassword(userInfo.password)) {
+       Toast.show("Password must be at least 6 characters long", {
+         type: "warning",
+       });
+       return;
+     }
+
+     setIsLoading(true);
+
+     try {
+       const response = await axios.post(`${SERVER_URI}/login`, {
+         email: userInfo.email,
+         password: userInfo.password,
+       });
+
+       await AsyncStorage.setItem("access_token", response.data.accessToken);
+       await AsyncStorage.setItem("refresh_token", response.data.refreshToken);
+
+       Toast.show("Login successful!", { type: "success" });
+       router.push("/(tabs)");
+     } catch (error) {
+       if (axios.isAxiosError(error)) {
+         if (error.response) {
+           // The request was made and the server responded with a status code
+           // that falls out of the range of 2xx
+           if (error.response.status === 400) {
+             Toast.show("Invalid email or password", { type: "danger" });
+           } else if (error.response.status === 429) {
+             Toast.show("Too many login attempts. Please try again later.", {
+               type: "danger",
+             });
+           } else {
+             Toast.show("An error occurred. Please try again.", {
+               type: "danger",
+             });
+           }
+         } else if (error.request) {
+           // The request was made but no response was received
+           Toast.show("Network error. Please check your internet connection.", {
+             type: "danger",
+           });
+         } else {
+           // Something happened in setting up the request that triggered an Error
+           Toast.show("An unexpected error occurred. Please try again.", {
+             type: "danger",
+           });
+         }
+       } else {
+         Toast.show("An unexpected error occurred. Please try again.", {
+           type: "danger",
+         });
+       }
+     } finally {
+       setIsLoading(false);
+     }
+   };
+
 
   return (
     <KeyboardAvoidingView
@@ -242,31 +291,14 @@ export default function LoginScreen() {
               )}
 
               <TouchableOpacity
-                style={{
-                  padding: 16,
-                  borderRadius: 8,
-                  backgroundColor: "#FDCF00",
-                  marginTop: 35,
-                  width: responsiveWidth(90),
-                  height: responsiveHeight(8),
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
+                style={styles.loginButton}
                 onPress={handleSignIn}
+                disabled={isLoading}
               >
-                {buttonSpinner ? (
-                  <ActivityIndicator size="small" color={"white"} />
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text
-                    style={{
-                      color: "white",
-                      textAlign: "center",
-                      fontSize: 16,
-                      fontFamily: "OtomanopeeOne",
-                    }}
-                  >
-                    Log In
-                  </Text>
+                  <Text style={styles.loginButtonText}>Log In</Text>
                 )}
               </TouchableOpacity>
 
@@ -400,6 +432,20 @@ const styles = StyleSheet.create({
     top: 17.8,
     marginTop: -2,
   },
+
+  loginButton: {
+    backgroundColor: "#FDCF00",
+    borderRadius: 8,
+    paddingVertical: 20,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  loginButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontFamily: "OtomanopeeOne",
+  },
+
   forgotSection: {
     textAlign: "center",
     fontSize: hp("2.2%"),

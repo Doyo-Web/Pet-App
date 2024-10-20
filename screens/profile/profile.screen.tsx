@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,11 @@ import { router } from "expo-router";
 
 export default function ProfileScreen() {
   const { height } = Dimensions.get("window");
+
+  const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
+
+
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Define the ImageFile interface to represent the structure of pet images
   interface ImageFile {
@@ -121,8 +126,68 @@ export default function ProfileScreen() {
     petImages: ["", "", "", ""],
   });
 
+  // Validation functions for each step
+  const validateStep1 = (): boolean => {
+    return !!(
+      formState.petType &&
+      formState.petName &&
+      formState.petBreed &&
+      formState.petAgeYears &&
+      formState.petAgeMonths &&
+      formState.petGender &&
+      formState.pottyTraining &&
+      (formState.pottyTraining !== "Outdoors" || formState.toiletBreaks)
+    );
+  };
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const validateStep2 = (): boolean => {
+    return !!(
+      formState.walkPerDay &&
+      formState.bathingFrequency &&
+      formState.dietSchedule.length > 0 &&
+      formState.dietSchedule.every((entry) => entry.time && entry.portion)
+    );
+  };
+
+  const validateStep3 = (): boolean => {
+    return !!(
+      formState.vaccinationDate &&
+      formState.dewormingDate &&
+      formState.tickTreatmentDate &&
+      (!medicalHistory ||
+        (formState.medicationDetails.nameFrequency &&
+          formState.medicationDetails.reason &&
+          formState.medicationDetails.administration))
+    );
+  };
+
+  const validateStep4 = (): boolean => {
+    return formState.petImages.some((image) => image !== "");
+  };
+
+  // Effect to check validation on each step change or form state update
+  useEffect(() => {
+    let isValid = false;
+    switch (currentStep) {
+      case 1:
+        isValid = validateStep1();
+        break;
+      case 2:
+        isValid = validateStep2();
+        break;
+      case 3:
+        isValid = validateStep3();
+        break;
+      case 4:
+        isValid = validateStep4();
+        break;
+      default:
+        isValid = false;
+    }
+    setIsNextButtonDisabled(!isValid);
+  }, [currentStep, formState]);
+
+  
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -231,11 +296,11 @@ export default function ProfileScreen() {
 
   const totalSteps = 4;
 
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+ const nextStep = () => {
+   if (currentStep < totalSteps && !isNextButtonDisabled) {
+     setCurrentStep(currentStep + 1);
+   }
+ };
 
   const prevStep = () => {
     if (currentStep > 1) {
@@ -421,14 +486,12 @@ export default function ProfileScreen() {
       setFormState((prevState) => ({
         ...prevState,
         petImages: updatedImages,
-        
       }));
     } catch (error) {
       console.error("Error reading image file:", error);
       Alert.alert("Error", "There was an error processing the image.");
     }
   };
-
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1181,18 +1244,29 @@ export default function ProfileScreen() {
 
         <View style={styles.bottomNavigation}>
           {currentStep < totalSteps ? (
-            <TouchableOpacity style={styles.button} onPress={nextStep}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isNextButtonDisabled && styles.disabledButton,
+              ]}
+              onPress={nextStep}
+              disabled={isNextButtonDisabled}
+            >
               <Text style={styles.buttonText}>
-                {currentStep === 1 && "Next to Preferences"}{" "}
-                {currentStep === 2 && "Next to Pet’s Medication"}
-                {currentStep === 3 && "Next to Pet’s Gallery"}
+                {currentStep === 1 && "Next to Preferences"}
+                {currentStep === 2 && "Next to Pet's Medication"}
+                {currentStep === 3 && "Next to Pet's Gallery"}
               </Text>
               <Ionicons name="arrow-forward" size={24} color="black" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={styles.button}
+              style={[
+                styles.button,
+                isNextButtonDisabled && styles.disabledButton,
+              ]}
               onPress={() => handlePetProfile()}
+              disabled={isNextButtonDisabled}
             >
               <Text style={styles.buttonText}>Almost done</Text>
             </TouchableOpacity>
@@ -1534,6 +1608,10 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 16,
     fontFamily: "OtomanopeeOne",
+  },
+
+  disabledButton: {
+    opacity: 0.5,
   },
 
   horizontalLine: {
