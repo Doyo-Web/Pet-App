@@ -79,7 +79,13 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     <View style={styles.tabbar}>
       <View style={styles.tabbarItembox}>
         {state.routes
-          .filter((route) => route.name !== "editprofile/index")
+          .filter(
+            (route) =>
+              route.name !== "editprofile/index" &&
+              route.name !== "hostsuccess/index" &&
+              route.name !== "profilesuccess/index" &&
+              route.name !== "hostsuccess copy/index"
+          )
           .map((route, index) => {
             const { options } = descriptors[route.key];
             const label =

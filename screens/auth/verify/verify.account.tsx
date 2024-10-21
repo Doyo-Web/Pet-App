@@ -27,10 +27,11 @@ export default function VerifyAccountScreen() {
   const [code, setCode] = useState(new Array(4).fill(""));
   const [buttonSpinner, setButtonSpinner] = useState(false);
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null);
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
 
   const inputs = useRef<any>([...Array(4)].map(() => React.createRef()));
 
-  const handleInput = (text: any, index: any) => {
+  const handleInput = (text: string, index: number) => {
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
@@ -42,6 +43,9 @@ export default function VerifyAccountScreen() {
     if (text === "" && index > 0) {
       inputs.current[index - 1].current.focus();
     }
+
+    // Check if all digits are filled
+    setIsButtonEnabled(newCode.every((digit) => digit !== ""));
   };
 
   const handleSumbit = async () => {
@@ -51,24 +55,27 @@ export default function VerifyAccountScreen() {
     const otpString = String(otp);
     const activationTokenString = String(activation_token);
 
-    await axios
-      .post(`${SERVER_URI}/activate-user`, {
+    setButtonSpinner(true);
+
+    try {
+      const response = await axios.post(`${SERVER_URI}/activate-user`, {
         activation_token: activationTokenString,
         activation_code: otpString,
-      })
-      .then((res: any) => {
-        Toast.show("Your account activated successfully!", {
-          type: "success",
-        });
-        setCode(new Array(4).fill(""));
-        Keyboard.dismiss();
-        router.push("/(routes)/login");
-      })
-      .catch((error: any) => {
-        Toast.show(error.message, {
-          type: "danger",
-        });
       });
+
+      Toast.show("Your account activated successfully!", {
+        type: "success",
+      });
+      setCode(new Array(4).fill(""));
+      Keyboard.dismiss();
+      router.push("/(routes)/login");
+    } catch (error: any) {
+      Toast.show(error.message, {
+        type: "danger",
+      });
+    } finally {
+      setButtonSpinner(false);
+    }
   };
 
   // const handleSumbit = async () => {
@@ -170,31 +177,17 @@ export default function VerifyAccountScreen() {
       </View>
       <View style={{ marginTop: 10 }}>
         <TouchableOpacity
-          style={{
-            padding: 16,
-            borderRadius: 8,
-            backgroundColor: "#00D0C3",
-            marginTop: 15,
-            width: responsiveWidth(90),
-            height: responsiveHeight(8),
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+          style={[
+            styles.submitButton,
+            { backgroundColor: isButtonEnabled ? "#00D0C3" : "#00D0C380" },
+          ]}
           onPress={handleSumbit}
+          disabled={!isButtonEnabled}
         >
           {buttonSpinner ? (
             <ActivityIndicator size="small" color={"white"} />
           ) : (
-            <Text
-              style={{
-                color: "white",
-                textAlign: "center",
-                fontSize: hp("2.2%"),
-                fontFamily: "OtomanopeeOne",
-              }}
-            >
-              Verify
-            </Text>
+            <Text style={styles.submitButtonText}>Verify</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -288,4 +281,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   backText: { fontSize: 16 },
+
+  submitButton: {
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 15,
+    width: responsiveWidth(90),
+    height: responsiveHeight(8),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "white",
+    textAlign: "center",
+    fontSize: hp("2.2%"),
+    fontFamily: "OtomanopeeOne",
+  },
 });

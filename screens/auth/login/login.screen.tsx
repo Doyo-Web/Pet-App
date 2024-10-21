@@ -184,11 +184,6 @@ export default function LoginScreen() {
 
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardcontainer}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={30} // adjust based on your layout
-    >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.container}>
           <Image
@@ -364,7 +359,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
   );
 }
 

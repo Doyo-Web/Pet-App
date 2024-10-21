@@ -25,6 +25,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Toast } from "react-native-toast-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
+import { router } from "expo-router";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -630,7 +631,6 @@ export default function HostScreen() {
   };
 
   const handleHostProfile = async () => {
-    console.log("Host Profile State:", profile); // Log profile state
 
     const accessToken = await AsyncStorage.getItem("access_token");
     const refreshToken = await AsyncStorage.getItem("refresh_token");
@@ -652,7 +652,8 @@ export default function HostScreen() {
         Toast.show(response.data.message, {
           type: "success",
         });
-        console.log(response.data.hostProfile);
+       
+        router.push("/(tabs)/hostsuccess");
       }
     } catch (error: any) {
       // Log error details
