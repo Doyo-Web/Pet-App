@@ -1,37 +1,48 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
 
 export default function useUser() {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User>();
+  const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState("");
   const [refetch, setRefetch] = useState(false);
 
   useEffect(() => {
-    const subscription = async () => {
-      const accessToken = await AsyncStorage.getItem("access_token");
-      const refreshToken = await AsyncStorage.getItem("refresh_token");
+    const fetchUser = async () => {
+      try {
+        const accessToken = await AsyncStorage.getItem("access_token");
 
-      await axios
-        .get(`${SERVER_URI}/me`, {
+        if (!accessToken) {
+          setLoading(false);
+          return;
+        }
+
+        // Check if we already have a cached user
+        const cachedUser = await AsyncStorage.getItem("user");
+        if (cachedUser) {
+          setUser(JSON.parse(cachedUser));
+          setLoading(false);
+        }
+
+        // Fetch the latest user data from the server
+        const { data } = await axios.get(`${SERVER_URI}/me`, {
           headers: {
             access_token: accessToken,
           },
-        })
-        .then((res: any) => {
-          setUser(res.data.user);
-          setLoading(false);
-        })
-        .catch((error: any) => {
-          setError(error?.message);
-          setLoading(false);
         });
+
+        setUser(data.user);
+        await AsyncStorage.setItem("user", JSON.stringify(data.user)); // Cache user
+      } catch (error: any) {
+        setError(error?.message);
+      } finally {
+        setLoading(false);
+      }
     };
-    subscription();
+
+    fetchUser();
   }, [refetch]);
 
   return { loading, user, error, setRefetch, refetch };

@@ -5,13 +5,10 @@ import React from "react";
 
 export default function TabsIndex() {
   const { loading, user } = useUser();
-  return (
-    <>
-      {loading ? (
-        <Loader />
-      ) : (
-        <Redirect href={!user ? "/(routes)/loader" : "/(tabs)"} />
-      )}
-    </>
-  );
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  return <Redirect href={user ? "/(tabs)" : "/(routes)/loader"} />;
 }
