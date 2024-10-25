@@ -1,4 +1,4 @@
-export const SERVER_URI = "https://pet-app-1-pu0i.onrender.com/api/v1";
+export const SERVER_URI = "https://pet-app-83k5.onrender.com/api/v1";
 
 
     
