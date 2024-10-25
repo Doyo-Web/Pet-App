@@ -93,7 +93,7 @@ export const CreatePetProfile = catchAsyncError(
 
       // Create a new pet profile with the uploaded images
       const newPetProfile = new PetProfileModel({
-        userid: req.user?.id,
+        userId: req.user?.id,
         petType,
         petName,
         petBreed,

@@ -21,7 +21,7 @@ interface DietSchedule {
 
 // Define the main Pet Profile interface
 interface PetProfile extends Document {
-  userid: Schema.Types.ObjectId; // Reference to the User as ObjectId
+  userId: Schema.Types.ObjectId; // Reference to the User as ObjectId
   petType: string;
   petName: string;
   petBreed: string;
@@ -52,7 +52,7 @@ interface PetProfile extends Document {
 
 // Mongoose schema definition
 const PetProfileSchema = new Schema<PetProfile>({
-  userid: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Properly defined as ObjectId
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Properly defined as ObjectId
   petType: { type: String, required: true },
   petName: { type: String, required: true },
   petBreed: { type: String, required: true },

@@ -29,6 +29,7 @@ import { ImageAnnotatorClient } from "@google-cloud/vision";
 import sharp from "sharp";
 import Tesseract from "tesseract.js";
 import fs from "fs"; // For file system operations
+import { PetProfileModel } from "../models/petprofile.model";
 
 
 dotenv.config();
@@ -595,6 +596,19 @@ export const DeleteUser = catchAsyncError(
 
     // Find user by id and delete
     const user = await userModel.findByIdAndDelete(userId);
+
+    if (user) {
+      // Then, delete all pet profiles associated with this user's userId
+      const deletedPetProfiles = await PetProfileModel.deleteMany({
+        userId: userId,
+      });
+
+      console.log(
+        `Deleted ${deletedPetProfiles.deletedCount} pet profiles associated with the user.`
+      );
+    } else {
+      console.log("User not found");
+    }
 
     if (!user) {
       return res.status(404).json({
