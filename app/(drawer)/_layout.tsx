@@ -48,6 +48,8 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         },
       });
       if (response.data) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token");
         Toast.show(response.data.message, {
           type: "success",
         });
