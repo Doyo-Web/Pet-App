@@ -84,7 +84,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               route.name !== "editprofile/index" &&
               route.name !== "hostsuccess/index" &&
               route.name !== "profilesuccess/index" &&
-              route.name !== "hostsuccess copy/index"
+              route.name !== "hostsuccess copy/index" &&
+              route.name !== "booknow/booknowtwo"
           )
           .map((route, index) => {
             const { options } = descriptors[route.key];

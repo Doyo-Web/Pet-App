@@ -10,7 +10,8 @@ import {
   Dimensions,
   Image,
   Platform,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -25,8 +26,7 @@ import { Toast } from "react-native-toast-notifications";
 import { router } from "expo-router";
 
 export default function ProfileScreen() {
-  const { height } = Dimensions.get("window");
-
+ 
   const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
 
 
@@ -405,7 +405,10 @@ export default function ProfileScreen() {
   const [collarAggression, setCollarAggression] = useState(false);
   const [foodAggression, setFoodAggression] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handlePetProfile = async () => {
+    setIsLoading(true);
     console.log("Form State:", formState); // Log formState
 
     const accessToken = await AsyncStorage.getItem("access_token");
@@ -438,7 +441,7 @@ export default function ProfileScreen() {
         console.log("Error Message:", error.message); // Logs general error messages
       }
     } finally {
-      // setLoader(false);
+      setIsLoading(false);
     }
   };
 
@@ -492,6 +495,8 @@ export default function ProfileScreen() {
       Alert.alert("Error", "There was an error processing the image.");
     }
   };
+  
+    
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1268,7 +1273,11 @@ export default function ProfileScreen() {
               onPress={() => handlePetProfile()}
               disabled={isNextButtonDisabled}
             >
-              <Text style={styles.buttonText}>Almost done</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Almost done</Text>
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -1276,6 +1285,8 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
+const { height, width: screenWidth } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -1718,8 +1729,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkedscreentwo: {
-    backgroundColor: "yellow",
+    backgroundColor: "#FDCF00",
   },
+
   checkmark: {
     color: "black",
   },
@@ -1860,7 +1872,7 @@ const styles = StyleSheet.create({
   },
 
   stepfourimagePicker: {
-    width: 150,
+    width: (screenWidth - 80) / 2,
     height: 150,
     borderWidth: 2,
     borderColor: "#FFD700",

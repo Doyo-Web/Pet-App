@@ -14,6 +14,7 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { router } from "expo-router";
 
 interface Pet {
   id: number;
@@ -104,16 +105,19 @@ export default function BookingScreen(): JSX.Element {
     setShowMap(false);
   };
 
+  const handleBookNow = () => {
+    router.push("./booknowtwo");
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.boardingbox}>
+        <TouchableOpacity style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.header}>Boarding</Text>
+      </View>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.boardingbox}>
-          <TouchableOpacity style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.header}>Boarding</Text>
-        </View>
-
         <Text style={styles.sectionTitle}>Choose your pet(s)</Text>
         <ScrollView
           horizontal
@@ -253,7 +257,7 @@ export default function BookingScreen(): JSX.Element {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity onPress={handleBookNow} style={styles.bookButton}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -341,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 10,
-    height: 53,
+    height: 70,
   },
 
   backButton: {
