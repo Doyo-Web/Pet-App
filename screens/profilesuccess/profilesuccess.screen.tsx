@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,70 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useRouter } from "expo-router";
+import { router, useFocusEffect, useRouter } from "expo-router";
+import useUser from "@/hooks/auth/useUser";
 
-const HostSuccessScreen = () => {
+const ProfileSuccessScreen = () => {
 
   const router = useRouter();
-  
+  const { loading, user, refetch, setRefetch } = useUser();
+  const [firstVisit, setFirstVisit] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("ProfileSuccessScreen focused");
+      setRefetch(true);
+      console.log("setRefetch called: true");
+      setTimeout(() => {
+        router.push("/(tabs)");
+      }, 2000);
+      return () => {
+        console.log("ProfileSuccessScreen unfocused");
+      };
+    }, [])
+  );
+
+  useEffect(() => {
+    console.log("Effect triggered: loading =", loading, "user =", user);
+
+    if (!loading && firstVisit) {
+      console.log(
+        "Loading is false and it's the first visit. Proceeding to check user data."
+      );
+
+      setTimeout(() => {
+        console.log("Checking user data after delay...");
+
+        if (user) {
+          console.log("User Data:", user);
+
+          const hasRequiredFields = Boolean(
+            user?.fullname &&
+              user?.phonenumber &&
+              user?.email &&
+              user.profession !== "Freelancer" &&
+              user?.avatar?.url
+          );
+
+          // Navigate based on field availability
+          if (hasRequiredFields) {
+            console.log("Navigating to main tabs");
+            router.push("/(tabs)");
+          } else {
+            console.log("Navigating to edit profile");
+            router.push("/(tabs)/editprofile");
+          }
+        } else {
+          console.log("No user data available.");
+        }
+      }, 2000); // Delay of 2 seconds
+
+      setFirstVisit(false); // Set to false after first visit
+    } else {
+      console.log("Still loading user data or it's not the first visit...");
+    }
+  }, [loading, user, router, firstVisit]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
@@ -63,7 +121,7 @@ const HostSuccessScreen = () => {
   );
 };
 
-export default HostSuccessScreen;
+export default ProfileSuccessScreen;
 
 const styles = StyleSheet.create({
   container: {

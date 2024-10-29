@@ -409,7 +409,6 @@ export default function ProfileScreen() {
 
   const handlePetProfile = async () => {
     setIsLoading(true);
-    console.log("Form State:", formState); // Log formState
 
     const accessToken = await AsyncStorage.getItem("access_token");
     const refreshToken = await AsyncStorage.getItem("refresh_token");
@@ -429,8 +428,7 @@ export default function ProfileScreen() {
         Toast.show(response.data.message, {
           type: "success",
         });
-        console.log(response.data.petProfile);
-        router.push("/(tabs)/editprofile");
+        router.push("/(tabs)/profilesuccess");
       }
     } catch (error: any) {
       // Log error details
