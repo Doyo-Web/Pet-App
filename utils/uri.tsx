@@ -1,6 +1,6 @@
-export const SERVER_URI = "http://192.168.29.182:8000/api/v1";
+export const SERVER_URI = "https://pet-app-2-2cbz.onrender.com/api/v1";
     
-//"https://pet-app-83k5.onrender.com/api/v1";
+//"http://192.168.38.182:8000/api/v1";
     
 
 
