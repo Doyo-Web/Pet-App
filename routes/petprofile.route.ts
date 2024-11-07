@@ -1,6 +1,6 @@
 import express from "express";
 import { isAuthenticated } from "../middleware/auth";
-import { CreatePetProfile } from "../controllers/petprofile.controller";
+import { CreatePetProfile, GetPetProfile } from "../controllers/petprofile.controller";
 import { uploadPetImages } from "../middleware/uploadMiddleware";
 
 const petprofileRouter = express.Router();
@@ -11,5 +11,7 @@ petprofileRouter.post(
   isAuthenticated,
   CreatePetProfile
 );
+
+petprofileRouter.get("/petprofile-get", isAuthenticated, GetPetProfile);
 
 export default petprofileRouter;

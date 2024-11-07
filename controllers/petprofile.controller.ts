@@ -135,3 +135,31 @@ export const CreatePetProfile = catchAsyncError(
     }
   }
 );
+
+export const GetPetProfile = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Assuming req.user contains the logged-in user's ID (e.g., set by an auth middleware)
+      const userId = req.user?.id;
+
+      // Find pet profiles associated with the logged-in user
+      const petProfiles = await PetProfileModel.find({ userId });
+
+      // If no profiles found, return a 404 error
+      if (!petProfiles || petProfiles.length === 0) {
+        return next(
+          new ErrorHandler("No pet profiles found for this user", 404)
+        );
+      }
+
+      // Send the pet profiles in the response
+      res.status(200).json({
+        success: true,
+        data: petProfiles,
+      });
+    } catch (error: any) {
+      console.error("Validation Error:", error);
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);

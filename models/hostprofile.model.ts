@@ -41,6 +41,7 @@ interface IPaymentDetails {
 
 // Main Host Profile Interface
 export interface IHostProfileModel extends Document {
+  userId: Schema.Types.ObjectId; // Reference to the User as ObjectId
   fullName: string;
   phoneNumber: string;
   email: string;
@@ -115,6 +116,7 @@ const PaymentDetailsSchema = new Schema<IPaymentDetails>({
 
 // Main Host Profile Schema
 const ProfileSchema = new Schema<IHostProfileModel>({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Properly defined as ObjectId
   fullName: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   email: { type: String, required: true },

@@ -8,7 +8,7 @@ import { ErrorMiddleware } from "./middleware/error";
 import userRouter from "./routes/user.route";
 import petprofileRouter from "./routes/petprofile.route";
 import hostProfileRouter from "./routes/hostprofile.route";
-
+import BookingRouter from "./routes/booking.route";
 
 app.use(express.json({ limit: "10mb" })); // Adjust the size limit as needed
 
@@ -32,6 +32,7 @@ app.use(cors());
 app.use("/api/v1", userRouter);
 app.use("/api/v1", petprofileRouter);
 app.use("/api/v1", hostProfileRouter);
+app.use("/api/v1", BookingRouter);
 
 //testing api
 app.get("/testing", (req: Request, res: Response, next: NextFunction) => {

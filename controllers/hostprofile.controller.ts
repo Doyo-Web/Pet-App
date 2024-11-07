@@ -116,6 +116,7 @@ export const createHostProfile = catchAsyncError(
 
       // Create the host profile with the uploaded image URLs
       const newHostProfile = new HostProfileModel({
+        userId: req.user?.id,
         fullName,
         phoneNumber,
         email,
