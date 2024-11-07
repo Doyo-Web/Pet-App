@@ -313,6 +313,14 @@ const Layout: React.FC = () => {
           if (pathname === "/booknow/booknowtwo") {
             return null; // Don't render anything for the profile screen
           }
+
+           if (pathname === "/booknow/booknowthree") {
+             return null; // Don't render anything for the profile screen
+          }
+          
+          if (pathname === "/booknow/booknowfour") {
+            return null; // Don't render anything for the profile screen
+          }
           return (
             <TouchableOpacity
               style={styles.customHamburgerContainer}
@@ -341,6 +349,14 @@ const Layout: React.FC = () => {
           if (pathname === "/booknow/booknowtwo") {
             return null; // Don't render anything for the profile screen
           }
+
+          if (pathname === "/booknow/booknowthree") {
+            return null; // Don't render anything for the profile screen
+          }
+
+            if (pathname === "/booknow/booknowfour") {
+              return null; // Don't render anything for the profile screen
+            }
           return (
             <Image
               source={require("@/assets/images/header-logo.png")}

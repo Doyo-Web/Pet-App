@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker, {
@@ -15,11 +16,14 @@ import DateTimePicker, {
 import MapView, { Marker } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router } from "expo-router";
+import axios from "axios";
+import { SERVER_URI } from "@/utils/uri";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Pet {
-  id: number;
+  id: string;
   name: string;
-  image: string;
+  image: string | null;
 }
 
 interface Location {
@@ -39,10 +43,7 @@ interface BookData {
 
 export default function BookingScreen(): JSX.Element {
   const [bookData, setBookData] = useState<BookData>({
-    pets: [
-      { id: 1, name: "Mojito", image: "@/assets/images/Mojito.png" },
-      { id: 2, name: "Rocky", image: "/placeholder.svg?height=100&width=100" },
-    ],
+    pets: [],
     startDate: new Date(),
     startTime: new Date(),
     endDate: new Date(),
@@ -51,6 +52,7 @@ export default function BookingScreen(): JSX.Element {
     diet: "packed",
   });
 
+  const [allPets, setAllPets] = useState<Pet[]>([]);
   const [showMap, setShowMap] = useState<boolean>(false);
   const [showUnavailablePopup, setShowUnavailablePopup] =
     useState<boolean>(false);
@@ -61,13 +63,46 @@ export default function BookingScreen(): JSX.Element {
       keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
     >("startDate");
 
-  const addNewPet = (): void => {
-    const newPet: Pet = {
-      id: Date.now(),
-      name: `New Pet ${bookData.pets.length + 1}`,
-      image: "/placeholder.svg?height=100&width=100",
+  useEffect(() => {
+    const fetchPets = async () => {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      try {
+        const response = await axios.get<{ success: boolean; data: any[] }>(
+          `${SERVER_URI}/petprofile-get`,
+          {
+            headers: { access_token: accessToken },
+          }
+        );
+        const filteredPets = response.data.data.map((pet: any) => ({
+          id: pet._id,
+          name: pet.petName,
+          image: pet.petImages.length > 0 ? pet.petImages[0].url : null,
+        }));
+        setAllPets(filteredPets);
+      } catch (error) {
+        console.error("Error fetching pet profiles:", error);
+        if (axios.isAxiosError(error)) {
+          console.error("Axios error details:", error.response?.data);
+        }
+        Alert.alert("Error", "Failed to fetch pet profiles. Please try again.");
+      }
     };
-    setBookData((prev) => ({ ...prev, pets: [...prev.pets, newPet] }));
+    fetchPets();
+  }, []);
+
+  const togglePetSelection = (pet: Pet) => {
+    setBookData((prev) => {
+      const isPetSelected = prev.pets.some((p) => p.id === pet.id);
+      if (isPetSelected) {
+        return { ...prev, pets: prev.pets.filter((p) => p.id !== pet.id) };
+      } else {
+        return { ...prev, pets: [...prev.pets, pet] };
+      }
+    });
+  };
+
+  const addNewPet = () => {
+    router.push("/(drawer)/(tabs)/profile");
   };
 
   const handleDateChange = (
@@ -96,7 +131,6 @@ export default function BookingScreen(): JSX.Element {
   };
 
   const handleLocationSelect = (location: Location): void => {
-    // Simulating service availability check
     if (location.address === "Delhi") {
       setShowUnavailablePopup(true);
     } else {
@@ -105,9 +139,36 @@ export default function BookingScreen(): JSX.Element {
     setShowMap(false);
   };
 
-  const handleBookNow = () => {
-    router.push("./booknowtwo");
-  }
+  const handleBookNow = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      const response = await axios.post(`${SERVER_URI}/booking`, bookData, {
+        headers: { access_token: accessToken },
+      });
+      if (response.data.success) {
+        router.push("./booknowtwo");
+      } else {
+        console.error("Booking failed:", response.data.message);
+        Alert.alert(
+          "Booking Failed",
+          response.data.message ||
+            "An error occurred while booking. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Error during booking:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error details:", error.response?.data);
+        Alert.alert(
+          "Booking Error",
+          error.response?.data?.message ||
+            "An unexpected error occurred. Please try again."
+        );
+      } else {
+        Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -124,12 +185,28 @@ export default function BookingScreen(): JSX.Element {
           showsHorizontalScrollIndicator={false}
           style={styles.petsContainer}
         >
-          {bookData.pets.map((pet) => (
-            <View key={pet.id} style={styles.petItem}>
-              <Image source={{ uri: pet.image }} style={styles.petImage} />
+          {allPets.map((pet) => (
+            <TouchableOpacity
+              key={pet.id}
+              style={[
+                styles.petItem,
+                bookData.pets.some((p) => p.id === pet.id) &&
+                  styles.selectedPet,
+              ]}
+              onPress={() => togglePetSelection(pet)}
+            >
+              <Image
+                source={{
+                  uri: pet.image
+                    ? pet.image
+                    : "/placeholder.svg?height=100&width=100",
+                }}
+                style={styles.petImage}
+              />
               <Text style={styles.petName}>{pet.name}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
+
           <TouchableOpacity style={styles.addNewPet} onPress={addNewPet}>
             <Icon name="add" size={40} color="#fff" />
             <Text style={styles.addNewText}>Add New</Text>
@@ -180,10 +257,10 @@ export default function BookingScreen(): JSX.Element {
                   {
                     backgroundColor:
                       locationType === "Home"
-                        ? "#FDCF00" // yellow for Home
+                        ? "#FDCF00"
                         : locationType === "Work"
-                        ? "#00D0C3" // teal for Work
-                        : "#F96247", // red for Friend
+                        ? "#00D0C3"
+                        : "#F96247",
                   },
                 ]}
                 onPress={() =>
@@ -210,7 +287,6 @@ export default function BookingScreen(): JSX.Element {
             </View>
           ))}
 
-          {/* Add New section inside the same container */}
           <View style={styles.locationsContainerbox}>
             <TouchableOpacity
               style={[styles.locationItembox, { backgroundColor: "#FDCF00" }]}
@@ -337,7 +413,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 20,
   },
-
   boardingbox: {
     backgroundColor: "#F96247",
     borderRadius: 6,
@@ -347,7 +422,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 70,
   },
-
   backButton: {
     zIndex: 1,
     width: 36,
@@ -388,6 +462,11 @@ const styles = StyleSheet.create({
   petName: {
     marginTop: 5,
   },
+  selectedPet: {
+    borderColor: "#FF6347",
+    borderWidth: 2,
+    borderRadius: 40,
+  },
   addNewPet: {
     width: 80,
     height: 80,
@@ -415,13 +494,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-
   locationsContainerbox: {
     borderRadius: 100,
     alignItems: "center",
     justifyContent: "center",
   },
-
   locationItembox: {
     width: 70,
     height: 70,
@@ -429,7 +506,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 100,
   },
-
   locationItem: {
     flex: 1,
     alignItems: "center",
@@ -438,7 +514,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-
   selectedLocation: {
     borderColor: "#FFF",
     backgroundColor: "#FFF",
@@ -450,7 +525,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
-
   bookButton: {
     backgroundColor: "#FF6347",
     borderRadius: 5,
@@ -507,10 +581,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-
   dietContainer: {
     flexDirection: "row",
-    justifyContent: "space-around", // to space buttons evenly
+    justifyContent: "space-around",
     alignItems: "center",
     marginVertical: 20,
   },
@@ -521,11 +594,11 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40, // Make the icon container circular
-    backgroundColor: "#F0F0F0", // Light grey background
+    borderRadius: 40,
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10, // Space between icon and text
+    marginBottom: 10,
   },
   dietText: {
     fontSize: 16,
@@ -534,12 +607,12 @@ const styles = StyleSheet.create({
   },
   dietSubtext: {
     fontSize: 12,
-    color: "#999", // Lighter color for subtext
+    color: "#999",
     textAlign: "center",
   },
   selectedDiet: {
     borderColor: "#000",
-    borderWidth: 2, // Highlight selected option
-    borderRadius: 50, // Circular border for the icon
+    borderWidth: 2,
+    borderRadius: 50,
   },
 });
