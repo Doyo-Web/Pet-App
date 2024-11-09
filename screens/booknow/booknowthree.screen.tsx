@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,75 +6,78 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  ImageSourcePropType,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Star } from "lucide-react-native";
-import { router } from "expo-router";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { SERVER_URI } from "@/utils/uri";
 
 interface Host {
-  id: string;
-  name: string;
-  location: string;
-  image: ImageSourcePropType;
+  _id: string;
+  fullName: string;
+  city: string;
+  profileImage: string;
   rating: number;
+  bio: string;
 }
 
-const hosts: Host[] = [
-  {
-    id: "1",
-    name: "Beatrice Oliver",
-    location: "Mumbai",
-    image: require("@/assets/images/person-2.png"),
-    rating: 5,
-  },
-  {
-    id: "2",
-    name: "Rahul Sharma",
-    location: "Mumbai",
-    image: require("@/assets/images/person-1.png"),
-    rating: 5,
-  },
-  {
-    id: "3",
-    name: "Atul Singh",
-    location: "Mumbai",
-    image: require("@/assets/images/person-3.png"),
-    rating: 5,
-  },
-  {
-    id: "4",
-    name: "Shreya Rajan",
-    location: "Mumbai",
-    image: require("@/assets/images/person-4.png"),
-    rating: 5,
-  },
-];
+interface Booking {
+  _id: string;
+  acceptedHosts: Host[];
+}
 
 interface HostCardProps {
   host: Host;
+  onKnowMore: () => void;
+  isSelected: boolean;
+  onSelect: () => void;
 }
 
- const handleBookNow = () => {
-   router.push("./booknowfour");
- };
-
-const HostCard: React.FC<HostCardProps> = ({ host }) => (
-  <TouchableOpacity style={styles.card}>
+const HostCard: React.FC<HostCardProps> = ({
+  host,
+  onKnowMore,
+  isSelected,
+  onSelect,
+}) => (
+  <TouchableOpacity
+    style={[styles.card, isSelected && styles.selectedCard]}
+    onPress={onSelect}
+    accessibilityRole="button"
+    accessibilityState={{ selected: isSelected }}
+    accessibilityLabel={`${isSelected ? "Deselect" : "Select"} ${
+      host.fullName
+    } as your host`}
+  >
     <View style={styles.cardContent}>
-      <Image source={host.image} style={styles.avatar} />
+      <Image
+        source={{ uri: host.profileImage }}
+        style={styles.avatar}
+        accessibilityLabel={`${host.fullName}'s profile picture`}
+      />
       <View style={styles.hostInfo}>
-        <Text style={styles.hostName}>{host.name}</Text>
-        <Text style={styles.location}>{host.location}</Text>
+        <Text style={styles.hostName}>{host.fullName}</Text>
+        <Text style={styles.location}>{host.city}</Text>
       </View>
       <View style={styles.ratingContainer}>
         <View style={styles.stars}>
           {[...Array(5)].map((_, i) => (
-            <Star key={i} size={16} fill="#FDD00D" color="#FDD00D" />
+            <Icon
+              key={`star-${host._id}-${i}`}
+              name="star"
+              size={16}
+              color={i < host.rating ? "#FDD00D" : "#E0E0E0"}
+            />
           ))}
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity
+          onPress={onKnowMore}
+          accessibilityLabel={`Learn more about ${host.fullName}`}
+        >
           <Text style={styles.knowMore}>know more</Text>
         </TouchableOpacity>
       </View>
@@ -83,19 +86,146 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
 );
 
 export default function BookingScreenThree() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        console.error("No access token found");
+        setLoading(false);
+        Alert.alert(
+          "Error",
+          "You are not logged in. Please log in and try again."
+        );
+        return;
+      }
+
+      setLoading(true);
+
+      const response = await axios.get<{ bookings: Booking[] }>(
+        `${SERVER_URI}/get-bookings`,
+        {
+          headers: { access_token: accessToken },
+        }
+      );
+
+      setBookings(response.data.bookings);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchBookings();
+  };
+
+  const handleKnowMore = (host: Host) => {
+    Alert.alert("Host Details", `Name: ${host.fullName}\nBio: ${host.bio}`);
+  };
+
+  const handleSelectHost = (hostId: string) => {
+    setSelectedHostIds((prevSelectedHostIds) => {
+      if (prevSelectedHostIds.includes(hostId)) {
+        return prevSelectedHostIds.filter((id) => id !== hostId);
+      } else {
+        return [...prevSelectedHostIds, hostId];
+      }
+    });
+  };
+
+  const handleConfirmBooking = async () => {
+    if (selectedHostIds.length === 0) {
+      Alert.alert(
+        "Error",
+        "Please select at least one host before confirming the booking."
+      );
+      return;
+    }
+
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        Alert.alert(
+          "Error",
+          "You are not logged in. Please log in and try again."
+        );
+        return;
+      }
+
+      setLoading(true);
+
+      const response = await axios.post(
+        `${SERVER_URI}/confirm-booking`,
+        { selectedHostIds },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            access_token: accessToken,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        Alert.alert("Success", "Booking confirmed successfully!", [
+          { text: "OK", onPress: () => router.push("./booknowfour") },
+        ]);
+      } else {
+        Alert.alert(
+          "Error",
+          response.data.message ||
+            "Failed to confirm booking. Please try again."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const allHosts = bookings.flatMap((booking) =>
+    booking.acceptedHosts.map((host) => ({
+      ...host,
+      bookingId: booking._id,
+    }))
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator
+          size="large"
+          color="#FF6B6B"
+          accessibilityLabel="Loading bookings"
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
-        onPress={() => {
-          router.push("/(drawer)/(tabs)/booknow/booknowtwo");
-        }}
+        onPress={() => router.push("/(drawer)/(tabs)/booknow/booknowtwo")}
+        accessibilityLabel="Go back to previous screen"
       >
         <View style={styles.boardingboxtwo}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => {
-              router.push("/(drawer)/(tabs)/booknow/booknowtwo");
-            }}
+            onPress={() => router.push("/(drawer)/(tabs)/booknow/booknowtwo")}
+            accessibilityLabel="Go back"
           >
             <Icon name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
@@ -103,15 +233,35 @@ export default function BookingScreenThree() {
         </View>
       </TouchableOpacity>
 
-      <Text style={styles.subtitle}>Select the Host for your pet</Text>
+      <Text style={styles.subtitle}>Select the Host(s) for your pet</Text>
 
-      <ScrollView style={styles.scrollView}>
-        {hosts.map((host) => (
-          <HostCard key={host.id} host={host} />
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#FF6B4A"]}
+            tintColor="#FF6B4A"
+          />
+        }
+      >
+        {allHosts.map((host) => (
+          <HostCard
+            key={`${host.bookingId}-${host._id}`}
+            host={host}
+            onKnowMore={() => handleKnowMore(host)}
+            isSelected={selectedHostIds.includes(host._id)}
+            onSelect={() => handleSelectHost(host._id)}
+          />
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.confirmButton} onPress={handleBookNow}>
+      <TouchableOpacity
+        style={styles.confirmButton}
+        onPress={handleConfirmBooking}
+        accessibilityLabel="Confirm booking with selected hosts"
+      >
         <Text style={styles.confirmButtonText}>Confirm Booking</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -124,14 +274,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingBottom: 190,
   },
-
   headerboardingbox: {
     fontSize: 18,
     color: "#fff",
     fontFamily: "OtomanopeeOne",
   },
-
   boardingboxtwo: {
+    marginTop: 25,
     backgroundColor: "#F96247",
     borderRadius: 6,
     flexDirection: "row",
@@ -141,9 +290,7 @@ const styles = StyleSheet.create({
     height: 70,
     marginHorizontal: 16,
   },
-
   backButton: {
-    zIndex: 1,
     width: 36,
     height: 36,
     position: "absolute",
@@ -153,21 +300,6 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     borderWidth: 1,
     borderRadius: 50,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FF6B4A",
-    padding: 16,
-    borderRadius: 8,
-    margin: 16,
-  },
-
-  headerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
   },
   subtitle: {
     textAlign: "center",
@@ -188,14 +320,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 12,
   },
+  selectedCard: {
+    backgroundColor: "#E6FFE6",
+    borderColor: "#4CAF50",
+  },
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginRight: 12,
   },
   hostInfo: {
@@ -204,34 +340,32 @@ const styles = StyleSheet.create({
   hostName: {
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 4,
   },
   location: {
     fontSize: 14,
-    color: "#666",
+    color: "#757575",
   },
   ratingContainer: {
     alignItems: "flex-end",
   },
   stars: {
     flexDirection: "row",
-    marginBottom: 4,
   },
   knowMore: {
-    color: "#FF6B4A",
     fontSize: 14,
+    color: "#FF6B4A",
   },
   confirmButton: {
     backgroundColor: "#FF6B4A",
-    marginTop: 30,
-    margin: 16,
-    padding: 16,
     borderRadius: 8,
+    paddingVertical: 16,
+    marginHorizontal: 16,
     alignItems: "center",
+    marginTop: 20,
   },
   confirmButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });

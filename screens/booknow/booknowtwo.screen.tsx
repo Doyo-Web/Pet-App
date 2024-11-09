@@ -57,7 +57,6 @@ export default function BookingScreenTwo() {
         headers: { access_token: accessToken },
       });
 
-      console.log(response.data.bookings); // Log the fresh data
       setBookings(response.data.bookings);
       setLoading(false); // Hide loading spinner after data is fetched
     } catch (error) {
