@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-// Define the interface for the Booking model
 export interface IBooking extends Document {
   userId: mongoose.Types.ObjectId;
   pets: Array<{
@@ -15,22 +14,29 @@ export interface IBooking extends Document {
     address: string;
   };
   diet: "packed" | "home";
-  acceptedHosts: mongoose.Types.ObjectId[]; // References HostProfile
+  acceptedHosts: mongoose.Types.ObjectId[];
+  selectedHost: mongoose.Types.ObjectId;
+  paymentStatus: "pending" | "completed" | "failed";
+  paymentDetails: {
+    paymentId: string;
+    orderId: string;
+    signature: string;
+    amount: number;
+  };
 }
 
-// Define the booking schema
 const bookingSchema: Schema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User", // Reference to the User model
+      ref: "User",
       required: true,
     },
     pets: [
       {
         id: {
           type: Schema.Types.ObjectId,
-          ref: "Pet", // Reference to the Pet model
+          ref: "Pet",
         },
         name: String,
         image: String,
@@ -62,12 +68,26 @@ const bookingSchema: Schema = new Schema(
     acceptedHosts: [
       {
         type: Schema.Types.ObjectId,
-        ref: "HostProfile", // Reference to the HostProfile model
+        ref: "HostProfile",
       },
     ],
+    selectedHost: {
+      type: Schema.Types.ObjectId,
+      ref: "HostProfile",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed"],
+      default: "pending",
+    },
+    paymentDetails: {
+      paymentId: String,
+      orderId: String,
+      signature: String,
+      amount: Number,
+    },
   },
-  { timestamps: true } // Automatically adds `createdAt` and `updatedAt` timestamps
+  { timestamps: true }
 );
 
-// Export the Booking model
 export default mongoose.model<IBooking>("Booking", bookingSchema);
