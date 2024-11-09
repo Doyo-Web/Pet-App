@@ -8,13 +8,13 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "../../utils/uri";
 import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 
 interface Booking {
   _id: string;
@@ -34,6 +34,7 @@ interface Booking {
 export default function BillingScreen() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -90,57 +91,29 @@ export default function BillingScreen() {
   };
 
   const handlePayment = async () => {
+    setPaymentLoading(true);
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
         throw new Error("No access token found");
       }
 
-      console.log("Creating Razorpay order...");
-      const orderResponse = await axios.post(
-        `${SERVER_URI}/create-razorpay-order`,
-        { amount: Math.round(grandTotal * 100) },
-        { headers: { access_token: accessToken } }
-      );
+      // Simulate payment process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const { id: orderId } = orderResponse.data;
-      console.log("Order created:", orderId);
+      // Simulate successful payment
+      const mockPaymentData = {
+        razorpay_payment_id: `pay_${Math.random().toString(36).substr(2, 9)}`,
+        razorpay_order_id: `order_${Math.random().toString(36).substr(2, 9)}`,
+        razorpay_signature: `${Math.random().toString(36).substr(2, 32)}`,
+      };
 
-      // Create the checkout URL
-      const checkoutUrl = `https://checkout.razorpay.com/v1/checkout.html?key=rzp_test_47UXyR0Uds1kIX&order_id=${orderId}&amount=${Math.round(
-        grandTotal * 100
-      )}&currency=INR&name=Pet%20Boarding&description=Pet%20Boarding%20Payment&prefill[email]=porwalsachin2510@gmail.com&prefill[contact]=9575415347&prefill[name]=Sachin%20Porwal&theme[color]=%23F96247`;
-
-      // Open payment in browser
-      const result = await WebBrowser.openAuthSessionAsync(
-        checkoutUrl,
-        "petboarding://payment-callback"
-      );
-
-      if (result.type === "success") {
-        // Parse the URL parameters
-        const urlParams = new URLSearchParams(new URL(result.url).search);
-        const paymentId = urlParams.get("razorpay_payment_id");
-        const signature = urlParams.get("razorpay_signature");
-
-        if (paymentId && signature) {
-          await savePaymentDetails({
-            razorpay_payment_id: paymentId,
-            razorpay_order_id: orderId,
-            razorpay_signature: signature,
-          });
-        } else {
-          Alert.alert("Error", "Payment verification failed");
-        }
-      } else {
-        Alert.alert("Notice", "Payment was cancelled");
-      }
+      await savePaymentDetails(mockPaymentData);
     } catch (error: any) {
-      console.error(
-        "Error initiating payment:",
-        error.response?.data || error.message
-      );
-      Alert.alert("Error", "Failed to initiate payment. Please try again.");
+      console.error("Error processing payment:", error.message);
+      Alert.alert("Error", "Failed to process payment. Please try again.");
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -163,12 +136,7 @@ export default function BillingScreen() {
         { headers: { access_token: accessToken } }
       );
 
-      Alert.alert("Success", "Payment completed successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.push("/(drawer)/(tabs)/booknow/booknowsuccess"),
-        },
-      ]);
+      router.push("/(drawer)/(tabs)/booknow/booknowsuccess");
     } catch (error) {
       console.error("Error saving payment details:", error);
       Alert.alert(
@@ -254,8 +222,19 @@ export default function BillingScreen() {
           <Text style={styles.grandTotalValue}>Rs.{grandTotal.toFixed(2)}</Text>
         </View>
 
-        <TouchableOpacity style={styles.paymentButton} onPress={handlePayment}>
-          <Text style={styles.paymentButtonText}>Make Payment</Text>
+        <TouchableOpacity
+          style={[
+            styles.paymentButton,
+            paymentLoading && styles.disabledButton,
+          ]}
+          onPress={handlePayment}
+          disabled={paymentLoading}
+        >
+          {paymentLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.paymentButtonText}>Make Payment</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -266,7 +245,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 60,
+    paddingTop: Platform.OS === "android" ? 25 : 0,
   },
   header: {
     backgroundColor: "#F96247",
@@ -342,11 +321,13 @@ const styles = StyleSheet.create({
   },
   paymentButton: {
     backgroundColor: "#FF6B4A",
-    // marginTop: 60,
     margin: 16,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   paymentButtonText: {
     color: "#fff",
