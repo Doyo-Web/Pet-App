@@ -188,11 +188,9 @@ export default function BookingScreen(): JSX.Element {
           {allPets.map((pet) => (
             <TouchableOpacity
               key={pet.id}
-              style={[
-                styles.petItem,
-                bookData.pets.some((p) => p.id === pet.id) &&
-                  styles.selectedPet,
-              ]}
+              style={
+                styles.petItem
+              }
               onPress={() => togglePetSelection(pet)}
             >
               <Image
@@ -201,7 +199,11 @@ export default function BookingScreen(): JSX.Element {
                     ? pet.image
                     : "/placeholder.svg?height=100&width=100",
                 }}
-                style={styles.petImage}
+                style={[
+                  styles.petImage,
+                  bookData.pets.some((p) => p.id === pet.id) &&
+                    styles.selectedPet,
+                ]}
               />
               <Text style={styles.petName}>{pet.name}</Text>
             </TouchableOpacity>

@@ -20,7 +20,7 @@ const BookSuccessScreen = () => {
       <StatusBar style="light" />
       <Image
         style={styles.backgroundimage}
-        source={require("@/assets/images/hostsuccessbackground.png")}
+        source={require("@/assets/images/bookingsuccessbackground.png")}
       />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton}>
@@ -44,12 +44,12 @@ const BookSuccessScreen = () => {
             <Text style={styles.awesomeText}>Awesome!</Text>
           </View>
           <Text style={styles.descriptionText}>
-            Your Host Profile{"\n"}is successfully created!
+            Your Payment{"\n"}is successfully done!
           </Text>
         </View>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.viewProfileButton}>
-            <Text style={styles.viewProfileText}>View your Host Profile</Text>
+            <Text style={styles.viewProfileText}>View your Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.homePageButton}
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   viewProfileButton: {
-    backgroundColor: "#00D1C1", // Matches button background color
+    backgroundColor: "#F96247", // Matches button background color
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -156,13 +156,13 @@ const styles = StyleSheet.create({
     marginBottom: 10, // Adjusted for spacing
   },
   viewProfileText: {
-    color: "#000",
+    color: "#fff",
     fontFamily: "Nunito_700Bold",
     fontSize: 18,
     fontWeight: "bold",
   },
   homePageButton: {
-    borderColor: "#00D1C1", // Matches border color
+    borderColor: "#F96247", // Matches border color
     borderWidth: 2,
     borderRadius: 10,
     paddingVertical: 12,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   homePageText: {
-    color: "#00D1C1", // Text color matches UI button
+    color: "#000", // Text color matches UI button
     fontSize: 18,
     fontWeight: "bold",
   },
