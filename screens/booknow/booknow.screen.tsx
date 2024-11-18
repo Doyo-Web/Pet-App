@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { router } from "expo-router";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface Pet {
   id: string;
@@ -52,43 +54,17 @@ export default function BookingScreen(): JSX.Element {
     diet: "packed",
   });
 
-  const [allPets, setAllPets] = useState<Pet[]>([]);
   const [showMap, setShowMap] = useState<boolean>(false);
-  const [showUnavailablePopup, setShowUnavailablePopup] =
-    useState<boolean>(false);
+  const [showUnavailablePopup, setShowUnavailablePopup] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [datePickerMode, setDatePickerMode] = useState<"date" | "time">("date");
-  const [currentDatePickerField, setCurrentDatePickerField] =
-    useState<
-      keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
-    >("startDate");
+  const [currentDatePickerField, setCurrentDatePickerField] = useState<
+    keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
+  >("startDate");
 
-  useEffect(() => {
-    const fetchPets = async () => {
-      const accessToken = await AsyncStorage.getItem("access_token");
-      try {
-        const response = await axios.get<{ success: boolean; data: any[] }>(
-          `${SERVER_URI}/petprofile-get`,
-          {
-            headers: { access_token: accessToken },
-          }
-        );
-        const filteredPets = response.data.data.map((pet: any) => ({
-          id: pet._id,
-          name: pet.petName,
-          image: pet.petImages.length > 0 ? pet.petImages[0].url : null,
-        }));
-        setAllPets(filteredPets);
-      } catch (error) {
-        console.error("Error fetching pet profiles:", error);
-        if (axios.isAxiosError(error)) {
-          console.error("Axios error details:", error.response?.data);
-        }
-        Alert.alert("Error", "Failed to fetch pet profiles. Please try again.");
-      }
-    };
-    fetchPets();
-  }, []);
+  const { petProfiles, isLoading, error } = useSelector(
+    (state: RootState) => state.petProfile
+  );
 
   const togglePetSelection = (pet: Pet) => {
     setBookData((prev) => {
@@ -120,10 +96,7 @@ export default function BookingScreen(): JSX.Element {
 
   const showDatePickerModal = (
     mode: "date" | "time",
-    field: keyof Pick<
-      BookData,
-      "startDate" | "startTime" | "endDate" | "endTime"
-    >
+    field: keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
   ): void => {
     setShowDatePicker(true);
     setDatePickerMode(mode);
@@ -151,8 +124,7 @@ export default function BookingScreen(): JSX.Element {
         console.error("Booking failed:", response.data.message);
         Alert.alert(
           "Booking Failed",
-          response.data.message ||
-            "An error occurred while booking. Please try again."
+          response.data.message || "An error occurred while booking. Please try again."
         );
       }
     } catch (error) {
@@ -161,8 +133,7 @@ export default function BookingScreen(): JSX.Element {
         console.error("Axios error details:", error.response?.data);
         Alert.alert(
           "Booking Error",
-          error.response?.data?.message ||
-            "An unexpected error occurred. Please try again."
+          error.response?.data?.message || "An unexpected error occurred. Please try again."
         );
       } else {
         Alert.alert("Error", "An unexpected error occurred. Please try again.");
@@ -185,29 +156,38 @@ export default function BookingScreen(): JSX.Element {
           showsHorizontalScrollIndicator={false}
           style={styles.petsContainer}
         >
-          {allPets.map((pet) => (
-            <TouchableOpacity
-              key={pet.id}
-              style={
-                styles.petItem
-              }
-              onPress={() => togglePetSelection(pet)}
-            >
-              <Image
-                source={{
-                  uri: pet.image
-                    ? pet.image
-                    : "/placeholder.svg?height=100&width=100",
-                }}
-                style={[
-                  styles.petImage,
-                  bookData.pets.some((p) => p.id === pet.id) &&
-                    styles.selectedPet,
-                ]}
-              />
-              <Text style={styles.petName}>{pet.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {isLoading ? (
+            <Text style={styles.loadingText}>Loading pet profiles...</Text>
+          ) : error ? (
+            <Text style={styles.errorText}>Error: {error}</Text>
+          ) : petProfiles && petProfiles.length > 0 ? (
+            petProfiles.map((pet) => (
+              <TouchableOpacity
+                key={pet._id}
+                style={styles.petItem}
+                onPress={() => togglePetSelection({
+                  id: pet._id,
+                  name: pet.petName,
+                  image: pet.petImages.length > 0 ? pet.petImages[0].url : null
+                })}
+              >
+                <Image
+                  source={{
+                    uri: pet.petImages.length > 0
+                      ? pet.petImages[0].url
+                      : "/placeholder.svg?height=100&width=100",
+                  }}
+                  style={[
+                    styles.petImage,
+                    bookData.pets.some((p) => p.id === pet._id) && styles.selectedPet,
+                  ]}
+                />
+                <Text style={styles.petName}>{pet.petName}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noPetsText}>No pet profiles found.</Text>
+          )}
 
           <TouchableOpacity style={styles.addNewPet} onPress={addNewPet}>
             <Icon name="add" size={40} color="#fff" />
@@ -254,8 +234,7 @@ export default function BookingScreen(): JSX.Element {
               <TouchableOpacity
                 style={[
                   styles.locationItem,
-                  bookData.location.type === locationType &&
-                    styles.selectedLocation,
+                  bookData.location.type === locationType && styles.selectedLocation,
                   {
                     backgroundColor:
                       locationType === "Home"
@@ -467,7 +446,6 @@ const styles = StyleSheet.create({
   selectedPet: {
     borderColor: "#FF6347",
     borderWidth: 2,
-    borderRadius: 40,
   },
   addNewPet: {
     width: 80,
@@ -480,6 +458,22 @@ const styles = StyleSheet.create({
   addNewText: {
     color: "#fff",
     marginTop: 5,
+  },
+  loadingText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+    marginTop: 20,
+  },
+  noPetsText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
   },
   dateInput: {
     flexDirection: "row",

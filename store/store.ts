@@ -1,16 +1,32 @@
-// store/store.ts
 import { configureStore } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { combineReducers } from "redux";
 import userReducer from "./userSlice";
+import petProfileReducer from "./petProfileSlice";
+
+const persistConfig = {
+  key: "root",
+  storage: AsyncStorage,
+  whitelist: ["user", "petProfile"], // Specify which reducers to persist
+};
+
+const rootReducer = combineReducers({
+  user: userReducer,
+  petProfile: petProfileReducer,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 const store = configureStore({
-  reducer: {
-    user: userReducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Disable if needed, for example, when dealing with non-serializable data like Dates.
+      serializableCheck: false,
     }),
 });
+
+const persistor = persistStore(store);
 
 store.subscribe(() => {
   try {
@@ -23,4 +39,4 @@ store.subscribe(() => {
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-export default store;
+export { store, persistor };

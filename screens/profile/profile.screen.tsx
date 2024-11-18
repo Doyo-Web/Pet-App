@@ -24,6 +24,9 @@ import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import { Toast } from "react-native-toast-notifications";
 import { router } from "expo-router";
+import { useDispatch, useSelector } from "react-redux";
+import { addPetProfile, setIsLoading, setError } from "@/store/petProfileSlice";
+import { RootState } from "@/store/store";
 
 export default function ProfileScreen() {
  
@@ -31,6 +34,9 @@ export default function ProfileScreen() {
 
 
   const [currentStep, setCurrentStep] = useState(1);
+
+ 
+   const dispatch = useDispatch();
 
   // Define the ImageFile interface to represent the structure of pet images
   interface ImageFile {
@@ -405,43 +411,55 @@ export default function ProfileScreen() {
   const [collarAggression, setCollarAggression] = useState(false);
   const [foodAggression, setFoodAggression] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoadings, setIsLoadings] = useState(false);
 
-  const handlePetProfile = async () => {
-    setIsLoading(true);
+  const { petProfiles, isLoading, error } = useSelector(
+    (state: RootState) => state.petProfile
+  );
 
-    const accessToken = await AsyncStorage.getItem("access_token");
-    const refreshToken = await AsyncStorage.getItem("refresh_token");
+  console.log("store petprofile data", petProfiles);
 
-    try {
-      const response = await axios.post(
-        `${SERVER_URI}/petprofile-create`,
-        formState,
-        {
-          headers: {
-            access_token: accessToken,
-          },
-        }
-      );
+ const handlePetProfile = async () => {
 
-      if (response.data) {
-        Toast.show(response.data.message, {
-          type: "success",
-        });
-        router.push("/(tabs)/profilesuccess");
-      }
-    } catch (error: any) {
-      // Log error details
-      if (error.response) {
-        console.log("Error Response Data:", error.response.data); // Logs the response from the server
-        console.log("Error Response Status:", error.response.status); // Logs the status code
-      } else {
-        console.log("Error Message:", error.message); // Logs general error messages
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+   dispatch(setIsLoading(true));
+
+   const accessToken = await AsyncStorage.getItem("access_token");
+
+   try {
+     const response = await axios.post(
+       `${SERVER_URI}/petprofile-create`,
+       formState,
+       {
+         headers: {
+           access_token: accessToken,
+         },
+       }
+     );
+
+     if (response.data) {
+       Toast.show(response.data.message, {
+         type: "success",
+       });
+
+       // Add the new pet profile to Redux state
+       dispatch(addPetProfile(response.data.petProfile));
+       router.push("/(tabs)/profilesuccess");
+     }
+   } catch (error: any) {
+     if (error.response) {
+       console.log("Error Response Data:", error.response.data);
+       console.log("Error Response Status:", error.response.status);
+       dispatch(
+         setError(error.response.data?.message || "Unknown error occurred.")
+       );
+     } else {
+       console.log("Error Message:", error.message);
+       dispatch(setError(error.message));
+     }
+   } finally {
+     dispatch(setIsLoading(false));
+   }
+ };
 
   // Function to pick an image
   const pickImage = async (index: number) => {

@@ -20,9 +20,7 @@ const ProfileSuccessScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log("ProfileSuccessScreen focused");
       setRefetch(true);
-      console.log("setRefetch called: true");
       setTimeout(() => {
         router.push("/(tabs)");
       }, 2000);
@@ -33,18 +31,12 @@ const ProfileSuccessScreen = () => {
   );
 
   useEffect(() => {
-    console.log("Effect triggered: loading =", loading, "user =", user);
 
     if (!loading && firstVisit) {
-      console.log(
-        "Loading is false and it's the first visit. Proceeding to check user data."
-      );
 
       setTimeout(() => {
-        console.log("Checking user data after delay...");
 
         if (user) {
-          console.log("User Data:", user);
 
           const hasRequiredFields = Boolean(
             user?.fullname &&
@@ -56,10 +48,8 @@ const ProfileSuccessScreen = () => {
 
           // Navigate based on field availability
           if (hasRequiredFields) {
-            console.log("Navigating to main tabs");
             router.push("/(tabs)");
           } else {
-            console.log("Navigating to edit profile");
             router.push("/(tabs)/editprofile");
           }
         } else {

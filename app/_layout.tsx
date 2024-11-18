@@ -17,7 +17,8 @@ import {
 import TabsLayout from "./(drawer)/(tabs)/_layout";
 import React from "react";
 import { Provider } from "react-redux";
-import store from "../store/store";
+import { store, persistor } from "../store/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -60,17 +61,19 @@ function RootLayoutNav() {
 
   return (
     <Provider store={store}>
-      <ToastProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(routes)/loader/index" />
-          <Stack.Screen name="(routes)/welcome/index" />
-          <Stack.Screen name="(routes)/signup/index" />
-          <Stack.Screen name="(routes)/verify/index" />
-          <Stack.Screen name="(routes)/login/index" />
-          <Stack.Screen name="(routes)/forgotpassword/index" />
-        </Stack>
-      </ToastProvider>
+      <PersistGate loading={null} persistor={persistor}>
+        <ToastProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(routes)/loader/index" />
+            <Stack.Screen name="(routes)/welcome/index" />
+            <Stack.Screen name="(routes)/signup/index" />
+            <Stack.Screen name="(routes)/verify/index" />
+            <Stack.Screen name="(routes)/login/index" />
+            <Stack.Screen name="(routes)/forgotpassword/index" />
+          </Stack>
+        </ToastProvider>
+      </PersistGate>
     </Provider>
   );
 }
