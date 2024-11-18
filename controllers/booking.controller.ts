@@ -166,6 +166,7 @@ export const getBookings = async (req: Request, res: Response) => {
 
 export const addAcceptedHost = async (req: Request, res: Response) => {
   try {
+    const { bookingId } = req.body;
     const userId = (req as any).user.id; // Get the logged-in user's ID
 
     // First find the host profile for the logged-in user
@@ -178,16 +179,16 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
       });
     }
 
-    // Find a booking where the host profile is not already accepted
+    // Find the specific booking by ID and ensure host isn't already accepted
     const booking = await Booking.findOne({
-      userId,
-      acceptedHosts: { $ne: hostProfile._id }, // Check against host profile ID instead of userId
+      _id: bookingId,
+      acceptedHosts: { $ne: hostProfile._id },
     });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: "No available booking for this user",
+        message: "Booking not found or host already accepted",
       });
     }
 
@@ -198,9 +199,9 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     await booking.save();
 
     // Populate the acceptedHosts field before sending response
-    const populatedBooking = await booking.populate({
-      path: "acceptedHosts",
-    });
+    const populatedBooking = await Booking.findById(booking._id).populate(
+      "acceptedHosts"
+    );
 
     res.status(200).json({
       success: true,
@@ -212,11 +213,10 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Error adding accepted host",
-      error: (error as Error).message,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
-
 // Additional controller for updating the accepted hosts (if necessary)
 export const updateAcceptedHosts = async (req: Request, res: Response) => {
   try {
