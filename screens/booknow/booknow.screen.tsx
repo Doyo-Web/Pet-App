@@ -19,8 +19,11 @@ import { router } from "expo-router";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { setBookingData } from "@/store/bookingSlice";
+
+
 
 interface Pet {
   id: string;
@@ -44,6 +47,9 @@ interface BookData {
 }
 
 export default function BookingScreen(): JSX.Element {
+
+  const dispatch = useDispatch();
+
   const [bookData, setBookData] = useState<BookData>({
     pets: [],
     startDate: new Date(),
@@ -113,12 +119,14 @@ export default function BookingScreen(): JSX.Element {
   };
 
   const handleBookNow = async () => {
+    
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       const response = await axios.post(`${SERVER_URI}/booking`, bookData, {
         headers: { access_token: accessToken },
       });
       if (response.data.success) {
+        dispatch(setBookingData(response.data.booking));
         router.push("./booknowtwo");
       } else {
         console.error("Booking failed:", response.data.message);

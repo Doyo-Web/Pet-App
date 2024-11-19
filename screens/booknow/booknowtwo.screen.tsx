@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
@@ -15,33 +16,50 @@ import { router } from "expo-router";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
-// Define the structure of Host and Booking data
 interface Host {
-  profileImage: string;
+  _id: string;
   fullName: string;
+  profileImage: string;
   city: string;
-  bio: string;
-  rating: number;
 }
 
 interface Booking {
+  _id: string;
   acceptedHosts: Host[];
-  location: { address: string; type: string };
-  // Add other necessary fields from your booking data
+  createdAt: string;
+  diet: string;
+  endDateTime: string;
+  location: {
+    address: string;
+    type: string;
+  };
+  paymentStatus: string;
+  pets: Array<{
+    id: string;
+    name: string;
+    image: string;
+  }>;
+  startDateTime: string;
+  updatedAt: string;
+  userId: string;
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 export default function BookingScreenTwo() {
-  const [currentBookingIndex, setCurrentBookingIndex] = useState(0);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentHostIndex, setCurrentHostIndex] = useState(0);
+  const [previousHostCount, setPreviousHostCount] = useState(0);
 
-  useEffect(() => {
-    // Fetch data each time the component mounts
-    fetchBookings();
-  }, []);
+  const bookingData = useSelector(
+    (state: RootState) => state.booking.bookingData
+  );
 
-  const fetchBookings = async () => {
+  const fetchBooking = useCallback(async () => {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
@@ -50,31 +68,68 @@ export default function BookingScreenTwo() {
         return;
       }
 
-      // Make sure to clear any cached data and force a fresh request.
-      setLoading(true); // Show loading spinner
+      const response = await axios.post<{ booking: Booking; success: boolean }>(
+        `${SERVER_URI}/get-booking-by-id`,
+        {
+          bookingId: bookingData?._id,
+        },
+        {
+          headers: { access_token: accessToken },
+        }
+      );
 
-      const response = await axios.get<{ bookings: Booking[] }>(`${SERVER_URI}/get-bookings`, {
-        headers: { access_token: accessToken },
-      });
+      if (response.data && response.data.success && response.data.booking) {
+        const newBooking = response.data.booking;
+        setBooking(newBooking);
 
-      setBookings(response.data.bookings);
-      setLoading(false); // Hide loading spinner after data is fetched
+        const newHostCount = newBooking.acceptedHosts.length;
+        if (newHostCount > previousHostCount) {
+          setPreviousHostCount(newHostCount);
+          setTimeout(fetchBooking, 1000);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching bookings:", error);
-      setLoading(false); // Hide loading spinner in case of error
+      console.error("Error fetching booking:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [bookingData?._id, previousHostCount]);
+
+  useEffect(() => {
+    fetchBooking();
+    const interval = setInterval(fetchBooking, 10000);
+    return () => clearInterval(interval);
+  }, [fetchBooking]);
+
+  const nextHost = () => {
+    if (booking && booking.acceptedHosts.length > 0) {
+      const newIndex = (currentHostIndex + 1) % booking.acceptedHosts.length;
+      setCurrentHostIndex(newIndex);
+      if (newIndex === 0) {
+        router.push("/booknow/booknowthree");
+      }
     }
   };
 
-  const nextBooking = () => {
-    setCurrentBookingIndex((prevIndex) => (prevIndex + 1) % bookings.length);
+  const prevHost = () => {
+    if (booking && booking.acceptedHosts.length > 0) {
+      setCurrentHostIndex((prev) =>
+        prev === 0 ? booking.acceptedHosts.length - 1 : prev - 1
+      );
+    }
   };
 
-  const prevBooking = () => {
-    setCurrentBookingIndex((prevIndex) => (prevIndex - 1 + bookings.length) % bookings.length);
+  const handleViewMore = () => {
+    const currentHost = booking?.acceptedHosts[currentHostIndex];
+    if (currentHost) {
+      console.log("View more for host:", currentHost._id);
+    }
   };
 
-  const handleBookNow = () => {
-    router.push("./booknowthree");
+  const handleBottomArrowClick = () => {
+    if (booking && booking.acceptedHosts.length > 1) {
+      nextHost();
+    }
   };
 
   if (loading) {
@@ -85,140 +140,150 @@ export default function BookingScreenTwo() {
     );
   }
 
-  const currentBooking = bookings[currentBookingIndex];
-  const hostInfo = currentBooking.acceptedHosts && currentBooking.acceptedHosts[0];
+  const currentHost = booking?.acceptedHosts[currentHostIndex];
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity onPress={() => router.push("/(drawer)/(tabs)/booknow")}>
-        <View style={styles.boardingboxtwo}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/(drawer)/(tabs)/booknow")}
-          >
-            <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerboardingbox}>Boarding</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.boardingboxtwo}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push("/(drawer)/(tabs)/booknow")}
+        >
+          <Icon name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerboardingbox}>Boarding</Text>
+      </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <View style={styles.iconContainer}>
+            <View style={styles.footprintIcon}>
               <Ionicons name="paw" size={24} color="white" />
             </View>
             <Text style={styles.cardTitle}>Booking Confirmation Process</Text>
           </View>
           <Text style={styles.stepText}>
-            <Text style={styles.boldText}>Step 1:</Text> Your request will be
-            acknowledged by our hosts within 12 hours. You will receive a
-            notification and an email update regarding the status.
+            <Text style={styles.boldText}>Step 1:</Text>
+            {"\n"}
+            Your request will be acknowledged by our hosts within 12 hours. You
+            will receive a notification in your notification bar and an email
+            update regarding the status.
           </Text>
           <Text style={styles.stepText}>
-            <Text style={styles.boldText}>Step 2:</Text> Once the hosts accept
-            your request, you can select your preferred host from the accepted
-            hosts to proceed with the booking.
+            <Text style={styles.boldText}>Step 2:</Text>
+            {"\n"}
+            Once the hosts accept your request, you can select your preferred
+            host from the accepted hosts to proceed with the booking.
           </Text>
         </View>
 
         <Text style={styles.sectionTitle}>Matched Pawfect Hosts</Text>
 
-        {hostInfo ? (
-          <View style={styles.hostCard}>
-            <Image
-              source={{ uri: hostInfo.profileImage }}
-              style={styles.hostImage}
-            />
-            <View style={styles.ratingContainer}>
-              {[...Array(5)].map((_, i) => (
-                <Ionicons
-                  key={i}
-                  name={i < hostInfo.rating ? "star" : "star-outline"}
-                  size={20}
-                  color="#FFD700"
-                />
-              ))}
-            </View>
-            <View style={styles.hostInfo}>
-              <View style={styles.hostHeader}>
-                <Text style={styles.hostName}>{hostInfo.fullName}</Text>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location" size={16} color="#666" />
-                  <Text style={styles.locationText}>{hostInfo.city}</Text>
+        {booking && booking.acceptedHosts.length > 0 ? (
+          <>
+            <View style={styles.hostCard}>
+              <Image
+                source={{ uri: currentHost?.profileImage }}
+                style={styles.hostImage}
+              />
+              <View style={styles.ratingContainer}>
+                {[...Array(5)].map((_, i) => (
+                  <Ionicons key={i} name="star" size={20} color="#FFD700" />
+                ))}
+              </View>
+              <View style={styles.hostInfo}>
+                <View style={styles.hostNameLocationContainer}>
+                  <View>
+                    <Text style={styles.hostName}>{currentHost?.fullName}</Text>
+                    <View style={styles.locationContainer}>
+                      <Ionicons name="location" size={16} color="#666" />
+                      <Text style={styles.locationText}>
+                        {currentHost?.city}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.viewMoreButton}
+                    onPress={handleViewMore}
+                  >
+                    <Text style={styles.viewMoreText}>View More</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <Text style={styles.bioText}>{hostInfo.bio}</Text>
-              <TouchableOpacity style={styles.viewMoreButton}>
-                <Text style={styles.viewMoreText}>View More</Text>
+            </View>
+
+            <View style={styles.navigationButtons}>
+              <TouchableOpacity onPress={prevHost} style={styles.navButton}>
+                <AntDesign name="left" size={24} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={nextHost} style={styles.navButton}>
+                <AntDesign name="right" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-          </View>
+          </>
         ) : (
-          <Text style={styles.noHostsText}>No matched hosts available.</Text>
+          <Text style={styles.noHostsText}>
+            No matched hosts available yet.
+          </Text>
         )}
-
-        <View style={styles.sliderButtons}>
-          <TouchableOpacity onPress={prevBooking} style={styles.sliderButton}>
-            <AntDesign name="arrowleft" size={24} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={nextBooking} style={styles.sliderButton}>
-            <AntDesign name="arrowright" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.bookNowButton} onPress={handleBookNow}>
-          <Text style={styles.bookNowText}>Book Now</Text>
-        </TouchableOpacity>
       </ScrollView>
+      <TouchableOpacity
+        style={styles.bottomArrowContainer}
+        onPress={handleBottomArrowClick}
+      >
+        <AntDesign name="down" size={24} color="#F96247" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  // The rest of your styles...
   container: {
     flex: 1,
     backgroundColor: "#FFF5EB",
-    paddingBottom: 140,
-  },
-  headerboardingbox: {
-    fontSize: 18,
-    color: "#fff",
-    fontFamily: "OtomanopeeOne",
+    paddingBottom: 100,
   },
   boardingboxtwo: {
     backgroundColor: "#F96247",
-    borderRadius: 6,
+    height: 60,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
-    height: 70,
-    marginHorizontal: 16,
+    paddingHorizontal: 16,
+  },
+  headerboardingbox: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
   },
   backButton: {
-    zIndex: 1,
-    width: 36,
-    height: 36,
     position: "absolute",
-    left: 10,
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "white",
     alignItems: "center",
     justifyContent: "center",
-    borderColor: "#fff",
-    borderWidth: 1,
-    borderRadius: 50,
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    minHeight: SCREEN_HEIGHT - 60,
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 60,
   },
   card: {
     backgroundColor: "white",
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 24,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -228,111 +293,123 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  iconContainer: {
+  footprintIcon: {
     backgroundColor: "#FF6B6B",
     borderRadius: 20,
-    padding: 8,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#333",
   },
   stepText: {
-    marginBottom: 8,
+    fontSize: 14,
     lineHeight: 20,
+    color: "#666",
+    marginBottom: 12,
   },
   boldText: {
     fontWeight: "bold",
+    color: "#333",
   },
   sectionTitle: {
-    textAlign: "center",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 12,
+    textAlign: "center",
+    marginBottom: 16,
+    color: "#333",
   },
   hostCard: {
     backgroundColor: "#FFECD1",
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   hostImage: {
     width: "100%",
     height: 200,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 12,
   },
   ratingContainer: {
-    flexDirection: "row",
     position: "absolute",
-    top: 30,
-    right: 30,
+    top: 24,
+    right: 24,
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    padding: 4,
+    borderRadius: 12,
   },
   hostInfo: {
-    marginBottom: 12,
+    marginTop: 8,
   },
-  hostHeader: {
-    marginBottom: 8,
+  hostNameLocationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   hostName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
   },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   locationText: {
     marginLeft: 4,
     color: "#666",
+    fontSize: 14,
   },
   viewMoreButton: {
     backgroundColor: "#FFD700",
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    borderRadius: 8,
     paddingVertical: 10,
-    alignItems: "center",
-    marginTop: 8,
+    paddingHorizontal: 20,
   },
   viewMoreText: {
-    fontWeight: "bold",
     color: "#000",
+    fontWeight: "bold",
+    fontSize: 16,
   },
-  sliderButtons: {
+  navigationButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 40,
-    marginBottom: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 32,
+    marginTop: 16,
+    marginBottom: 24,
   },
-  sliderButton: {
+  navButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#666",
     alignItems: "center",
     justifyContent: "center",
-  },
-  bookNowButton: {
-    backgroundColor: "#F96247",
-    borderRadius: 4,
-    padding: 16,
-    alignItems: "center",
-  },
-  bookNowText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
   },
   noHostsText: {
     textAlign: "center",
     color: "#666",
-    marginBottom: 16,
+    fontSize: 16,
+    marginTop: 32,
   },
-
-  bioText: {
-    fontSize: 14,
-    color: "#444",
-    lineHeight: 20,
-    marginBottom: 8,
+  bottomArrowContainer: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    padding: 10,
   },
 });

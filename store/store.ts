@@ -4,16 +4,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { combineReducers } from "redux";
 import userReducer from "./userSlice";
 import petProfileReducer from "./petProfileSlice";
+import bookingReducer from "./bookingSlice";
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["user", "petProfile"], // Specify which reducers to persist
+  whitelist: ["user", "petProfile", "booking"], // Specify which reducers to persist
 };
 
 const rootReducer = combineReducers({
   user: userReducer,
   petProfile: petProfileReducer,
+  booking: bookingReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

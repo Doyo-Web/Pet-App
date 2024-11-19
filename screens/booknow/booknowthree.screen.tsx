@@ -16,6 +16,8 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
+import { RootState } from "@/store/store";
+import { useSelector } from "react-redux";
 
 interface Host {
   _id: string;
@@ -86,16 +88,19 @@ const HostCard: React.FC<HostCardProps> = ({
 );
 
 export default function BookingScreenThree() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const bookingData = useSelector(
+    (state: RootState) => state.booking.bookingData
+  );
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchBookings();
+    fetchBooking();
   }, []);
 
-  const fetchBookings = async () => {
+  const fetchBooking = async () => {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
@@ -110,17 +115,24 @@ export default function BookingScreenThree() {
 
       setLoading(true);
 
-      const response = await axios.get<{ bookings: Booking[] }>(
-        `${SERVER_URI}/get-bookings`,
+      const response = await axios.post<{ booking: Booking; success: boolean }>(
+        `${SERVER_URI}/get-booking-by-id`,
+        {
+          bookingId: bookingData?._id,
+        },
         {
           headers: { access_token: accessToken },
         }
       );
 
-      setBookings(response.data.bookings);
+      if (response.data.success && response.data.booking) {
+        setBooking(response.data.booking);
+      } else {
+        Alert.alert("Error", "Failed to fetch booking. Please try again.");
+      }
     } catch (error) {
-      console.error("Error fetching bookings:", error);
-      Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+      console.error("Error fetching booking:", error);
+      Alert.alert("Error", "Failed to fetch booking. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,7 +141,7 @@ export default function BookingScreenThree() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchBookings();
+    fetchBooking();
   };
 
   const handleKnowMore = (host: Host) => {
@@ -169,7 +181,10 @@ export default function BookingScreenThree() {
 
       const response = await axios.post(
         `${SERVER_URI}/confirm-booking`,
-        { selectedHostIds },
+        {
+          selectedHostIds,
+          bookingId: bookingData?._id,
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -190,18 +205,12 @@ export default function BookingScreenThree() {
         );
       }
     } catch (error) {
+      console.error("Error confirming booking:", error);
       Alert.alert("Error", "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  const allHosts = bookings.flatMap((booking) =>
-    booking.acceptedHosts.map((host) => ({
-      ...host,
-      bookingId: booking._id,
-    }))
-  );
 
   if (loading) {
     return (
@@ -233,7 +242,7 @@ export default function BookingScreenThree() {
         </View>
       </TouchableOpacity>
 
-      <Text style={styles.subtitle}>Select the Host(s) for your pet</Text>
+      <Text style={styles.subtitle}>Select Host(s) for your pet</Text>
 
       <ScrollView
         style={styles.scrollView}
@@ -246,23 +255,37 @@ export default function BookingScreenThree() {
           />
         }
       >
-        {allHosts.map((host) => (
-          <HostCard
-            key={`${host.bookingId}-${host._id}`}
-            host={host}
-            onKnowMore={() => handleKnowMore(host)}
-            isSelected={selectedHostIds.includes(host._id)}
-            onSelect={() => handleSelectHost(host._id)}
-          />
-        ))}
+        {booking && booking.acceptedHosts.length > 0 ? (
+          booking.acceptedHosts.map((host) => (
+            <HostCard
+              key={host._id}
+              host={host}
+              onKnowMore={() => handleKnowMore(host)}
+              isSelected={selectedHostIds.includes(host._id)}
+              onSelect={() => handleSelectHost(host._id)}
+            />
+          ))
+        ) : (
+          <Text style={styles.noHostsText}>
+            No accepted hosts available yet.
+          </Text>
+        )}
       </ScrollView>
 
       <TouchableOpacity
-        style={styles.confirmButton}
+        style={[
+          styles.confirmButton,
+          selectedHostIds.length === 0 && styles.disabledButton,
+        ]}
         onPress={handleConfirmBooking}
-        accessibilityLabel="Confirm booking with selected hosts"
+        disabled={selectedHostIds.length === 0 || loading}
+        accessibilityLabel="Confirm booking with selected host(s)"
       >
-        <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+        )}
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -367,5 +390,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  noHostsText: {
+    textAlign: "center",
+    fontSize: 16,
+    color: "#666",
+    marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
   },
 });
