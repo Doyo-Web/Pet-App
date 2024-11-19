@@ -4,6 +4,7 @@ import {
   createBooking,
   createRazorpayOrder,
   getBilling,
+  getBookingById,
   getBookings,
   savePaymentDetails,
   updateBookingWithSelectedHost,
@@ -16,7 +17,7 @@ const router = express.Router();
 router.post("/booking", isAuthenticated, createBooking);
 router.get("/bookings", isAuthenticated, getBookings);
 router.put("/accepted-host", isAuthenticated, addAcceptedHost);
-router.get("/get-bookings", isAuthenticated, getBookings);
+router.post("/get-booking-by-id", isAuthenticated, getBookingById);
 router.post("/confirm-booking", isAuthenticated, updateBookingWithSelectedHost);
 router.get("/get-billing", isAuthenticated, getBilling);
 router.post("/create-razorpay-order", isAuthenticated, createRazorpayOrder);

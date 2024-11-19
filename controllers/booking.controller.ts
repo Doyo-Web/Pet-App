@@ -125,6 +125,52 @@ export const createBooking = async (req: Request, res: Response) => {
 };
 
 
+export const getBookingById = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.body;
+
+    // Validate bookingId
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required.",
+      });
+    }
+
+    // Find the booking by ID and populate the acceptedHosts field
+    const booking = await Booking.findById(bookingId).populate({
+      path: "acceptedHosts",
+      model: HostProfile,
+    });
+
+    // Debugging: Log the populated booking
+    console.log("Populated Booking:", JSON.stringify(booking, null, 2));
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found.",
+      });
+    }
+
+    // Send response with populated booking
+    res.status(200).json({
+      success: true,
+      booking,
+    });
+  } catch (error) {
+    // Debugging: Log the error
+    console.error("Error fetching booking by ID:", error);
+
+    // Send error response
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the booking.",
+    });
+  }
+};
+
+
 export const getBookings = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id; // Assuming userId is in request user object
@@ -330,4 +376,4 @@ export const getBilling = async (req: Request, res: Response) => {
       message: "An error occurred while fetching the bookings.",
     });
   }
-};
+}
