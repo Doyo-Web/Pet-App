@@ -441,6 +441,8 @@ export default function ProfileScreen() {
          type: "success",
        });
 
+       console.log(response.data.petProfile);
+
        // Add the new pet profile to Redux state
        dispatch(addPetProfile(response.data.petProfile));
        router.push("/(tabs)/profilesuccess");

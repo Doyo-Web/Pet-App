@@ -41,7 +41,7 @@ interface PetProfile {
 
 // Define the state interface for multiple pet profiles
 interface PetProfileState {
-  petProfiles: PetProfile[]; // Array of pet profiles
+  petProfiles: PetProfile[];
   isLoading: boolean;
   error: string | null;
 }
@@ -59,11 +59,12 @@ const petProfileSlice = createSlice({
   reducers: {
     // Add a new pet profile
     addPetProfile(state, action: PayloadAction<PetProfile>) {
+      if (!state.petProfiles) state.petProfiles = []; // Defensive check
       state.petProfiles.push(action.payload);
     },
-    // Replace the entire array of pet profiles (e.g., after fetching from a server)
+    // Replace the entire array of pet profiles
     setPetProfiles(state, action: PayloadAction<PetProfile[]>) {
-      state.petProfiles = action.payload;
+      state.petProfiles = action.payload || [];
     },
     // Update an existing pet profile by ID
     updatePetProfile(state, action: PayloadAction<PetProfile>) {

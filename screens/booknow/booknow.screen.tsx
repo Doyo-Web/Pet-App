@@ -72,6 +72,8 @@ export default function BookingScreen(): JSX.Element {
     (state: RootState) => state.petProfile
   );
 
+  console.log("booking petprofile data", petProfiles);
+
   const togglePetSelection = (pet: Pet) => {
     setBookData((prev) => {
       const isPetSelected = prev.pets.some((p) => p.id === pet.id);
@@ -164,38 +166,29 @@ export default function BookingScreen(): JSX.Element {
           showsHorizontalScrollIndicator={false}
           style={styles.petsContainer}
         >
-          {isLoading ? (
-            <Text style={styles.loadingText}>Loading pet profiles...</Text>
-          ) : error ? (
-            <Text style={styles.errorText}>Error: {error}</Text>
-          ) : petProfiles && petProfiles.length > 0 ? (
-            petProfiles.map((pet) => (
-              <TouchableOpacity
-                key={pet._id}
-                style={styles.petItem}
-                onPress={() => togglePetSelection({
+          {petProfiles.map((pet) => (
+            <TouchableOpacity
+              key={pet._id}
+              onPress={() =>
+                togglePetSelection({
                   id: pet._id,
                   name: pet.petName,
-                  image: pet.petImages.length > 0 ? pet.petImages[0].url : null
-                })}
-              >
-                <Image
-                  source={{
-                    uri: pet.petImages.length > 0
-                      ? pet.petImages[0].url
-                      : "/placeholder.svg?height=100&width=100",
-                  }}
-                  style={[
-                    styles.petImage,
-                    bookData.pets.some((p) => p.id === pet._id) && styles.selectedPet,
-                  ]}
-                />
-                <Text style={styles.petName}>{pet.petName}</Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.noPetsText}>No pet profiles found.</Text>
-          )}
+                  image: pet.petImages[0]?.url ?? null,
+                })
+              }
+              style={[
+                styles.petItem,
+                bookData.pets.some((p) => p.id === pet._id) &&
+                  styles.petImage,
+              ]}
+            >
+              <Image
+                source={{ uri: pet.petImages[0]?.url }}
+                style={[styles.petImage, styles.selectedPet]}
+              />
+              <Text>{pet.petName}</Text>
+            </TouchableOpacity>
+          ))}
 
           <TouchableOpacity style={styles.addNewPet} onPress={addNewPet}>
             <Icon name="add" size={40} color="#fff" />
@@ -242,7 +235,8 @@ export default function BookingScreen(): JSX.Element {
               <TouchableOpacity
                 style={[
                   styles.locationItem,
-                  bookData.location.type === locationType && styles.selectedLocation,
+                  bookData.location.type === locationType &&
+                    styles.selectedLocation,
                   {
                     backgroundColor:
                       locationType === "Home"
@@ -454,6 +448,7 @@ const styles = StyleSheet.create({
   selectedPet: {
     borderColor: "#FF6347",
     borderWidth: 2,
+    borderRadius: 100,
   },
   addNewPet: {
     width: 80,
