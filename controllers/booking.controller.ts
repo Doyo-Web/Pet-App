@@ -263,6 +263,7 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     });
   }
 };
+
 // Additional controller for updating the accepted hosts (if necessary)
 export const updateAcceptedHosts = async (req: Request, res: Response) => {
   try {

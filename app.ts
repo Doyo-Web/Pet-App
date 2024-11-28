@@ -1,52 +1,74 @@
-import cookieParser from "cookie-parser";
-import express, { NextFunction, Request, Response } from "express";
+import express, { Application } from "express";
 import cors from "cors";
-export const app = express();
+import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import multer from "multer";
-import { ErrorMiddleware } from "./middleware/error";
+import http from "http";
+import { Server as SocketIOServer } from "socket.io";
 import userRouter from "./routes/user.route";
-import petprofileRouter from "./routes/petprofile.route";
+import petProfileRouter from "./routes/petprofile.route";
 import hostProfileRouter from "./routes/hostprofile.route";
-import BookingRouter from "./routes/booking.route";
+import bookingRouter from "./routes/booking.route";
+import chatRouter from "./routes/chat.route";
+import { ErrorMiddleware } from "./middleware/error";
 
-app.use(express.json({ limit: "10mb" })); // Adjust the size limit as needed
+const app: Application = express();
+const server = http.createServer(app); // Create the HTTP server
+const io = new SocketIOServer(server, { cors: { origin: "*" } }); // Setup Socket.IO
 
+app.use(cors());
+app.use(cookieParser());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // limit file size to 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
+app.use(upload.fields([{ name: "petImages", maxCount: 10 }]));
 
-app.use(upload.fields([{ name: 'petImages', maxCount: 10 }]));
-
-//cookie parser
-app.use(cookieParser());
-
-//Cors
-app.use(cors());
-
-//routes
-
+// API Routes
 app.use("/api/v1", userRouter);
-app.use("/api/v1", petprofileRouter);
+app.use("/api/v1", petProfileRouter);
 app.use("/api/v1", hostProfileRouter);
-app.use("/api/v1", BookingRouter);
+app.use("/api/v1", bookingRouter);
+app.use("/api/v1", chatRouter);
 
-//testing api
-app.get("/testing", (req: Request, res: Response, next: NextFunction) => {
-    res.status(200).json({
-        success: true,
-        message: "API is Working"
-    });
+// Testing Route
+app.get("/testing", (_, res) => {
+  res.status(200).json({ success: true, message: "API is Working" });
 });
 
-//unknown route
-app.get("*", (req: Request, res: Response, next: NextFunction) => {
-    const err = new Error(`Route ${req.originalUrl} not found`) as any;
-    err.statusCode = 404;
-    next(err);
+// Unknown Route Handler
+app.get("*", (req, res, next) => {
+  const err = new Error(`Route ${req.originalUrl} not found`) as any;
+  err.statusCode = 404;
+  next(err);
 });
 
 app.use(ErrorMiddleware);
+
+// Socket.IO Event Handling
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+    console.log(`Client joined room: ${roomId}`);
+  });
+
+  socket.on("sendMessage", (message) => {
+    const { roomId, content, sender } = message;
+    io.to(roomId).emit("receiveMessage", {
+      content,
+      sender,
+      timestamp: new Date(),
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
+
+export { app, server };
