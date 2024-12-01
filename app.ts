@@ -13,8 +13,8 @@ import chatRouter from "./routes/chat.route";
 import { ErrorMiddleware } from "./middleware/error";
 
 const app: Application = express();
-const server = http.createServer(app); // Create the HTTP server
-const io = new SocketIOServer(server, { cors: { origin: "*" } }); // Setup Socket.IO
+const server = http.createServer(app);
+const io = new SocketIOServer(server, { cors: { origin: "*" } });
 
 app.use(cors());
 app.use(cookieParser());
@@ -40,7 +40,7 @@ app.get("/testing", (_, res) => {
 });
 
 // Unknown Route Handler
-app.get("*", (req, res, next) => {
+app.all("*", (req, res, next) => {
   const err = new Error(`Route ${req.originalUrl} not found`) as any;
   err.statusCode = 404;
   next(err);
@@ -48,27 +48,4 @@ app.get("*", (req, res, next) => {
 
 app.use(ErrorMiddleware);
 
-// Socket.IO Event Handling
-io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
-
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
-    console.log(`Client joined room: ${roomId}`);
-  });
-
-  socket.on("sendMessage", (message) => {
-    const { roomId, content, sender } = message;
-    io.to(roomId).emit("receiveMessage", {
-      content,
-      sender,
-      timestamp: new Date(),
-    });
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
-  });
-});
-
-export { app, server };
+export { app, server, io };

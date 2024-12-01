@@ -1,9 +1,17 @@
 import { Router } from "express";
-import { createChat, getChatMessages } from "../controllers/chat.controller";
+import {
+  createChat,
+  getChatMessages,
+  sendMessage,
+  closeChat,
+} from "../controllers/chat.controller";
+import { isAuthenticated } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/chat", createChat); // Create a new chat room
-router.get("/chat/:roomId", getChatMessages); // Get chat messages by roomId
+router.post("/chat", isAuthenticated, createChat);
+router.get("/chat/:bookingId", isAuthenticated, getChatMessages);
+router.post("/chat/message", isAuthenticated, sendMessage);
+router.post("/chat/close", isAuthenticated, closeChat);
 
 export default router;
