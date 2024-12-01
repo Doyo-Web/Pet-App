@@ -3,9 +3,5 @@ import ChatScreen from "../../../../screens/chat/chat.screen"
 import React from "react";
 
 export default function Courses() {
-  return <ChatScreen route={{
-    params: {
-      bookingId: ""
-    }
-  }} />;
+  return <ChatScreen />;
 }

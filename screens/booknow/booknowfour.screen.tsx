@@ -29,6 +29,7 @@ interface Booking {
   startDateTime: string;
   endDateTime: string;
   diet: string;
+  paymentStatus: string;
 }
 
 export default function BillingScreen() {
@@ -109,6 +110,12 @@ export default function BillingScreen() {
       };
 
       await savePaymentDetails(mockPaymentData);
+
+      // Navigate to chat screen after successful payment
+      router.push({
+        pathname: "/chat",
+        params: { bookingId: booking?._id },
+      });
     } catch (error: any) {
       console.error("Error processing payment:", error.message);
       Alert.alert("Error", "Failed to process payment. Please try again.");
@@ -136,7 +143,15 @@ export default function BillingScreen() {
         { headers: { access_token: accessToken } }
       );
 
-      router.push("/(drawer)/(tabs)/booknow/booknowsuccess");
+      // Update the local booking state to reflect the completed payment
+      setBooking((prevBooking) => {
+        if (prevBooking) {
+          return { ...prevBooking, paymentStatus: "completed" };
+        }
+        return prevBooking;
+      });
+
+      Alert.alert("Success", "Payment completed successfully!");
     } catch (error) {
       console.error("Error saving payment details:", error);
       Alert.alert(
@@ -222,20 +237,34 @@ export default function BillingScreen() {
           <Text style={styles.grandTotalValue}>Rs.{grandTotal.toFixed(2)}</Text>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.paymentButton,
-            paymentLoading && styles.disabledButton,
-          ]}
-          onPress={handlePayment}
-          disabled={paymentLoading}
-        >
-          {paymentLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.paymentButtonText}>Make Payment</Text>
-          )}
-        </TouchableOpacity>
+        {booking.paymentStatus !== "completed" ? (
+          <TouchableOpacity
+            style={[
+              styles.paymentButton,
+              paymentLoading && styles.disabledButton,
+            ]}
+            onPress={handlePayment}
+            disabled={paymentLoading}
+          >
+            {paymentLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.paymentButtonText}>Make Payment</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() =>
+              router.push({
+                pathname: "/chat",
+                params: { bookingId: booking._id },
+              })
+            }
+          >
+            <Text style={styles.chatButtonText}>Open Chat</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -339,5 +368,17 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 16,
     marginTop: 20,
+  },
+  chatButton: {
+    backgroundColor: "#4CAF50",
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  chatButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
