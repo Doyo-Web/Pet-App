@@ -15,6 +15,9 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "../../utils/uri";
 import io from "socket.io-client";
+import { router } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 interface User {
   _id: string;
@@ -44,12 +47,22 @@ export default function ChatScreen() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const route = useRoute();
-  const { bookingId } = route.params as { bookingId: string };
+  // const { bookingId } = route.params as { bookingId: string };
   const flatListRef = useRef<FlatList>(null);
   const socketRef = useRef<any>(null);
+  const router = useRouter();
+  const { bookingId } = useLocalSearchParams();
+
+   if (!bookingId) {
+     router.push("/(drawer)/(tabs)/booknow");
+     return null;
+   }
 
   useEffect(() => {
+    if (!bookingId) {
+      router.push("/(drawer)/(tabs)/booknow");
+      return;
+    }
     createOrFetchChat();
     setupSocket();
     getCurrentUser();
@@ -59,7 +72,7 @@ export default function ChatScreen() {
         socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [bookingId, router]);
 
   const getCurrentUser = async () => {
     try {
