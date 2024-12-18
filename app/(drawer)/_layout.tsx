@@ -329,6 +329,15 @@ const Layout: React.FC = () => {
           if (pathname === "/chat") {
             return null; // Don't render anything for the profile screen
           }
+
+           if (pathname === "/petparents") {
+             return null; // Don't render anything for the profile screen
+          }
+          
+          if (pathname === "/petparents/petparentstwo") {
+            return null; // Don't render anything for the profile screen
+          }
+          
           return (
             <TouchableOpacity
               style={styles.customHamburgerContainer}
@@ -371,6 +380,13 @@ const Layout: React.FC = () => {
           }
 
           if (pathname === "/chat") {
+            return null; // Don't render anything for the profile screen
+          }
+          if (pathname === "/petparents") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/petparents/petparentstwo") {
             return null; // Don't render anything for the profile screen
           }
           return (

@@ -18,50 +18,50 @@ const ProfileSuccessScreen = () => {
   const { loading, user, refetch, setRefetch } = useUser();
   const [firstVisit, setFirstVisit] = useState(true);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      setRefetch(true);
-      setTimeout(() => {
-        router.push("/(tabs)");
-      }, 2000);
-      return () => {
-        console.log("ProfileSuccessScreen unfocused");
-      };
-    }, [])
-  );
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     setRefetch(true);
+  //     setTimeout(() => {
+  //       router.push("/(tabs)");
+  //     }, 2000);
+  //     return () => {
+  //       console.log("ProfileSuccessScreen unfocused");
+  //     };
+  //   }, [])
+  // );
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    if (!loading && firstVisit) {
+  //   if (!loading && firstVisit) {
 
-      setTimeout(() => {
+  //     setTimeout(() => {
 
-        if (user) {
+  //       if (user) {
 
-          const hasRequiredFields = Boolean(
-            user?.fullname &&
-              user?.phonenumber &&
-              user?.email &&
-              user.profession !== "Freelancer" &&
-              user?.avatar?.url
-          );
+  //         const hasRequiredFields = Boolean(
+  //           user?.fullname &&
+  //             user?.phonenumber &&
+  //             user?.email &&
+  //             user.profession !== "Freelancer" &&
+  //             user?.avatar?.url
+  //         );
 
-          // Navigate based on field availability
-          if (hasRequiredFields) {
-            router.push("/(tabs)");
-          } else {
-            router.push("/(tabs)/editprofile");
-          }
-        } else {
-          console.log("No user data available.");
-        }
-      }, 2000); // Delay of 2 seconds
+  //         // Navigate based on field availability
+  //         if (hasRequiredFields) {
+  //           router.push("/(tabs)");
+  //         } else {
+  //           router.push("/(tabs)/editprofile");
+  //         }
+  //       } else {
+  //         console.log("No user data available.");
+  //       }
+  //     }, 2000); // Delay of 2 seconds
 
-      setFirstVisit(false); // Set to false after first visit
-    } else {
-      console.log("Still loading user data or it's not the first visit...");
-    }
-  }, [loading, user, router, firstVisit]);
+  //     setFirstVisit(false); // Set to false after first visit
+  //   } else {
+  //     console.log("Still loading user data or it's not the first visit...");
+  //   }
+  // }, [loading, user, router, firstVisit]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,7 +96,10 @@ const ProfileSuccessScreen = () => {
           </Text>
         </View>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.viewProfileButton}>
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={() => router.push("/petparents")}
+          >
             <Text style={styles.viewProfileText}>View your Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
