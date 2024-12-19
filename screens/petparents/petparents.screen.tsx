@@ -21,10 +21,22 @@ import {
   LogOut,
 } from "lucide-react-native";
 import { router } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import useUser from "@/hooks/auth/useUser";
 
 export default function PetParentProfile() {
   const [expanded, setExpanded] = useState(false);
   const [animation] = useState(new Animated.Value(0));
+
+   const { petProfiles, isLoading, error } = useSelector(
+     (state: RootState) => state.petProfile
+  );
+  
+  const { user, setRefetch, loading } = useUser();
+  const ruser = useSelector((state: any) => state.user.user);
+
+  console.log("user data", user);
 
   const toggleExpand = () => {
     setExpanded(!expanded);
@@ -33,6 +45,10 @@ export default function PetParentProfile() {
       useNativeDriver: true,
     }).start();
   };
+
+  const addNewPet = () => {
+      router.push("/(drawer)/(tabs)/profile");
+    };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,14 +62,24 @@ export default function PetParentProfile() {
           </TouchableOpacity>
           <View style={styles.profile}>
             <Image
-              source={{ uri: "https://placekitten.com/100/100" }}
+              source={{
+                uri:
+                  ruser?.avatar?.url || user?.avatar?.url
+                    ? ruser?.avatar?.url || user?.avatar?.url
+                    : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
+              }}
               style={styles.avatar}
             />
             <View style={styles.info}>
-              <Text style={styles.name}>Ritu Gupta</Text>
+              <Text style={styles.name}>
+                {ruser?.fullname || user?.fullname}
+              </Text>
               <View style={styles.location}>
                 <MapPin color="#666" size={14} />
-                <Text style={styles.locationText}>Coimbatore</Text>
+                <Text style={styles.locationText}>
+                  {" "}
+                  {ruser?.profession || user?.profession}
+                </Text>
               </View>
             </View>
           </View>
@@ -95,29 +121,29 @@ export default function PetParentProfile() {
           {expanded && (
             <View style={styles.petProfilesContent}>
               <View style={styles.petList}>
-                <View style={styles.petItem}>
-                  <Image
-                    source={{ uri: "https://placekitten.com/200/200" }}
-                    style={styles.petImage}
-                  />
-                  <Text style={styles.petName}>Mojito</Text>
-                  <TouchableOpacity style={styles.editButton}>
-                    <Pencil color="#666" size={16} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.petItem}>
-                  <Image
-                    source={{ uri: "https://placedog.net/200/200" }}
-                    style={styles.petImage}
-                  />
-                  <Text style={styles.petName}>Rocky</Text>
-                  <TouchableOpacity style={styles.editButton}>
-                    <Pencil color="#666" size={16} />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.addButton}>
+                {isLoading ? (
+                  <Text>Loading pet profiles...</Text>
+                ) : error ? (
+                  <Text>Error loading pet profiles: {error}</Text>
+                ) : (
+                  petProfiles.map((pet) => (
+                    <View key={pet._id} style={styles.petItem}>
+                      <Image
+                        source={{
+                          uri:
+                            pet.petImages[0]?.url ||
+                            "https://placekitten.com/200/200",
+                        }}
+                        style={styles.petImage}
+                      />
+                      <Text style={styles.petName}>{pet.petName}</Text>
+                      <TouchableOpacity style={styles.editButton}>
+                        <Pencil color="#666" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+                <TouchableOpacity style={styles.addButton} onPress={addNewPet}>
                   <View style={styles.plusCircle}>
                     <Plus color="#000" size={24} />
                   </View>
@@ -131,9 +157,7 @@ export default function PetParentProfile() {
         {/* My Bookings */}
         <TouchableOpacity
           style={styles.navigationSection}
-          onPress={() =>
-            router.push("/petparents/petparentstwo")
-          }
+          onPress={() => router.push("/petparents/petparentstwo")}
         >
           <View style={styles.navigationContent}>
             <View style={styles.navigationIconContainer}>
