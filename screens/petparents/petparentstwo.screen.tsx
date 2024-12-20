@@ -1,6 +1,8 @@
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { router } from "expo-router";
+import { ArrowLeft, CalendarIcon } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -126,48 +128,42 @@ export default function BookingsScreen() {
     <View key={item._id} style={styles.bookingItem}>
       <View style={styles.yellowStrip} />
       <View style={styles.bookingContent}>
-        <Image
-          source={{
-            uri:
-              item.pets[0]?.image || "https://placekitten.com/100/100",
-          }}
-          style={styles.petImage}
-        />
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri: item.pets[0]?.image || "https://placekitten.com/100/100",
+            }}
+            style={styles.petImage}
+          />
+        </View>
         <View style={styles.bookingInfo}>
-          <View style={styles.dateRow}>
-            <Text style={styles.calendarIcon}>📅</Text>
+          <View style={styles.dateContainer}>
+            <CalendarIcon
+              size={16}
+              color="#666666"
+              style={styles.calendarIcon}
+            />
             <Text style={styles.dateText}>
-              {new Date(item.startDateTime).toLocaleDateString()} -{" "}
-              {new Date(item.endDateTime).toLocaleDateString()}
+              {new Date(item.startDateTime).getDate()}/
+              {new Date(item.startDateTime).getMonth() + 1} -{" "}
+              {new Date(item.endDateTime).getDate()}/
+              {new Date(item.endDateTime).getMonth() + 1}
             </Text>
           </View>
-          <Text style={styles.petName}>
-            {item.pets.map((pet) => pet.name).join(", ")}
-          </Text>
-          <Text style={styles.dietText}>Diet: {item.diet}</Text>
-          <Text style={styles.locationText}>
-            Location: {item.location.address} ({item.location.type})
-          </Text>
-          <View style={styles.bottomRow}>
-            <Text style={styles.bookingType}>
-              {item.selectedHost ? "Host Selected" : "Pending Host"}
-            </Text>
+          <Text style={styles.petName}>{item.pets[0]?.name}</Text>
+          <Text style={styles.serviceType}>Pet Boarding</Text>
+          <View style={styles.statusContainer}>
             <Text
-              style={
+              style={[
+                styles.statusText,
                 item.paymentStatus === "completed"
                   ? styles.completedStatus
-                  : styles.upcomingStatus
-              }
+                  : styles.pendingStatus,
+              ]}
             >
               {item.paymentStatus === "completed" ? "Completed" : "Pending"}
             </Text>
           </View>
-          {item.paymentDetails && (
-            <Text style={styles.paymentText}>
-              Payment: ${item.paymentDetails.amount} (Order ID:{" "}
-              {item.paymentDetails.orderId})
-            </Text>
-          )}
         </View>
         <TouchableOpacity style={styles.detailsButton}>
           <Text style={styles.detailsText}>View Details {">"}</Text>
@@ -236,12 +232,20 @@ export default function BookingsScreen() {
     </ScrollView>
   );
 
+  const prevStep = () => {
+    router.push("/(drawer)/(tabs)/petparents");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={prevStep}
+        >
           <View style={styles.backButtonCircle}>
-            <Text style={styles.backButtonText}>{"<"}</Text>
+            <ArrowLeft color="#000" size={24} />
           </View>
         </TouchableOpacity>
         <Text style={styles.title}>My Bookings</Text>
@@ -304,6 +308,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginRight: 16,
+    padding: 12,
   },
   backButtonCircle: {
     width: 40,
@@ -360,90 +365,87 @@ const styles = StyleSheet.create({
   },
   bookingItem: {
     flexDirection: "row",
-    marginBottom: 16,
     marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   yellowStrip: {
     width: 4,
     backgroundColor: "#FFD700",
-    borderTopLeftRadius: 4,
-    borderBottomLeftRadius: 4,
   },
   bookingContent: {
     flex: 1,
     flexDirection: "row",
     padding: 12,
-    backgroundColor: "#F5F5F5",
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
+    backgroundColor: "#FFFFFF",
   },
+
+  imageContainer: {
+    marginRight: 12,
+  },
+
   petImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     marginRight: 12,
   },
   bookingInfo: {
     flex: 1,
+    justifyContent: "center",
   },
-  dateRow: {
+  dateContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
   },
   calendarIcon: {
+    width: 16,
+    height: 16,
     marginRight: 4,
-    fontSize: 16,
   },
   dateText: {
     fontSize: 14,
-    color: "#666",
+    color: "#666666",
   },
   petName: {
     fontSize: 16,
     fontWeight: "500",
+    color: "#000000",
+    marginBottom: 2,
+  },
+  serviceType: {
+    fontSize: 14,
+    color: "#666666",
     marginBottom: 4,
   },
-  dietText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
-  },
-  locationText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
-  },
-  bottomRow: {
+  statusContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
   },
-  bookingType: {
+  statusText: {
     fontSize: 14,
-    color: "#666",
+    fontWeight: "500",
   },
   completedStatus: {
-    fontSize: 14,
-    fontWeight: "500",
     color: "#4CAF50",
   },
-  upcomingStatus: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#FF5252",
-  },
-  paymentText: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
+  pendingStatus: {
+    color: "#FF9800",
   },
   detailsButton: {
     justifyContent: "center",
+    paddingLeft: 12,
   },
   detailsText: {
-    color: "#666",
     fontSize: 12,
+    color: "#666666",
   },
 });
