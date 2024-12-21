@@ -29,14 +29,16 @@ export default function PetParentProfile() {
   const [expanded, setExpanded] = useState(false);
   const [animation] = useState(new Animated.Value(0));
 
-   const { petProfiles, isLoading, error } = useSelector(
-     (state: RootState) => state.petProfile
+  const { petProfiles, isLoading, error } = useSelector(
+    (state: RootState) => state.petProfile
   );
-  
+
   const { user, setRefetch, loading } = useUser();
   const ruser = useSelector((state: any) => state.user.user);
 
-  console.log("user data", user);
+   const navigateToGallery = () => {
+     router.push("/(drawer)/(tabs)/petparents/petparentsthree");
+   };
 
   const toggleExpand = () => {
     setExpanded(!expanded);
@@ -47,8 +49,13 @@ export default function PetParentProfile() {
   };
 
   const addNewPet = () => {
-      router.push("/(drawer)/(tabs)/profile");
-    };
+    router.push("/(drawer)/(tabs)/profile");
+  };
+
+  // Flatten all pet images into a single array
+  const allPetImages = petProfiles.flatMap((pet) =>
+    pet.petImages.map((img) => ({ url: img.url, petName: pet.petName }))
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +84,6 @@ export default function PetParentProfile() {
               <View style={styles.location}>
                 <MapPin color="#666" size={14} />
                 <Text style={styles.locationText}>
-                  {" "}
                   {ruser?.profession || user?.profession}
                 </Text>
               </View>
@@ -182,27 +188,25 @@ export default function PetParentProfile() {
         {/* Gallery */}
         <View style={styles.gallery}>
           <Text style={styles.galleryTitle}>My Gallery</Text>
-          <View style={styles.galleryGrid}>
-            <Image
-              source={{ uri: "https://placekitten.com/300/300" }}
-              style={styles.galleryImage}
-            />
-            <Image
-              source={{ uri: "https://placedog.net/300/300" }}
-              style={styles.galleryImage}
-            />
-            <Image
-              source={{ uri: "https://placekitten.com/301/301" }}
-              style={styles.galleryImage}
-            />
-            <Image
-              source={{ uri: "https://placedog.net/301/301" }}
-              style={styles.galleryImage}
-            />
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.seeMore}>see more</Text>
-          </TouchableOpacity>
+          {allPetImages.length > 0 ? (
+            <View style={styles.galleryGrid}>
+              {allPetImages.slice(0, 4).map((image, index) => (
+                <View key={index} style={styles.galleryImageContainer}>
+                  <Image
+                    source={{ uri: image.url }}
+                    style={styles.galleryImage}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.noImagesText}>No images available</Text>
+          )}
+          {allPetImages.length > 4 && (
+            <TouchableOpacity onPress={navigateToGallery}>
+              <Text style={styles.seeMore}>see more</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Footer */}
@@ -224,6 +228,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    paddingBottom: 160,
   },
   header: {
     padding: 16,
@@ -389,11 +394,24 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-  galleryImage: {
+  galleryImageContainer: {
     width: "48%",
+    marginBottom: 16,
+  },
+  galleryImage: {
+    width: "100%",
     aspectRatio: 1,
     borderRadius: 8,
-    marginBottom: 8,
+  },
+  galleryImageCaption: {
+    marginTop: 4,
+    fontSize: 14,
+    textAlign: "center",
+  },
+  noImagesText: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
   },
   seeMore: {
     textAlign: "center",

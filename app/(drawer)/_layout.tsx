@@ -337,6 +337,10 @@ const Layout: React.FC = () => {
           if (pathname === "/petparents/petparentstwo") {
             return null; // Don't render anything for the profile screen
           }
+
+          if (pathname === "/petparents/petparentsthree") {
+            return null; // Don't render anything for the profile screen
+          }
           
           return (
             <TouchableOpacity
@@ -389,6 +393,10 @@ const Layout: React.FC = () => {
           if (pathname === "/petparents/petparentstwo") {
             return null; // Don't render anything for the profile screen
           }
+
+           if (pathname === "/petparents/petparentsthree") {
+             return null; // Don't render anything for the profile screen
+           }
           return (
             <Image
               source={require("@/assets/images/header-logo.png")}
