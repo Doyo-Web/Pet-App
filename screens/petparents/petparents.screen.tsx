@@ -38,6 +38,11 @@ export default function PetParentProfile() {
 
    const navigateToGallery = () => {
      router.push("/(drawer)/(tabs)/petparents/petparentsthree");
+  };
+  
+  
+   const navigateToBookingRequest = () => {
+     router.push("/(drawer)/(tabs)/booknow/booknowthree");
    };
 
   const toggleExpand = () => {
@@ -175,7 +180,10 @@ export default function PetParentProfile() {
         </TouchableOpacity>
 
         {/* Requests */}
-        <TouchableOpacity style={styles.navigationSection}>
+        <TouchableOpacity
+          style={styles.navigationSection}
+          onPress={navigateToBookingRequest}
+        >
           <View style={styles.navigationContent}>
             <View style={styles.navigationIconContainer}>
               <FileText color="#000" size={24} />
