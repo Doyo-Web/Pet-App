@@ -4,6 +4,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 import HostProfileModel from "../models/hostprofile.model";
 import cloudinary from "../config/cloudinaryConfig";
 import dotenv from "dotenv";
+import Booking, { IBooking } from "../models/booking.model";
 
 dotenv.config();
 
@@ -183,3 +184,83 @@ export const createHostProfile = catchAsyncError(
     }
   }
 );
+
+export const getHostBookings = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id; // Assuming userId is in the request user object via isAuthenticated middleware
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    // Find bookings where the user is the selected host
+    const bookings = await Booking.find({ selectedHost: userId })
+      .populate("userId", "name email") // Populating user information
+      .populate("pets", "name image") // Populating pet details
+      .populate("selectedHost", "name email"); // Populating host details;
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No bookings found for this host.",
+      });
+    }
+
+    // Respond with the found bookings
+    res.status(200).json({
+      success: true,
+      bookings,
+    });
+  } catch (error) {
+    // Debugging: Log the error
+    console.error("Error fetching host bookings:", error);
+
+    // Respond with an error
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the bookings.",
+    });
+  }
+};
+
+export const getHost = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id; // Assuming userId is in the request user object via isAuthenticated middleware
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    // Find bookings where the user is the selected host
+    const host = await HostProfileModel.findOne({ userId })
+      .populate("userId");
+
+    if (!host) {
+      return res.status(404).json({
+        success: false,
+        message: "No host found",
+      });
+    }
+
+    // Respond with the found bookings
+    res.status(200).json({
+      success: true,
+      host,
+    });
+  } catch (error) {
+    // Debugging: Log the error
+    console.error("Error fetching host:", error);
+
+    // Respond with an error
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the host.",
+    });
+  }
+};

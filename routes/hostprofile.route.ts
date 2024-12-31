@@ -1,6 +1,10 @@
 import express from "express";
 import { isAuthenticated } from "../middleware/auth";
-import { createHostProfile } from "../controllers/hostprofile.controller";
+import {
+  createHostProfile,
+  getHost,
+  getHostBookings,
+} from "../controllers/hostprofile.controller";
 
 const hostProfileRouter = express.Router();
 
@@ -9,6 +13,20 @@ hostProfileRouter.post(
   "/hostprofile-create",
   isAuthenticated,
   createHostProfile
+);
+
+// Route to get a new host booking
+hostProfileRouter.get(
+  "/hostbooking",
+  isAuthenticated,
+  getHostBookings
+);
+
+// Route to get a new host booking
+hostProfileRouter.get(
+  "/host",
+  isAuthenticated,
+  getHost
 );
 
 export default hostProfileRouter;
