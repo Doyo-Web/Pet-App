@@ -48,7 +48,10 @@ const HostSuccessScreen = () => {
           </Text>
         </View>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.viewProfileButton}>
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={() => router.push("/hostprofile")}
+          >
             <Text style={styles.viewProfileText}>View your Host Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
