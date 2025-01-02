@@ -264,3 +264,50 @@ export const getHost = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const deleteHostProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id; // Assuming `isAuthenticated` middleware attaches `user` to the request object
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    // Find the host profile by userId
+    const hostProfile = await HostProfileModel.findOne({ userId });
+
+    if (!hostProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Host profile not found.",
+      });
+    }
+
+    // Delete the host profile
+    await HostProfileModel.deleteOne({ userId });
+
+    // Optionally, clean up associated data, e.g., remove host references in bookings
+    await Booking.updateMany(
+      { acceptedHosts: hostProfile._id },
+      { $pull: { acceptedHosts: hostProfile._id } }
+    );
+
+    // Respond with a success message
+    res.status(200).json({
+      success: true,
+      message: "Host profile successfully deleted.",
+    });
+  } catch (error: any) {
+    console.error("Error deleting host profile:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting the host profile.",
+      error: error.message, // Optional: include error details for debugging
+    });
+  }
+};
+

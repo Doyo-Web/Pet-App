@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated } from "../middleware/auth";
 import {
   createHostProfile,
+  deleteHostProfile,
   getHost,
   getHostBookings,
 } from "../controllers/hostprofile.controller";
@@ -28,5 +29,8 @@ hostProfileRouter.get(
   isAuthenticated,
   getHost
 );
+
+// Route to delete a host profile
+hostProfileRouter.delete("/hostprofile-delete", isAuthenticated, deleteHostProfile);
 
 export default hostProfileRouter;
