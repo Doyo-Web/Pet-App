@@ -11,10 +11,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
+import { Toast } from "react-native-toast-notifications";
 
 // Define the Host interface
 interface Host {
@@ -83,6 +84,54 @@ export default function HostProfileScreen() {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [host, setHost] = useState<Host | null>(null);
   const [loading, setLoading] = useState(true);
+
+const router = useRouter();
+  
+const handleHostProfileDelete = async () => {
+
+  try {
+    // Fetch the access token from AsyncStorage
+    const accessToken = await AsyncStorage.getItem("access_token");
+
+    if (!accessToken) {
+      Toast.show("Access token not found. Please log in again.", {
+        type: "error",
+      });
+      return;
+    }
+
+    // Make the DELETE request
+    const response = await axios.delete(`${SERVER_URI}/hostprofile-delete`, {
+      headers: {
+        "Content-Type": "application/json",
+        access_token: accessToken, // Send the token in the headers
+      },
+    });
+
+    if (response.status === 200) {
+      // Show success message
+     Toast.show(response.data.message, {
+              type: "success",
+            });
+
+      // Redirect to the desired route
+      router.push("/(tabs)/host");
+    }
+  } catch (error: any) {
+    // Handle errors
+    if (error.response) {
+      console.error("Error Response Data:", error.response.data);
+      Toast.show("Failed to delete host profile.", {
+        type: "error",
+      });
+    } else {
+      console.error("Error Message:", error.message);
+      Toast.show("An unexpected error occurred", {
+        type: "error",
+      });
+    }
+  }
+};
 
   useEffect(() => {
     const fetchHostData = async () => {
@@ -281,7 +330,10 @@ export default function HostProfileScreen() {
           <Text style={styles.seeMoreText}>see more</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteButton}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleHostProfileDelete}
+        >
           <MaterialIcons name="delete-outline" size={24} color="#FF4D4F" />
           <Text style={styles.deleteText}>Delete my Host Profile</Text>
         </TouchableOpacity>
@@ -292,6 +344,7 @@ export default function HostProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    paddingBottom: 200,
     flex: 1,
     backgroundColor: "#fff",
   },

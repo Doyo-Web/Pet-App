@@ -12,6 +12,7 @@ import {
   FlatList,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { Picker } from "@react-native-picker/picker";
@@ -264,6 +265,8 @@ export default function HostScreen() {
       upiid: "",
     },
   });
+
+  const [isLoadings, setIsLoadings] = useState(false);
 
   // Validation functions
   const validateStep1 = (): boolean => {
@@ -631,7 +634,7 @@ export default function HostScreen() {
   };
 
   const handleHostProfile = async () => {
-
+    setIsLoadings(true);
     const accessToken = await AsyncStorage.getItem("access_token");
     const refreshToken = await AsyncStorage.getItem("refresh_token");
 
@@ -649,6 +652,7 @@ export default function HostScreen() {
       );
 
       if (response.data) {
+        setIsLoadings(false);
         Toast.show(response.data.message, {
           type: "success",
         });
@@ -1715,8 +1719,10 @@ export default function HostScreen() {
               ]}
               onPress={() => handleHostProfile()}
               disabled={isNextButtonDisabled}
-            >
-              <Text style={styles.buttonText}>All done</Text>
+              >{isLoadings ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) :
+                (<Text style={styles.buttonText}>All done</Text>)}
             </TouchableOpacity>
           )}
         </View>
