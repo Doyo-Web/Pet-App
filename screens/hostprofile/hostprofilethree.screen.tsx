@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,32 +8,80 @@ import {
   SafeAreaView,
   Dimensions,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { ArrowLeft, Plus } from "lucide-react-native";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import { router } from "expo-router";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { SERVER_URI } from "@/utils/uri";
 
 const { width } = Dimensions.get("window");
-const imageSize = (width - 48) / 2; // Calculate image size based on screen width (2 columns with padding)
+const imageSize = (width - 48) / 2;
+
+interface Host {
+  hostProfile?: {
+    facilityPictures?: string[];
+    petPictures?: string[];
+  };
+}
 
 export default function GalleryScreen() {
-  const { petProfiles, isLoading, error } = useSelector(
-    (state: RootState) => state.petProfile
-  );
+  const [host, setHost] = useState<Host | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Flatten all pet images into a single array
-  const allPetImages = petProfiles.flatMap((pet) =>
-    pet.petImages.map((img) => ({ url: img.url, petName: pet.petName }))
-  );
+  useEffect(() => {
+    const fetchHostData = async () => {
+      try {
+        const accessToken = await AsyncStorage.getItem("access_token");
+        if (!accessToken) {
+          console.error("No access token found");
+          setLoading(false);
+          Alert.alert(
+            "Error",
+            "You are not logged in. Please log in and try again."
+          );
+          return;
+        }
+
+        const response = await axios.get<{ host: Host }>(`${SERVER_URI}/host`, {
+          headers: { access_token: accessToken },
+        });
+        setHost(response.data.host);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching host data:", error);
+        setLoading(false);
+        Alert.alert("Error", "Failed to fetch host data. Please try again.");
+      }
+    };
+
+    fetchHostData();
+  }, []);
 
   const prevStep = () => {
     router.push("/(drawer)/(tabs)/petparents/petparentstwo");
   };
+
+  const renderImages = () => {
+    const facilityPictures = host?.hostProfile?.facilityPictures || [];
+    const petPictures = host?.hostProfile?.petPictures || [];
+    const allPictures = [...facilityPictures, ...petPictures];
+
+    return allPictures.map((image, index) => (
+      <View key={`image-${index}`} style={styles.imageContainer}>
+        <Image
+          source={{ uri: image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+      </View>
+    ));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
           <ArrowLeft size={24} color="black" />
@@ -42,27 +90,20 @@ export default function GalleryScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Gallery Grid */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.gallery}>
-          {allPetImages.map((image, index) => (
-            <View key={index} style={styles.imageContainer}>
-              <Image
-                source={{ uri: image.url }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            </View>
-          ))}
-
-          {/* Add Photo Button */}
-          <TouchableOpacity style={styles.addButton}>
-            <View style={styles.addButtonInner}>
-              <Plus size={24} color="#F59E0B" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      {loading ? (
+        <ActivityIndicator size="large" color="#F59E0B" style={styles.loader} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.gallery}>
+            {renderImages()}
+            <TouchableOpacity style={styles.addButton}>
+              <View style={styles.addButtonInner}>
+                <Plus size={24} color="#F59E0B" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -91,10 +132,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "bold",
-    marginRight: 40, // To offset the back button and keep title centered
+    marginRight: 40,
   },
   placeholder: {
-    width: 40, // Same width as back button for symmetry
+    width: 40,
   },
   scrollContent: {
     padding: 16,
@@ -130,5 +171,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEF3C7",
     alignItems: "center",
     justifyContent: "center",
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

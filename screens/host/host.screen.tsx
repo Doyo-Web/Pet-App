@@ -633,44 +633,80 @@ export default function HostScreen() {
     }));
   };
 
-  const handleHostProfile = async () => {
-    setIsLoadings(true);
-    const accessToken = await AsyncStorage.getItem("access_token");
-    const refreshToken = await AsyncStorage.getItem("refresh_token");
+ 
+const handleHostProfile = async () => {
+  setIsLoadings(true); // Start loading indicator
+  const accessToken = await AsyncStorage.getItem("access_token");
 
-    try {
-      // Send the profile data directly as JSON
-      const response = await axios.post(
-        `${SERVER_URI}/hostprofile-create`,
-        profile, // Send profile object directly
-        {
-          headers: {
-            "Content-Type": "application/json", // Indicate JSON content
-            access_token: accessToken,
-          },
-        }
-      );
+  try {
+    // Send the profile data as JSON
+    const response = await axios.post(
+      `${SERVER_URI}/hostprofile-create`,
+      profile, // Send profile object directly
+      {
+        headers: {
+          "Content-Type": "application/json", // Specify JSON content
+          access_token: accessToken, // Include access token
+        },
+      }
+    );
 
-      if (response.data) {
-        setIsLoadings(false);
+    // Check server response for success or specific conditions
+    if (response.data.message) {
+      // If host profile already exists
+      if (response.data.message === "User already has a host profile") {
+        Toast.show("You already have a host profile.", {
+          type: "info",
+        });
+        setTimeout(() => {
+          router.replace("/(tabs)/hostprofile");
+        }, 2000);
+      } else {
+        // Success message for profile creation
         Toast.show(response.data.message, {
           type: "success",
         });
-       
-        router.push("/(tabs)/hostsuccess");
+        setTimeout(() => {
+          router.replace("/(tabs)/hostsuccess");
+        }, 2000);
       }
-    } catch (error: any) {
-      // Log error details
-      if (error.response) {
-        console.log("Error Response Data:", error.response.data); // Logs the response from the server
-        console.log("Error Response Status:", error.response.status); // Logs the status code
-      } else {
-        console.log("Error Message:", error.message); // Logs general error messages
-      }
-    } finally {
-      // setLoader(false); // Handle loader state if applicable
     }
-  };
+  } catch (error: any) {
+    // Handle and log errors
+    if (error.response) {
+      console.log("Error Response Data:", error.response.data); // Log server response
+      console.log("Error Response Status:", error.response.status); // Log HTTP status
+      if (error.response.data.message) {
+        // Show specific error message from the server
+        Toast.show(error.response.data.message, {
+          type: "success",
+        });
+         setTimeout(() => {
+           router.replace("/(tabs)/hostprofile");
+         }, 1000);
+      } else {
+        // Generic error toast
+        Toast.show("An error occurred. Please try again.", {
+          type: "error",
+        });
+      }
+    } else {
+      console.log("Error Message:", error.message); // Log general error message
+      Toast.show("Failed to connect to the server.", {
+        type: "error",
+      });
+    }
+  } finally {
+    setIsLoadings(false); // Stop loading indicator
+  }
+};
+
+
+
+
+
+
+
 
   const renderStep = () => {
     switch (currentStep) {
