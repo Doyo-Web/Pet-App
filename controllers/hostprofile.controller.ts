@@ -32,9 +32,175 @@ const uploadImage = async (base64Image: string, folder: string) => {
   }
 };
 
+// export const createHostProfile = catchAsyncError(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const {
+//         fullName,
+//         phoneNumber,
+//         email,
+//         age,
+//         gender,
+//         dateOfBirth,
+//         profession,
+//         location,
+//         line1,
+//         line2,
+//         city,
+//         pincode,
+//         residenceType,
+//         builtUpArea,
+//         petSize,
+//         petGender,
+//         petCount,
+//         willingToWalk,
+//         hasAreaRestrictions,
+//         areaRestrictions,
+//         walkFrequency,
+//         walkDuration,
+//         willingToCook,
+//         cookingOptions,
+//         groomPet,
+//         hasPet,
+//         pets,
+//         hasVetNearby,
+//         vetInfo,
+//         HostProfile: {
+//           profileImage,
+//           bio,
+//           idProof,
+//           facilityPictures,
+//           petPictures,
+//           pricingDaycare,
+//           pricingBoarding,
+//           pricingVegMeal,
+//           pricingNonVegMeal,
+//         },
+//         paymentDetails: {
+//           accountHolderName,
+//           accountNumber,
+//           ifscCode,
+//           bankName,
+//           upiid,
+//         },
+//       } = req.body;
+
+//       // Upload images to Cloudinary if they are provided as base64
+//       const uploadedProfileImage = profileImage
+//         ? await uploadImage(profileImage, "host_profiles/profile_Image")
+//         : null;
+
+//       const uploadedIdProof = idProof
+//         ? await uploadImage(idProof, "host_profiles/host_idproof")
+//         : null;
+
+//       const uploadedFacilityPictures = await Promise.all(
+//         facilityPictures.map(async (base64Image: string) => {
+//           if (base64Image && base64Image.trim() !== "") {
+//             return await uploadImage(
+//               base64Image,
+//               "host_profiles/facility_pictures"
+//             );
+//           }
+//           return null;
+//         })
+//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+//       const uploadedPetPictures = await Promise.all(
+//         petPictures.map(async (base64Image: string) => {
+//           if (base64Image && base64Image.trim() !== "") {
+//             return await uploadImage(base64Image, "host_profiles/pet_pictures");
+//           }
+//           return null;
+//         })
+//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+//       // Create the host profile with the uploaded image URLs
+//       const newHostProfile = new HostProfileModel({
+//         userId: req.user?.id,
+//         fullName,
+//         phoneNumber,
+//         email,
+//         age,
+//         gender,
+//         dateOfBirth,
+//         profession,
+//         location,
+//         line1,
+//         line2,
+//         city,
+//         pincode,
+//         residenceType,
+//         builtUpArea,
+//         petSize,
+//         petGender,
+//         petCount,
+//         willingToWalk,
+//         hasAreaRestrictions,
+//         areaRestrictions,
+//         walkFrequency,
+//         walkDuration,
+//         willingToCook,
+//         cookingOptions,
+//         groomPet,
+//         hasPet,
+//         pets,
+//         hasVetNearby,
+//         vetInfo,
+
+//         hostProfile: {
+//           profileImage: uploadedProfileImage?.url || "",
+//           bio,
+//           idProof: uploadedIdProof?.url || "",
+//           facilityPictures: uploadedFacilityPictures.map(
+//             (pic) => pic?.url || ""
+//           ),
+//           petPictures: uploadedPetPictures.map((pic) => pic?.url || ""),
+//           pricingDaycare,
+//           pricingBoarding,
+//           pricingVegMeal,
+//           pricingNonVegMeal,
+//         },
+
+//         paymentDetails: {
+//           accountHolderName,
+//           accountNumber,
+//           ifscCode,
+//           bankName,
+//           upiid,
+//         },
+//       });
+
+//       const savedHostProfile = await newHostProfile.save();
+
+//       res.status(201).json({
+//         success: true,
+//         message: "Host Profile Created Successfully",
+//         hostProfile: savedHostProfile,
+//       });
+//     } catch (error: any) {
+//       console.error("Host Profile Creation Error:", error);
+//       return next(new ErrorHandler(error.message, 400));
+//     }
+//   }
+// );
+
 export const createHostProfile = catchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Check if the user already has a host profile
+      const existingHostProfile = await HostProfileModel.findOne({
+        userId: req.user?.id,
+      });
+
+      if (existingHostProfile) {
+        return res.status(400).json({
+          success: false,
+          message: "User already has a host profile",
+        });
+      }
+
+      // Destructure request body
       const {
         fullName,
         phoneNumber,
@@ -85,7 +251,7 @@ export const createHostProfile = catchAsyncError(
         },
       } = req.body;
 
-      // Upload images to Cloudinary if they are provided as base64
+      // Upload images to Cloudinary
       const uploadedProfileImage = profileImage
         ? await uploadImage(profileImage, "host_profiles/profile_Image")
         : null;
@@ -115,7 +281,7 @@ export const createHostProfile = catchAsyncError(
         })
       ).then((pictures) => pictures.filter((picture) => picture !== null));
 
-      // Create the host profile with the uploaded image URLs
+      // Create the host profile
       const newHostProfile = new HostProfileModel({
         userId: req.user?.id,
         fullName,
