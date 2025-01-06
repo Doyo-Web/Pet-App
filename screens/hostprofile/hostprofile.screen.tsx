@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useRouter } from "expo-router";
@@ -80,58 +81,102 @@ interface Host {
   __v: { $numberInt: string };
 }
 
+const DeleteConfirmationModal = ({
+  visible,
+  onClose,
+  onConfirm,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) => {
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.warningIconContainer}>
+            <MaterialIcons name="warning" size={32} color="#FF6B6B" />
+          </View>
+          <Text style={styles.modalTitle}>
+            Are you sure you want to delete your Host Profile?
+          </Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.yesButton]}
+              onPress={onConfirm}
+            >
+              <Text style={[styles.buttonText, styles.yesButtonText]}>YES</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.noButton]}
+              onPress={onClose}
+            >
+              <Text style={[styles.buttonText, styles.noButtonText]}>NO</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 export default function HostProfileScreen() {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [host, setHost] = useState<Host | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
-const router = useRouter();
-  
-const handleHostProfileDelete = async () => {
+  const router = useRouter();
 
-  try {
-    // Fetch the access token from AsyncStorage
-    const accessToken = await AsyncStorage.getItem("access_token");
+  const handleDeletePress = () => {
+    setIsDeleteModalVisible(true);
+  };
 
-    if (!accessToken) {
-      Toast.show("Access token not found. Please log in again.", {
-        type: "error",
-      });
-      return;
-    }
+  const handleHostProfileDelete = async () => {
+     try {
+       const accessToken = await AsyncStorage.getItem("access_token");
 
-    // Make the DELETE request
-    const response = await axios.delete(`${SERVER_URI}/hostprofile-delete`, {
-      headers: {
-        "Content-Type": "application/json",
-        access_token: accessToken, // Send the token in the headers
-      },
-    });
+       if (!accessToken) {
+         Toast.show("Access token not found. Please log in again.", {
+           type: "error",
+         });
+         return;
+       }
 
-    if (response.status === 200) {
-      // Show success message
-     Toast.show(response.data.message, {
-              type: "success",
-            });
+       const response = await axios.delete(`${SERVER_URI}/hostprofile-delete`, {
+         headers: {
+           "Content-Type": "application/json",
+           access_token: accessToken,
+         },
+       });
 
-      // Redirect to the desired route
-      router.push("/(tabs)/host");
-    }
-  } catch (error: any) {
-    // Handle errors
-    if (error.response) {
-      console.error("Error Response Data:", error.response.data);
-      Toast.show("Failed to delete host profile.", {
-        type: "error",
-      });
-    } else {
-      console.error("Error Message:", error.message);
-      Toast.show("An unexpected error occurred", {
-        type: "error",
-      });
-    }
-  }
-};
+       if (response.status === 200) {
+         Toast.show(response.data.message, {
+           type: "success",
+         });
+         router.push("/(tabs)/host");
+       }
+     } catch (error: any) {
+       if (error.response) {
+         console.error("Error Response Data:", error.response.data);
+         Toast.show("Failed to delete host profile.", {
+           type: "error",
+         });
+       } else {
+         console.error("Error Message:", error.message);
+         Toast.show("An unexpected error occurred", {
+           type: "error",
+         });
+       }
+     } finally {
+       setIsDeleteModalVisible(false);
+     }
+  };
 
   useEffect(() => {
     const fetchHostData = async () => {
@@ -169,6 +214,10 @@ const handleHostProfileDelete = async () => {
 
   const navigateToGallery = () => {
     router.push("/(drawer)/(tabs)/hostprofile/hostprofilethree");
+  };
+
+  const navigateToReview = () => {
+    router.push("/(drawer)/(tabs)/hostprofile/hostprofilefour");
   };
 
   const renderPanelContent = (panel: string) => {
@@ -290,10 +339,7 @@ const handleHostProfileDelete = async () => {
         </TouchableOpacity>
         {expandedPanel === "requests" && renderPanelContent("requests")}
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => togglePanel("reviews")}
-        >
+        <TouchableOpacity style={styles.menuItem} onPress={navigateToReview}>
           <MaterialIcons name="rate-review" size={24} color="#00BFA6" />
           <Text style={styles.menuText}>Reviews</Text>
           <Ionicons
@@ -332,12 +378,17 @@ const handleHostProfileDelete = async () => {
 
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={handleHostProfileDelete}
+          onPress={handleDeletePress}
         >
           <MaterialIcons name="delete-outline" size={24} color="#FF4D4F" />
           <Text style={styles.deleteText}>Delete my Host Profile</Text>
         </TouchableOpacity>
       </ScrollView>
+      <DeleteConfirmationModal
+        visible={isDeleteModalVisible}
+        onClose={() => setIsDeleteModalVisible(false)}
+        onConfirm={handleHostProfileDelete}
+      />
     </SafeAreaView>
   );
 }
@@ -497,5 +548,68 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "red",
     marginVertical: 20,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 320,
+    alignItems: "center",
+  },
+  warningIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#FFE8E8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    textAlign: "center",
+    color: "#333333",
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 16,
+    width: "100%",
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+  yesButton: {
+    backgroundColor: "#00BFA6",
+  },
+  noButton: {
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#00BFA6",
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  yesButtonText: {
+    color: "white",
+  },
+  noButtonText: {
+    color: "#00BFA6",
   },
 });

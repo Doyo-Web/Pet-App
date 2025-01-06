@@ -679,7 +679,7 @@ const handleHostProfile = async () => {
       if (error.response.data.message) {
         // Show specific error message from the server
         Toast.show(error.response.data.message, {
-          type: "success",
+          type: "error",
         });
          setTimeout(() => {
            router.replace("/(tabs)/hostprofile");

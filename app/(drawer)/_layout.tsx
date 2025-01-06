@@ -352,6 +352,10 @@ const Layout: React.FC = () => {
 
            if (pathname === "/hostprofile/hostprofilethree") {
              return null; // Don't render anything for the profile screen
+          }
+          
+           if (pathname === "/hostprofile/hostprofilefour") {
+             return null; // Don't render anything for the profile screen
            }
           
           return (
@@ -421,6 +425,10 @@ const Layout: React.FC = () => {
           if (pathname === "/hostprofile/hostprofilethree") {
             return null; // Don't render anything for the profile screen
           }
+
+           if (pathname === "/hostprofile/hostprofilefour") {
+             return null; // Don't render anything for the profile screen
+           }
           return (
             <Image
               source={require("@/assets/images/header-logo.png")}
