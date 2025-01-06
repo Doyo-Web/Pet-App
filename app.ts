@@ -10,6 +10,7 @@ import petProfileRouter from "./routes/petprofile.route";
 import hostProfileRouter from "./routes/hostprofile.route";
 import bookingRouter from "./routes/booking.route";
 import chatRouter from "./routes/chat.route";
+import reviewRouter from "./routes/review.route";
 import { ErrorMiddleware } from "./middleware/error";
 
 const app: Application = express();
@@ -33,6 +34,7 @@ app.use("/api/v1", petProfileRouter);
 app.use("/api/v1", hostProfileRouter);
 app.use("/api/v1", bookingRouter);
 app.use("/api/v1", chatRouter);
+app.use("/api/v1", reviewRouter);
 
 // Testing Route
 app.get("/testing", (_, res) => {
