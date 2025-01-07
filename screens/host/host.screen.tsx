@@ -95,7 +95,7 @@ export default function HostScreen() {
     pincode: string;
     residenceType: string;
     builtUpArea: string;
-    petSize: string;
+    petSize: string[];
     petGender: string;
     petCount: string;
     willingToWalk: string;
@@ -225,7 +225,7 @@ export default function HostScreen() {
     pincode: "",
     residenceType: "",
     builtUpArea: "",
-    petSize: "",
+    petSize: [],
     petGender: "",
     petCount: "",
     willingToWalk: "",
@@ -658,17 +658,134 @@ const handleHostProfile = async () => {
         Toast.show("You already have a host profile.", {
           type: "info",
         });
+
+      // Reset all state to initial values
+      setProfile({
+        fullName: "",
+        phoneNumber: "",
+        email: "",
+        age: "",
+        gender: "",
+        dateOfBirth: new Date(),
+        profession: "",
+        location: "",
+        line1: "",
+        line2: "",
+        city: "",
+        pincode: "",
+        residenceType: "",
+        builtUpArea: "",
+        petSize: [],
+        petGender: "",
+        petCount: "",
+        willingToWalk: "",
+        hasAreaRestrictions: "",
+        areaRestrictions: "",
+        walkFrequency: "",
+        walkDuration: "",
+        willingToCook: "",
+        cookingOptions: [],
+        groomPet: false,
+        hasPet: "",
+        pets: [{ ...initialPet }],
+        hasVetNearby: "",
+        vetInfo: {
+          name: "",
+          clinic: "",
+          phone: "",
+          address: "",
+        },
+        HostProfile: {
+          profileImage: "",
+          bio: "",
+          idProof: "",
+          facilityPictures: ["", "", "", ""],
+          petPictures: ["", ""],
+          pricingDaycare: "",
+          pricingBoarding: "",
+          pricingVegMeal: "",
+          pricingNonVegMeal: "",
+        },
+        paymentDetails: {
+          accountHolderName: "",
+          accountNumber: "",
+          ifscCode: "",
+          bankName: "",
+          upiid: "",
+        },
+      });
+
+        setCurrentStep(1);
         setTimeout(() => {
           router.replace("/(tabs)/hostprofile");
-        }, 2000);
+        }, 0);
       } else {
         // Success message for profile creation
         Toast.show(response.data.message, {
           type: "success",
         });
+
+      // Reset all state to initial values
+      setProfile({
+        fullName: "",
+        phoneNumber: "",
+        email: "",
+        age: "",
+        gender: "",
+        dateOfBirth: new Date(),
+        profession: "",
+        location: "",
+        line1: "",
+        line2: "",
+        city: "",
+        pincode: "",
+        residenceType: "",
+        builtUpArea: "",
+        petSize: [],
+        petGender: "",
+        petCount: "",
+        willingToWalk: "",
+        hasAreaRestrictions: "",
+        areaRestrictions: "",
+        walkFrequency: "",
+        walkDuration: "",
+        willingToCook: "",
+        cookingOptions: [],
+        groomPet: false,
+        hasPet: "",
+        pets: [{ ...initialPet }],
+        hasVetNearby: "",
+        vetInfo: {
+          name: "",
+          clinic: "",
+          phone: "",
+          address: "",
+        },
+        HostProfile: {
+          profileImage: "",
+          bio: "",
+          idProof: "",
+          facilityPictures: ["", "", "", ""],
+          petPictures: ["", ""],
+          pricingDaycare: "",
+          pricingBoarding: "",
+          pricingVegMeal: "",
+          pricingNonVegMeal: "",
+        },
+        paymentDetails: {
+          accountHolderName: "",
+          accountNumber: "",
+          ifscCode: "",
+          bankName: "",
+          upiid: "",
+        },
+      });
+
+
+        setCurrentStep(1);
         setTimeout(() => {
           router.replace("/(tabs)/hostsuccess");
-        }, 2000);
+        }, 0);
       }
     }
   } catch (error: any) {
@@ -681,9 +798,66 @@ const handleHostProfile = async () => {
         Toast.show(error.response.data.message, {
           type: "error",
         });
+      // Reset all state to initial values
+      setProfile({
+        fullName: "",
+        phoneNumber: "",
+        email: "",
+        age: "",
+        gender: "",
+        dateOfBirth: new Date(),
+        profession: "",
+        location: "",
+        line1: "",
+        line2: "",
+        city: "",
+        pincode: "",
+        residenceType: "",
+        builtUpArea: "",
+        petSize: [],
+        petGender: "",
+        petCount: "",
+        willingToWalk: "",
+        hasAreaRestrictions: "",
+        areaRestrictions: "",
+        walkFrequency: "",
+        walkDuration: "",
+        willingToCook: "",
+        cookingOptions: [],
+        groomPet: false,
+        hasPet: "",
+        pets: [{ ...initialPet }],
+        hasVetNearby: "",
+        vetInfo: {
+          name: "",
+          clinic: "",
+          phone: "",
+          address: "",
+        },
+        HostProfile: {
+          profileImage: "",
+          bio: "",
+          idProof: "",
+          facilityPictures: ["", "", "", ""],
+          petPictures: ["", ""],
+          pricingDaycare: "",
+          pricingBoarding: "",
+          pricingVegMeal: "",
+          pricingNonVegMeal: "",
+        },
+        paymentDetails: {
+          accountHolderName: "",
+          accountNumber: "",
+          ifscCode: "",
+          bankName: "",
+          upiid: "",
+        },
+      });
+
+        setCurrentStep(1);
          setTimeout(() => {
            router.replace("/(tabs)/hostprofile");
-         }, 1000);
+         }, 0);
       } else {
         // Generic error toast
         Toast.show("An error occurred. Please try again.", {
@@ -777,7 +951,7 @@ const handleHostProfile = async () => {
                   {[...Array(100)].map((_, i) => (
                     <Picker.Item
                       key={i}
-                      label={`${i + 1} years`}
+                      label={`${i + 1}`}
                       value={`${i + 1}`}
                     />
                   ))}
@@ -987,8 +1161,13 @@ const handleHostProfile = async () => {
                   <CircularCheckbox
                     key={size}
                     title={size}
-                    checked={profile.petSize === size}
-                    onPress={() => handleInputChange("petSize", size)}
+                    checked={profile.petSize.includes(size)}
+                    onPress={() => {
+                      const updatedSizes = profile.petSize.includes(size)
+                        ? profile.petSize.filter((s) => s !== size)
+                        : [...profile.petSize, size];
+                      handleInputChange("petSize", updatedSizes);
+                    }}
                     width="50%"
                   />
                 ))}
@@ -1188,28 +1367,36 @@ const handleHostProfile = async () => {
             {profile.hasPet === "Yes" && isPetFormOpen && (
               <View style={styles.petFormContainer3}>
                 {/* Tab Navigation */}
-                <View style={styles.tabContainer3}>
-                  {profile.pets.map((_, index) => (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.tabScrollView}
+                >
+                  <View style={styles.tabContainer3}>
+                    {profile.pets.map((_, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.tabButton,
+                          activeTab === index && styles.activeTabButton, // Highlight active tab
+                        ]}
+                        onPress={() => setActiveTab(index)} // Switch tab
+                      >
+                        <Text style={styles.tabButtonText}>
+                          Pet #{index + 1}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                     <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.tabButton,
-                        activeTab === index && styles.activeTabButton, // Highlight active tab
-                      ]}
-                      onPress={() => setActiveTab(index)} // Switch tab
+                      style={styles.addPetButton}
+                      onPress={addPet}
                     >
-                      <Text style={styles.tabButtonText}>Pet #{index + 1}</Text>
+                      <Text style={styles.addPetButtonText}>
+                        + Add another pet
+                      </Text>
                     </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity
-                    style={styles.addPetButton}
-                    onPress={addPet}
-                  >
-                    <Text style={styles.addPetButtonText}>
-                      + Add another pet
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                  </View>
+                </ScrollView>
 
                 {/* Render the form for the active tab */}
                 <View key={activeTab} style={styles.petForm}>
@@ -1647,7 +1834,6 @@ const handleHostProfile = async () => {
             <TextInput
               style={styles.inputcasefive}
               placeholder="Bank Name"
-              keyboardType="numeric"
               value={profile.paymentDetails.bankName}
               onChangeText={(text) => updatePaymentDetails("bankName", text)}
             />
@@ -1656,7 +1842,7 @@ const handleHostProfile = async () => {
             <TextInput
               style={styles.inputcasefive}
               placeholder="Account Number"
-              autoCapitalize="characters"
+              keyboardType="numeric"
               value={profile.paymentDetails.accountNumber}
               onChangeText={(text) =>
                 updatePaymentDetails("accountNumber", text)
@@ -2459,7 +2645,7 @@ const styles = StyleSheet.create({
   },
 
   casetwosection: {
-    padding: 16,
+    paddingBottom: 20,
   },
 
   casetwosectionTitle: {
@@ -2621,6 +2807,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0F7F9", // light blue background similar to the UI
     borderRadius: 10,
   },
+
+  tabScrollView: {
+    flexGrow: 0,
+  },
+  
   tabContainer3: {
     flexDirection: "row",
     justifyContent: "space-between",

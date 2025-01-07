@@ -149,7 +149,6 @@ export default function ProfileScreen() {
   const validateStep2 = (): boolean => {
     return !!(
       formState.walkPerDay &&
-      formState.bathingFrequency &&
       formState.dietSchedule.length > 0 &&
       formState.dietSchedule.every((entry) => entry.time && entry.portion)
     );
@@ -445,6 +444,46 @@ export default function ProfileScreen() {
 
        // Add the new pet profile to Redux state
        dispatch(addPetProfile(response.data.petProfile));
+
+       // Reset the form state to initial values
+       setFormState({
+         petType: "",
+         petName: "",
+         petBreed: "",
+         petAgeYears: "",
+         petAgeMonths: "",
+         petGender: "",
+         lastHeatCycle: "",
+         isNeutered: false,
+         neuteredDate: "",
+         pottyTraining: "",
+         toiletBreaks: "",
+         walkPerDay: "",
+         bathingFrequency: "",
+         dailyCombing: false,
+         dietSchedule: [{ time: "", portion: "" }],
+         foodAllergy: "",
+         vaccinationDate: new Date(),
+         dewormingDate: new Date(),
+         tickTreatmentDate: new Date(),
+         medicationDetails: {
+           nameFrequency: "",
+           reason: "",
+           administration: "",
+         },
+         aggressiveTendencies: {
+           maleDog: false,
+           femaleDog: false,
+           human: false,
+           otherAnimals: false,
+         },
+         resourceGuarding: false,
+         groomingAggression: false,
+         collarAggression: false,
+         foodAggression: false,
+         petImages: ["", "", "", ""],
+       });
+       
        setCurrentStep(1);
        router.push("/(tabs)/profilesuccess");
      }

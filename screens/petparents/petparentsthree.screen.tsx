@@ -32,18 +32,27 @@ export default function GalleryScreen() {
  });
   const [loading, setLoading] = useState(true);
 
+
   const { petProfiles, isLoading, error } = useSelector(
     (state: RootState) => state.petProfile
   );
 
-   useEffect(() => {
-     // Show review popup after 2 seconds
-     const timer = setTimeout(() => {
-       setShowReview(true);
-     }, 2000);
+  useEffect(() => {
+    // Check if the review has already been submitted
+    const checkReviewStatus = async () => {
+      const reviewSubmitted = await AsyncStorage.getItem("review_submitted");
+      if (!reviewSubmitted) {
+        // If the review hasn't been submitted yet, show the popup
+        const timer = setTimeout(() => {
+          setShowReview(true);
+        }, 2000);
 
-     return () => clearTimeout(timer);
-   }, []);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    checkReviewStatus();
+  }, []);
 
   const allPetImages = petProfiles.flatMap((pet) =>
     pet.petImages.map((img) => ({ url: img.url, petName: pet.petName }))
@@ -55,17 +64,17 @@ export default function GalleryScreen() {
 
 const handleSubmitReview = async () => {
   try {
-     const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) {
-        console.error("No access token found");
-        setLoading(false);
-        Alert.alert(
-          "Error",
-          "You are not logged in. Please log in and try again."
-        );
-        return;
+    const accessToken = await AsyncStorage.getItem("access_token");
+    if (!accessToken) {
+      console.error("No access token found");
+      setLoading(false);
+      Alert.alert(
+        "Error",
+        "You are not logged in. Please log in and try again."
+      );
+      return;
     }
-    
+
     setLoading(true);
 
     const response = await axios.post(
@@ -84,8 +93,11 @@ const handleSubmitReview = async () => {
     }
 
     Toast.show(response.data.message, {
-              type: "success",
-            });
+      type: "success",
+    });
+    // Store the review submission status
+    await AsyncStorage.setItem("review_submitted", "true");
+
     setShowReview(false);
   } catch (error) {
     console.error("Error submitting review:", error);
