@@ -56,7 +56,7 @@ export interface IHostProfileModel extends Document {
   pincode: string;
   residenceType: string;
   builtUpArea: string;
-  petSize: string;
+  petSize: string[]; // Changed to string array
   petGender: string;
   petCount: string;
   willingToWalk: string;
@@ -131,7 +131,7 @@ const ProfileSchema = new Schema<IHostProfileModel>({
   pincode: { type: String, required: false },
   residenceType: { type: String, required: false },
   builtUpArea: { type: String, required: false },
-  petSize: { type: String, required: false },
+  petSize: { type: [String], required: false }, // Updated to array of strings
   petGender: { type: String, required: false },
   petCount: { type: String, required: false },
   willingToWalk: { type: String, required: false },
@@ -146,7 +146,6 @@ const ProfileSchema = new Schema<IHostProfileModel>({
   pets: { type: [PetSchema], required: false },
   hasVetNearby: { type: String, required: false },
   vetInfo: { type: VetInfoSchema, required: false },
-
   hostProfile: { type: HostProfileSchema, required: false },
   paymentDetails: { type: PaymentDetailsSchema, required: false },
 });
