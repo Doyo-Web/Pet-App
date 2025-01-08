@@ -95,7 +95,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               route.name !== "hostprofile/index" &&
               route.name !== "hostprofile/hostprofiletwo" &&
               route.name !== "hostprofile/hostprofilethree" &&
-              route.name !== "hostprofile/hostprofilefour"
+              route.name !== "hostprofile/hostprofilefour" &&
+            route.name !== "hostprofile/hostprofilefive"
           )
           .map((route, index) => {
             const { options } = descriptors[route.key];

@@ -327,7 +327,7 @@ export default function HostProfileScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => togglePanel("requests")}
+          onPress={() => router.push("/hostprofile/hostprofilefive")}
         >
           <MaterialIcons name="assignment" size={24} color="#00BFA6" />
           <Text style={styles.menuText}>Requests</Text>
