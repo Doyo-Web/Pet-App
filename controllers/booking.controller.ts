@@ -3,6 +3,7 @@ import Booking, { IBooking } from "../models/booking.model";
 import HostProfile from "../models/hostprofile.model";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
+import User from "../models/user.model";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_47UXyR0Uds1kIX",
@@ -378,3 +379,58 @@ export const getBilling = async (req: Request, res: Response) => {
     });
   }
 }
+
+
+export const getRequestBooking = async (req: Request, res: Response) => {
+  try {
+    // Fetch all bookings where `acceptedHosts` is empty or undefined
+    const bookings = await Booking.find()
+      .populate({
+        path: "userId",
+        model: User,
+        select: "city fullname email", // Populate required user fields
+      })
+      .populate({
+        path: "acceptedHosts",
+        model: HostProfile,
+        select: "city fullName email", // Populate required host fields
+      });
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No unaccepted bookings found.",
+      });
+    }
+
+    // // Filter bookings where the user's city matches any host's city
+    // const filteredBookings = bookings.filter((booking) => {
+    //   const userCity = booking.userId?.city;
+    //   if (!userCity) return false; // Skip if the user has no city
+    //   const hostCities = booking.acceptedHosts.map((host) => host.city);
+    //   return hostCities.includes(userCity);
+    // });
+
+    // if (filteredBookings.length === 0) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "No unaccepted bookings with matching cities found.",
+    //   });
+    // }
+
+    // Send the filtered bookings in the response
+    return res.status(200).json({
+      success: true,
+      bookings
+    });
+  } catch (error) {
+    console.error(
+      "Error fetching unaccepted bookings with matching cities:",
+      error
+    );
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the bookings.",
+    });
+  }
+};
