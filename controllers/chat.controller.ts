@@ -1,151 +1,135 @@
-import { Request, Response } from "express";
-import Chat from "../models/chat.model";
-import Booking from "../models/booking.model";
-import mongoose from "mongoose";
+import { NextFunction, Request, Response } from "express";
+import Chat, { IChat } from "../models/chat.model";
+import userModel, { IUser } from "../models/user.model";
+import HostProfile from "../models/hostprofile.model";
 
-export const createChat = async (req: Request, res: Response) => {
-  const { bookingId } = req.body;
-  const userId = (req as any).user.id;
+import Booking, { IBooking } from "../models/booking.model";
 
+export const getChatList = async (req: Request, res: Response) => {
   try {
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found" });
-    }
+    const userId = req.user?.id; // Assuming you have authentication middleware
+    const chats = await Chat.find({ participants: userId })
+      .populate("participants", "fullName avatar")
+      .sort({ updatedAt: -1 });
 
-    if (booking.paymentStatus !== "completed") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Payment not completed" });
-    }
-
-    const participants = [userId, booking.selectedHost];
-    let chat = await Chat.findOne({ booking: bookingId });
-
-    if (!chat) {
-      chat = new Chat({
-        booking: bookingId,
-        participants,
-        messages: [],
-        isActive: true,
-      });
-      await chat.save();
-    }
-
-    res.status(200).json({ success: true, chat });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json(chats);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching chat list", error });
   }
 };
 
 export const getChatMessages = async (req: Request, res: Response) => {
-  const { chatId } = req.params;
-  const userId = (req as any).user.id;
-
   try {
+    const chatId = req.params.chatId;
     const chat = await Chat.findById(chatId).populate(
       "messages.sender",
-      "fullname"
+      "fullName avatar"
     );
 
     if (!chat) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found" });
     }
 
-    if (!chat.participants.includes(new mongoose.Types.ObjectId(userId))) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Unauthorized access to chat" });
-    }
-
-    res.status(200).json({
-      success: true,
-      messages: chat.messages,
-      isActive: chat.isActive,
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json(chat.messages);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching chat messages", error });
   }
 };
 
 export const sendMessage = async (req: Request, res: Response) => {
-  const { chatId, content } = req.body;
-  const userId = (req as any).user.id;
-
   try {
+    const { chatId, content } = req.body;
+    const senderId = req.user?.id; // Assuming you have authentication middleware
+
     const chat = await Chat.findById(chatId);
-
     if (!chat) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Chat not found" });
-    }
-
-    if (!chat.isActive) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Chat is no longer active" });
-    }
-
-    if (!chat.participants.includes(new mongoose.Types.ObjectId(userId))) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Unauthorized access to chat" });
+      return res.status(404).json({ message: "Chat not found" });
     }
 
     const newMessage = {
-      sender: new mongoose.Types.ObjectId(userId),
-      content: content.trim(),
+      sender: senderId,
+      content,
       timestamp: new Date(),
     };
 
     chat.messages.push(newMessage);
+    chat.lastMessage = newMessage;
     await chat.save();
 
-    res.status(200).json({ success: true, message: newMessage });
-  } catch (error: any) {
-    console.error("Error sending message:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.json(newMessage);
+  } catch (error) {
+    res.status(500).json({ message: "Error sending message", error });
   }
 };
 
-export const closeChat = async (req: Request, res: Response) => {
-  const { chatId } = req.body;
-  const userId = (req as any).user.id;
-
+export const createChat = async (req: Request, res: Response) => {
   try {
-    const chat = await Chat.findById(chatId);
+    const { participantId } = req.body;
+    const userId = req.user?.id; // Assuming you have authentication middleware
 
-    if (!chat) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Chat not found" });
+    // Check if chat already exists
+    const existingChat = await Chat.findOne({
+      participants: { $all: [userId, participantId] },
+    });
+
+    if (existingChat) {
+      return res.json(existingChat);
     }
 
-    if (!chat.participants.includes(new mongoose.Types.ObjectId(userId))) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Unauthorized access to chat" });
-    }
+    // Create new chat
+    const newChat = new Chat({
+      participants: [userId, participantId],
+      messages: [],
+    });
 
-    chat.isActive = false;
-    await chat.save();
-
-    res
-      .status(200)
-      .json({ success: true, message: "Chat closed successfully" });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    await newChat.save();
+    res.status(201).json(newChat);
+  } catch (error) {
+    res.status(500).json({ message: "Error creating chat", error });
   }
 };
 
-export default {
-  createChat,
-  getChatMessages,
-  sendMessage,
-  closeChat,
+export const getUserRelatedBookings = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.user?.id; // Assuming req.user is populated by isAuthenticated middleware
+
+  // Check if the user has a host profile
+  const hostProfile = await HostProfile.findOne({ userId });
+  let data;
+
+  if (hostProfile) {
+    // User is a host
+    const bookings = await Booking.find({
+      selectedHost: hostProfile._id,
+      paymentStatus: "completed",
+    })
+      .populate("userId", "name email phone") // Fetch pet parent details
+      .select("userId");
+
+    data = bookings.map((booking) => booking.userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Pet parent details for bookings where you are the host",
+      petParents: data,
+    });
+  } else {
+    // User is a pet parent
+    const bookings = await Booking.find({
+      userId,
+      paymentStatus: "completed",
+    })
+      .populate("selectedHost", "name email phone") // Fetch host details
+      .select("selectedHost");
+
+    data = bookings.map((booking) => booking.selectedHost);
+
+    return res.status(200).json({
+      success: true,
+      message: "Host details for bookings created by you",
+      hosts: data,
+    });
+  }
 };
+
+
+

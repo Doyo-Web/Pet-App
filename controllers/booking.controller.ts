@@ -265,6 +265,44 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
   }
 };
 
+
+export const declineHost = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.body; // Booking ID from the request body
+    const userId = (req as any).user.id; // Get the logged-in user's ID from the request
+
+    // Find the host profile associated with the logged-in user
+    const hostProfile = await HostProfile.findOne({ userId });
+
+    if (!hostProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Host profile not found for this user",
+      });
+    }
+
+    // Remove the host ID from the `acceptedHosts` array in the specified booking
+    await Booking.updateOne(
+      { $pull: { acceptedHosts: hostProfile._id } }
+    );
+
+    // Respond with a success message
+    res.status(200).json({
+      success: true,
+      message: "Host profile declined successfully",
+    });
+  } catch (error) {
+    console.error("Error declining host:", error);
+
+    // Handle unexpected errors gracefully
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while declining the host",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 // Additional controller for updating the accepted hosts (if necessary)
 export const updateAcceptedHosts = async (req: Request, res: Response) => {
   try {
@@ -383,8 +421,20 @@ export const getBilling = async (req: Request, res: Response) => {
 
 export const getRequestBooking = async (req: Request, res: Response) => {
   try {
+
+    const userId = req.user?.id; // Get the authenticated user's ID from the request object
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User not authenticated.",
+      });
+    }
+
     // Fetch all bookings where `acceptedHosts` is empty or undefined
-    const bookings = await Booking.find()
+    const bookings = await Booking.find({
+      acceptedHosts: { $nin: [userId] }, // Exclude bookings with the user's ID in `acceptedHosts`
+    })
       .populate({
         path: "userId",
         model: User,
@@ -396,12 +446,12 @@ export const getRequestBooking = async (req: Request, res: Response) => {
         select: "city fullName email", // Populate required host fields
       });
 
-    if (!bookings || bookings.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No unaccepted bookings found.",
-      });
-    }
+    // if (!bookings || bookings.length === 0) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "No unaccepted bookings found.",
+    //   });
+    // }
 
     // // Filter bookings where the user's city matches any host's city
     // const filteredBookings = bookings.filter((booking) => {

@@ -1,17 +1,19 @@
-import { Router } from "express";
+import express from "express";
 import {
-  createChat,
+  getChatList,
   getChatMessages,
   sendMessage,
-  closeChat,
+  createChat,
+  getUserRelatedBookings,
 } from "../controllers/chat.controller";
-import { isAuthenticated } from "../middleware/auth";
+import { isAuthenticated } from "../middleware/auth"; // Assuming you have an authentication middleware
 
-const router = Router();
+const router = express.Router();
 
-router.post("/chat", isAuthenticated, createChat);
-router.get("/chat/:bookingId", isAuthenticated, getChatMessages);
-router.post("/chat/message", isAuthenticated, sendMessage);
-router.post("/chat/close", isAuthenticated, closeChat);
+router.get("/list", isAuthenticated, getChatList);
+router.get("/:chatId/messages", isAuthenticated, getChatMessages);
+router.post("/send", isAuthenticated, sendMessage);
+router.post("/create", isAuthenticated, createChat);
+router.get("/user-related-bookings", isAuthenticated, getUserRelatedBookings);
 
 export default router;
