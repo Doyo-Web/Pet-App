@@ -9,8 +9,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
 
 type User = {
@@ -25,16 +24,10 @@ type RoleBasedUsersResponse = {
   hosts?: User[];
 };
 
-type RootStackParamList = {
-  RoleBasedUsers: undefined;
-  ChatScreen: { userId: string };
-};
-
 const RoleBasedUsersScreen: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRoleBasedUsers = async () => {
@@ -63,7 +56,7 @@ const RoleBasedUsersScreen: React.FC = () => {
   }, []);
 
   const startChat = (userId: string) => {
-    navigation.navigate("ChatScreen", { userId });
+    router.push(`/(drawer)/(tabs)/chat/chattwo?userId=${userId}`);
   };
 
   if (loading) {

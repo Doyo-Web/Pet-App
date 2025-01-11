@@ -1,181 +1,175 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  FlatList,
   TextInput,
   TouchableOpacity,
+  FlatList,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import io, { Socket } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { useRoute, RouteProp } from "@react-navigation/native";
 import { SERVER_URI } from "@/utils/uri";
-
-type ChatScreenRouteParams = {
-  params: {
-    chatId: string;
-    userId: string;
-  };
-};
 
 type Message = {
   _id: string;
-  sender: {
-    _id: string;
-  };
+  sender: string;
   content: string;
-  timestamp: string;
+  createdAt: string;
 };
 
 const ChatScreen: React.FC = () => {
-  const route = useRoute<RouteProp<ChatScreenRouteParams, "params">>();
-  const { chatId, userId } = route.params;
-
+  const { userId } = useLocalSearchParams<{ userId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const fetchMessages = async () => {
-    try {
-      const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) {
-        throw new Error("No access token found");
-      }
-      const response = await axios.get(`${SERVER_URI}/chat/${chatId}`, {
-        headers: { access_token: accessToken },
-      });
-
-      setMessages(response.data);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
-
-    try {
-       const accessToken = await AsyncStorage.getItem("access_token");
-       if (!accessToken) {
-         throw new Error("No access token found");
-       }
-      const response = await axios.post(
-        `${SERVER_URI}/chat/message`,
-        { chatId, content: newMessage },
-        {
-          headers: { access_token: accessToken },
-        }
-      );
-
-      setMessages((prevMessages) => [...prevMessages, response.data]);
-      setNewMessage("");
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
+  const [inputMessage, setInputMessage] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    fetchMessages();
-  }, [chatId]);
+    const setupSocket = async () => {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        console.error("No access token found");
+        return;
+      }
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View
-      style={[
-        styles.messageBubble,
-        item.sender._id === userId
-          ? styles.messageBubbleRight
-          : styles.messageBubbleLeft,
-      ]}
-    >
-      <Text style={styles.messageText}>{item.content}</Text>
-      <Text style={styles.messageTimestamp}>
-        {new Date(item.timestamp).toLocaleTimeString()}
-      </Text>
-    </View>
-  );
+      socketRef.current = io(SERVER_URI, {
+        query: { token: accessToken },
+      });
+
+      socketRef.current.on("connect", () => {
+        console.log("Connected to socket server");
+      });
+
+      socketRef.current.on("message", (message: Message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
+
+      // Fetch current user ID
+      try {
+        const response = await fetch(`${SERVER_URI}/current-user`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await response.json();
+        setCurrentUserId(data.userId);
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+      }
+
+      // Fetch previous messages
+      try {
+        const response = await fetch(`${SERVER_URI}/messages/${userId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await response.json();
+        setMessages(data.messages);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [userId]);
+
+  const sendMessage = () => {
+    if (inputMessage.trim() && socketRef.current) {
+      socketRef.current.emit("sendMessage", {
+        recipientId: userId,
+        content: inputMessage,
+      });
+      setInputMessage("");
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={styles.container}>
       <FlatList
         data={messages}
-        renderItem={renderMessage}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.messageList}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.messageBubble,
+              item.sender === currentUserId
+                ? styles.sentMessage
+                : styles.receivedMessage,
+            ]}
+          >
+            <Text style={styles.messageText}>{item.content}</Text>
+            <Text style={styles.messageTime}>
+              {new Date(item.createdAt).toLocaleTimeString()}
+            </Text>
+          </View>
+        )}
       />
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
+          value={inputMessage}
+          onChangeText={setInputMessage}
           placeholder="Type a message..."
-          value={newMessage}
-          onChangeText={setNewMessage}
         />
         <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  messageList: {
     padding: 10,
   },
   messageBubble: {
-    marginVertical: 5,
+    maxWidth: "70%",
     padding: 10,
     borderRadius: 10,
-    maxWidth: "75%",
+    marginBottom: 10,
   },
-  messageBubbleLeft: {
-    backgroundColor: "#e1ffc7",
-    alignSelf: "flex-start",
-  },
-  messageBubbleRight: {
-    backgroundColor: "#d1e7ff",
+  sentMessage: {
     alignSelf: "flex-end",
+    backgroundColor: "#007AFF",
+  },
+  receivedMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E5E5EA",
   },
   messageText: {
-    fontSize: 16,
+    color: "#000",
   },
-  messageTimestamp: {
+  messageTime: {
     fontSize: 10,
-    color: "gray",
-    textAlign: "right",
+    color: "#888",
+    alignSelf: "flex-end",
   },
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
     padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-    backgroundColor: "#fff",
   },
   input: {
     flex: 1,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 10,
   },
   sendButton: {
-    marginLeft: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: "#007bff",
+    backgroundColor: "#007AFF",
     borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    justifyContent: "center",
   },
   sendButtonText: {
     color: "#fff",
