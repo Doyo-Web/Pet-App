@@ -2,12 +2,12 @@ import { NextFunction, Request, Response } from "express";
 import Chat, { IChat } from "../models/chat.model";
 import userModel, { IUser } from "../models/user.model";
 import HostProfile from "../models/hostprofile.model";
-
 import Booking, { IBooking } from "../models/booking.model";
+import { io } from "../app";
 
 export const getChatList = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming you have authentication middleware
+    const userId = req.user?.id;
     const chats = await Chat.find({ participants: userId })
       .populate("participants", "fullName avatar")
       .sort({ updatedAt: -1 });
@@ -38,8 +38,9 @@ export const getChatMessages = async (req: Request, res: Response) => {
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
-    const { chatId, content } = req.body;
-    const senderId = req.user?.id; // Assuming you have authentication middleware
+    const { chatId } = req.params;
+    const { content } = req.body;
+    const senderId = req.user?.id;
 
     const chat = await Chat.findById(chatId);
     if (!chat) {
@@ -56,6 +57,8 @@ export const sendMessage = async (req: Request, res: Response) => {
     chat.lastMessage = newMessage;
     await chat.save();
 
+    io.to(chatId).emit("message", newMessage);
+
     res.json(newMessage);
   } catch (error) {
     res.status(500).json({ message: "Error sending message", error });
@@ -65,9 +68,8 @@ export const sendMessage = async (req: Request, res: Response) => {
 export const createChat = async (req: Request, res: Response) => {
   try {
     const { participantId } = req.body;
-    const userId = req.user?.id; // Assuming you have authentication middleware
+    const userId = req.user?.id;
 
-    // Check if chat already exists
     const existingChat = await Chat.findOne({
       participants: { $all: [userId, participantId] },
     });
@@ -76,7 +78,6 @@ export const createChat = async (req: Request, res: Response) => {
       return res.json(existingChat);
     }
 
-    // Create new chat
     const newChat = new Chat({
       participants: [userId, participantId],
       messages: [],
@@ -89,20 +90,22 @@ export const createChat = async (req: Request, res: Response) => {
   }
 };
 
-export const getUserRelatedBookings = async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user?.id; // Assuming req.user is populated by isAuthenticated middleware
+export const getUserRelatedBookings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const userId = req.user?.id;
 
-  // Check if the user has a host profile
   const hostProfile = await HostProfile.findOne({ userId });
   let data;
 
   if (hostProfile) {
-    // User is a host
     const bookings = await Booking.find({
       selectedHost: hostProfile._id,
       paymentStatus: "completed",
     })
-      .populate("userId", "name email phone") // Fetch pet parent details
+      .populate("userId", "name email phone")
       .select("userId");
 
     data = bookings.map((booking) => booking.userId);
@@ -113,12 +116,11 @@ export const getUserRelatedBookings = async (req: Request, res: Response, next: 
       petParents: data,
     });
   } else {
-    // User is a pet parent
     const bookings = await Booking.find({
       userId,
       paymentStatus: "completed",
     })
-      .populate("selectedHost", "name email phone") // Fetch host details
+      .populate("selectedHost", "name email phone")
       .select("selectedHost");
 
     data = bookings.map((booking) => booking.selectedHost);
@@ -131,5 +133,12 @@ export const getUserRelatedBookings = async (req: Request, res: Response, next: 
   }
 };
 
+export const joinChat = (socket: any, chatId: string) => {
+  socket.join(chatId);
+  console.log(`User joined chat: ${chatId}`);
+};
 
-
+export const leaveChat = (socket: any, chatId: string) => {
+  socket.leave(chatId);
+  console.log(`User left chat: ${chatId}`);
+};
