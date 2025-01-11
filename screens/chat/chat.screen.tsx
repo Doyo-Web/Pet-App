@@ -5,109 +5,92 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
 
-type User = {
+type Chat = {
   _id: string;
-  name: string;
-  email: string;
-  phone?: string;
+  participants: {
+    _id: string;
+    fullName: string;
+    avatar: string;
+  }[];
+  lastMessage: {
+    content: string;
+    timestamp: string;
+  };
 };
 
-type RoleBasedUsersResponse = {
-  petParents?: User[];
-  hosts?: User[];
-};
-
-const RoleBasedUsersScreen: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+const ChatListScreen: React.FC = () => {
+  const [chats, setChats] = useState<Chat[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchRoleBasedUsers = async () => {
+    const fetchChats = async () => {
       try {
         const accessToken = await AsyncStorage.getItem("access_token");
-        if (!accessToken) {
-          throw new Error("No access token found");
-        }
-        const response = await axios.get<RoleBasedUsersResponse>(
-          `${SERVER_URI}/user-related-bookings`,
-          {
-            headers: { access_token: accessToken },
-          }
-        );
+        if (!accessToken) throw new Error("No access token found");
 
-        console.log(response.data.petParents || response.data.hosts);
-        setUsers(response.data.petParents || response.data.hosts || []);
+        const response = await axios.get(`${SERVER_URI}/list`, {
+          headers: { access_token: accessToken },
+        });
+        setChats(response.data);
       } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching chats:", error);
       }
     };
 
-    fetchRoleBasedUsers();
+    fetchChats();
   }, []);
 
-  const startChat = (userId: string) => {
-    router.push(`/(drawer)/(tabs)/chat/chattwo?userId=${userId}`);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+ const navigateToChat = (chatId: string) => {
+   router.push({
+     pathname: "/chat/[id]", // Use '[id]' for the dynamic segment
+     params: { id: chatId }, // Pass the 'id' parameter to the route
+   });
+ };
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={users}
+        data={chats}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.userItem}
-            onPress={() => startChat(item._id)}
+            style={styles.chatItem}
+            onPress={() => navigateToChat(item._id)}
           >
-            <Text style={styles.userName}>{item.name}</Text>
-            <Text style={styles.userEmail}>{item.email}</Text>
+            <Text style={styles.chatName}>{item.participants[0].fullName}</Text>
+            <Text style={styles.lastMessage}>{item.lastMessage?.content}</Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No users found</Text>
-        }
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f5f5f5" },
-  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  userItem: {
-    padding: 16,
-    backgroundColor: "#fff",
-    marginBottom: 8,
-    borderRadius: 8,
-    elevation: 2,
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
   },
-  userName: { fontSize: 18, fontWeight: "bold" },
-  userEmail: { fontSize: 14, color: "#555" },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 16,
-    fontSize: 16,
+  chatItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  chatName: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  lastMessage: {
+    fontSize: 14,
     color: "#888",
+    marginTop: 4,
   },
 });
 
-export default RoleBasedUsersScreen;
+export default ChatListScreen;
