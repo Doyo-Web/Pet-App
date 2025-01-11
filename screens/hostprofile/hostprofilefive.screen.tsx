@@ -80,8 +80,8 @@ export default function RequestsScreen() {
         const hostResponse = await axios.get<Host>(`${SERVER_URI}/host`, {
           headers: { access_token: accessToken },
         });
-          
-          console.log(hostResponse.data.host.city);
+
+        console.log(hostResponse.data.host.city);
         if (hostResponse.data && hostResponse.data.host.city) {
           setHostCity(hostResponse.data.host.city);
         } else {
@@ -133,7 +133,7 @@ export default function RequestsScreen() {
   const handleAccept = async (bookingId: string) => {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
-      await axios.post(
+      await axios.put(
         `${SERVER_URI}/accepted-host`,
         { bookingId },
         { headers: { access_token: accessToken } }
@@ -164,7 +164,7 @@ export default function RequestsScreen() {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       await axios.post(
-        `${SERVER_URI}/booking/decline`,
+        `${SERVER_URI}/decline-host`,
         { bookingId },
         { headers: { access_token: accessToken } }
       );
@@ -232,7 +232,7 @@ export default function RequestsScreen() {
         >
           {bookings.length === 0 ? (
             <Text style={styles.noBookingsText}>
-              No booking requests in your city at the moment
+              No booking requests at the moment
             </Text>
           ) : (
             bookings.map((booking) => (
@@ -276,7 +276,6 @@ export default function RequestsScreen() {
                   </View>
                 </View>
 
-                {!booking.selectedHost && (
                   <View style={styles.actionButtonsContainer}>
                     <TouchableOpacity
                       style={styles.declineButton}
@@ -291,7 +290,6 @@ export default function RequestsScreen() {
                       <Text style={styles.acceptButtonText}>ACCEPT</Text>
                     </TouchableOpacity>
                   </View>
-                )}
               </View>
             ))
           )}

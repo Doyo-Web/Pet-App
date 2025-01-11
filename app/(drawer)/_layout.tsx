@@ -361,6 +361,11 @@ const Layout: React.FC = () => {
           if (pathname === "/hostprofile/hostprofilefive") {
             return null; // Don't render anything for the profile screen
           }
+
+           if (pathname === "/chat/chattwo") {
+             return null; // Don't render anything for the profile screen
+           }
+          
           
           return (
             <TouchableOpacity
@@ -435,6 +440,10 @@ const Layout: React.FC = () => {
           }
           
           if (pathname === "/hostprofile/hostprofilefive") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/chat/chattwo") {
             return null; // Don't render anything for the profile screen
           }
           return (
