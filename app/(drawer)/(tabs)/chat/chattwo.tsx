@@ -45,7 +45,6 @@ const ChatScreen: React.FC = () => {
       }
       setUserId(userIdFromStorage);
 
-      // Fetch existing messages
       try {
         const response = await axios.get(
           `${SERVER_URI}/chats/${chatId}/messages`,
@@ -58,7 +57,6 @@ const ChatScreen: React.FC = () => {
         console.error("Error fetching messages:", error);
       }
 
-      // Set up Socket.IO connection
       socketRef.current = io(SERVER_URI, {
         query: { chatId, accessToken },
       });
@@ -94,7 +92,6 @@ const ChatScreen: React.FC = () => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       setInputMessage("");
 
-      // Emit the message through Socket.IO
       if (socketRef.current) {
         socketRef.current.emit("sendMessage", newMessage);
       }

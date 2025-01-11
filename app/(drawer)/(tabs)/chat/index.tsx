@@ -62,7 +62,6 @@ const RoleBasedUsersScreen: React.FC = () => {
         throw new Error("No access token found");
       }
 
-      // Create or get existing chat
       const response = await axios.post(
         `${SERVER_URI}/chats`,
         { participantId: userId },
