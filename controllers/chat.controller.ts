@@ -95,43 +95,71 @@ export const getUserRelatedBookings = async (
   res: Response,
   next: NextFunction
 ) => {
-  const userId = req.user?.id;
+  try {
+    const userId = req.user?.id;
 
-  const hostProfile = await HostProfile.findOne({ userId });
-  let data;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
 
-  if (hostProfile) {
-    const bookings = await Booking.find({
-      selectedHost: hostProfile._id,
-      paymentStatus: "completed",
-    })
-      .populate("userId", "name email phone")
-      .select("userId");
+    // Fetch the logged-in user's details
+    const loggedInUser = await userModel
+      .findById(userId);
 
-    data = bookings.map((booking) => booking.userId);
+    if (!loggedInUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user details not found",
+      });
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: "Pet parent details for bookings where you are the host",
-      petParents: data,
-    });
-  } else {
-    const bookings = await Booking.find({
-      userId,
-      paymentStatus: "completed",
-    })
-      .populate("selectedHost", "name email phone")
-      .select("selectedHost");
+    const hostProfile = await HostProfile.findOne({ userId });
+    let data;
+    let message;
 
-    data = bookings.map((booking) => booking.selectedHost);
+    if (hostProfile) {
+      const bookings = await Booking.find({
+        selectedHost: hostProfile._id,
+        paymentStatus: "completed",
+      })
+        .populate("userId", "name email phone")
+        .select("userId");
 
-    return res.status(200).json({
-      success: true,
-      message: "Host details for bookings created by you",
-      hosts: data,
-    });
+      data = bookings.map((booking) => booking.userId);
+      message = "Pet parent details for bookings where you are the host";
+
+      return res.status(200).json({
+        success: true,
+        message,
+        loggedInUser,
+        petParents: data,
+      });
+    } else {
+      const bookings = await Booking.find({
+        userId,
+        paymentStatus: "completed",
+      })
+        .populate("selectedHost", "name email phone")
+        .select("selectedHost");
+
+      data = bookings.map((booking) => booking.selectedHost);
+      message = "Host details for bookings created by you";
+
+      return res.status(200).json({
+        success: true,
+        message,
+        loggedInUser,
+        hosts: data,
+      });
+    }
+  } catch (error) {
+    next(error);
   }
 };
+
 
 export const joinChat = (socket: any, chatId: string) => {
   socket.join(chatId);
