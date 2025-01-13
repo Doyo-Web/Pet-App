@@ -70,95 +70,42 @@ export const createChat = async (req: Request, res: Response) => {
     const { participantId } = req.body;
     const userId = req.user?.id;
 
+    // Check if the user is already a participant in any chat with the given participant
     const existingChat = await Chat.findOne({
       participants: { $all: [userId, participantId] },
     });
 
+    // If the user is already part of an existing chat with the participant
     if (existingChat) {
-      return res.json(existingChat);
+      return res.json(existingChat); // Return the existing chat
     }
 
-    const newChat = new Chat({
-      participants: [userId, participantId],
-      messages: [],
+    // Check if the user is part of any chat at all
+    const userChat = await Chat.findOne({
+      participants: userId,
     });
 
-    await newChat.save();
-    res.status(201).json(newChat);
+    // If the user has chats, return an existing one
+    if (userChat) {
+      return res.json(userChat); // Return the existing chat
+    }
+
+    // If no chat exists, create a new chat
+    const newChat = new Chat({
+      participants: [userId, participantId],
+      messages: [], // Initialize with an empty messages array
+    });
+
+    await newChat.save(); // Save the new chat
+
+    res.status(201).json(newChat); // Return the new chat
   } catch (error) {
     res.status(500).json({ message: "Error creating chat", error });
   }
 };
 
-export const getUserRelatedBookings = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "User not authenticated",
-      });
-    }
 
-    // Fetch the logged-in user's details
-    const loggedInUser = await userModel
-      .findById(userId);
-
-    if (!loggedInUser) {
-      return res.status(404).json({
-        success: false,
-        message: "Logged-in user details not found",
-      });
-    }
-
-    const hostProfile = await HostProfile.findOne({ userId });
-    let data;
-    let message;
-
-    if (hostProfile) {
-      const bookings = await Booking.find({
-        selectedHost: hostProfile._id,
-        paymentStatus: "completed",
-      })
-        .populate("userId", "name email phone")
-        .select("userId");
-
-      data = bookings.map((booking) => booking.userId);
-      message = "Pet parent details for bookings where you are the host";
-
-      return res.status(200).json({
-        success: true,
-        message,
-        loggedInUser,
-        petParents: data,
-      });
-    } else {
-      const bookings = await Booking.find({
-        userId,
-        paymentStatus: "completed",
-      })
-        .populate("selectedHost", "name email phone")
-        .select("selectedHost");
-
-      data = bookings.map((booking) => booking.selectedHost);
-      message = "Host details for bookings created by you";
-
-      return res.status(200).json({
-        success: true,
-        message,
-        loggedInUser,
-        hosts: data,
-      });
-    }
-  } catch (error) {
-    next(error);
-  }
-};
 
 
 export const joinChat = (socket: any, chatId: string) => {

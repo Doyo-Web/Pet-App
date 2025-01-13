@@ -4,7 +4,6 @@ import {
   getChatMessages,
   sendMessage,
   createChat,
-  getUserRelatedBookings,
 } from "../controllers/chat.controller";
 import { isAuthenticated } from "../middleware/auth";
 
@@ -14,6 +13,5 @@ router.get("/list", isAuthenticated, getChatList);
 router.get("/:chatId/messages", isAuthenticated, getChatMessages);
 router.post("/:chatId/messages", isAuthenticated, sendMessage);
 router.post("/create", isAuthenticated, createChat);
-router.get("/user-related-bookings", isAuthenticated, getUserRelatedBookings);
 
 export default router;

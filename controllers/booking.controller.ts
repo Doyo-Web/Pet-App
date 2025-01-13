@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import Booking, { IBooking } from "../models/booking.model";
 import HostProfile from "../models/hostprofile.model";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import User from "../models/user.model";
+import userModel from "../models/user.model";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_47UXyR0Uds1kIX",
@@ -482,5 +483,74 @@ export const getRequestBooking = async (req: Request, res: Response) => {
       success: false,
       message: "An error occurred while fetching the bookings.",
     });
+  }
+};
+
+export const getUserRelatedBookings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Fetch the logged-in user's details
+    const loggedInUser = await userModel.findById(userId);
+
+    if (!loggedInUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user details not found",
+      });
+    }
+
+    const hostProfile = await HostProfile.findOne({ userId });
+    let data;
+    let message;
+
+    if (hostProfile) {
+      const bookings = await Booking.find({
+        selectedHost: hostProfile._id,
+        paymentStatus: "completed",
+      })
+        .populate("userId", "name email phone")
+        .select("userId");
+
+      data = bookings.map((booking) => booking.userId);
+      message = "Pet parent details for bookings where you are the host";
+
+      return res.status(200).json({
+        success: true,
+        message,
+        loggedInUser,
+        petParents: data,
+      });
+    } else {
+      const bookings = await Booking.find({
+        userId,
+        paymentStatus: "completed",
+      })
+        .populate("selectedHost", "name email phone")
+        .select("selectedHost");
+
+      data = bookings.map((booking) => booking.selectedHost);
+      message = "Host details for bookings created by you";
+
+      return res.status(200).json({
+        success: true,
+        message,
+        loggedInUser,
+        hosts: data,
+      });
+    }
+  } catch (error) {
+    next(error);
   }
 };

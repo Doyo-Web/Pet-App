@@ -8,6 +8,7 @@ import {
   getBookingById,
   getBookings,
   getRequestBooking,
+  getUserRelatedBookings,
   savePaymentDetails,
   updateBookingWithSelectedHost,
 } from "../controllers/booking.controller";
@@ -26,4 +27,6 @@ router.get("/get-billing", isAuthenticated, getBilling);
 router.post("/create-razorpay-order", isAuthenticated, createRazorpayOrder);
 router.post("/save-payment", isAuthenticated, savePaymentDetails);
 router.get("/getrequestbooking", isAuthenticated, getRequestBooking);
+router.get("/user-related-bookings", isAuthenticated, getUserRelatedBookings);
+
 export default router;
