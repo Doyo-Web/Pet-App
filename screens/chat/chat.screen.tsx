@@ -21,7 +21,7 @@ type User = {
   };
 };
 
-type Host = {
+type Participant = {
   _id: string;
   fullname: string;
   email: string;
@@ -31,8 +31,8 @@ type Host = {
 };
 
 const ChatListScreen: React.FC = () => {
-  const [host, setHost] = useState<Host | null>(null); // Host details
-  const [petParents, setPetParents] = useState<User[]>([]); // Pet parents list
+  const [currentUser, setCurrentUser] = useState<Participant | null>(null); // Current logged-in user
+  const [relatedUsers, setRelatedUsers] = useState<User[]>([]); // Related users list (hosts or pet parents)
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -50,11 +50,11 @@ const ChatListScreen: React.FC = () => {
           }
         );
 
-        console.log("Full API response:", response.data);
+        console.log("API response:", response.data);
 
-        // Extract and set host details and pet parents
-        setHost(response.data.loggedInUser);
-        setPetParents(response.data.petParents || []);
+        // Set current user and related users based on response
+        setCurrentUser(response.data.loggedInUser || null);
+        setRelatedUsers(response.data.hosts || response.data.petParents || []);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -65,14 +65,14 @@ const ChatListScreen: React.FC = () => {
     fetchData();
   }, []);
 
-  const openChat = (petParentId: string) => {
-    if (!host) return;
+  const openChat = (relatedUserId: string) => {
+    if (!currentUser) return;
 
     router.push({
       pathname: "/chat/chattwo", // Dynamic route
       params: {
-        userId: petParentId,
-        selectedHost: host._id, // Sending the host's ID
+        userId: relatedUserId,
+        selectedHost: currentUser._id, // Sending the logged-in user's ID
       },
     });
   };
@@ -81,21 +81,22 @@ const ChatListScreen: React.FC = () => {
     <View style={styles.container}>
       {loading ? (
         <ActivityIndicator size="large" color="#6200ea" />
-      ) : petParents.length > 0 && host ? (
+      ) : relatedUsers.length > 0 && currentUser ? (
         <>
-          <View style={styles.hostInfo}>
+          <View style={styles.userInfo}>
             <Image
               source={{
-                uri: host.avatar?.url || "https://via.placeholder.com/50",
+                uri:
+                  currentUser.avatar?.url || "https://via.placeholder.com/50",
               }}
               style={styles.avatar}
             />
-            <Text style={styles.hostText}>
-              Logged in as: {host.fullname} ({host.email})
+            <Text style={styles.userText}>
+              Logged in as: {currentUser.fullname} ({currentUser.email})
             </Text>
           </View>
           <FlatList
-            data={petParents}
+            data={relatedUsers}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -108,7 +109,7 @@ const ChatListScreen: React.FC = () => {
                   }}
                   style={styles.avatar}
                 />
-                <View style={styles.userInfo}>
+                <View style={styles.userDetails}>
                   <Text style={styles.userName}>{item.email}</Text>
                   <Text style={styles.userId}>ID: {item._id}</Text>
                 </View>
@@ -117,7 +118,7 @@ const ChatListScreen: React.FC = () => {
           />
         </>
       ) : (
-        <Text style={styles.noUsersText}>No pet parents found</Text>
+        <Text style={styles.noUsersText}>No related users found</Text>
       )}
     </View>
   );
@@ -128,14 +129,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  hostInfo: {
+  userInfo: {
     padding: 16,
     backgroundColor: "#e0e0e0",
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
   },
-  hostText: {
+  userText: {
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 8,
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginRight: 16,
   },
-  userInfo: {
+  userDetails: {
     flex: 1,
   },
   userName: {
