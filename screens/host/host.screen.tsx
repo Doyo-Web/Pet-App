@@ -27,6 +27,7 @@ import { Toast } from "react-native-toast-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -40,6 +41,31 @@ export default function HostScreen() {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
+
+
+ 
+  useFocusEffect(
+     React.useCallback(() => {
+       const checkHostStatus = async () => {
+         const accessToken = await AsyncStorage.getItem("access_token");
+         try {
+           const response = await axios.get(`${SERVER_URI}/host`, {
+             headers: {
+               "Content-Type": "application/json",
+               access_token: accessToken,
+             },
+           });
+           if (response.data.host) {
+             router.push("/(drawer)/(tabs)/hostprofile");
+           }
+         } catch (error) {
+           console.log("Error checking host profile:", error);
+         }
+       };
+
+       checkHostStatus();
+     }, [])
+   );
 
   // Add new state for button disabled status
   const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
@@ -651,13 +677,15 @@ const handleHostProfile = async () => {
       }
     );
 
+
     // Check server response for success or specific conditions
     if (response.data.message) {
       // If host profile already exists
       if (response.data.message === "User already has a host profile") {
         Toast.show("You already have a host profile.", {
           type: "info",
-        });
+        }
+        );
 
       // Reset all state to initial values
       setProfile({

@@ -12,6 +12,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
+import { useFocusEffect } from "@react-navigation/native";
 
 type User = {
   _id: string;
@@ -36,34 +37,38 @@ const ChatListScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const accessToken = await AsyncStorage.getItem("access_token");
-        if (!accessToken) throw new Error("No access token found");
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const accessToken = await AsyncStorage.getItem("access_token");
+          if (!accessToken) throw new Error("No access token found");
 
-        const response = await axios.get(
-          `${SERVER_URI}/user-related-bookings`,
-          {
-            headers: { access_token: accessToken },
-          }
-        );
+          const response = await axios.get(
+            `${SERVER_URI}/user-related-bookings`,
+            {
+              headers: { access_token: accessToken },
+            }
+          );
 
-        console.log("API response:", response.data);
+          console.log("API response:", response.data);
 
-        // Set current user and related users based on response
-        setCurrentUser(response.data.loggedInUser || null);
-        setRelatedUsers(response.data.hosts || response.data.petParents || []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          // Set current user and related users based on response
+          setCurrentUser(response.data.loggedInUser || null);
+          setRelatedUsers(
+            response.data.hosts || response.data.petParents || []
+          );
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchData();
-  }, []);
+      fetchData();
+    }, [])
+  );
 
   const openChat = (relatedUserId: string) => {
     if (!currentUser) return;
