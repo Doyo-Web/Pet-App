@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import Booking, { IBooking } from "../models/booking.model";
 import HostProfile from "../models/hostprofile.model";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import Razorpay from "razorpay";
 import User from "../models/user.model";
 import userModel from "../models/user.model";
@@ -230,7 +230,7 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     // Find the specific booking by ID and ensure host isn't already accepted
     const booking = await Booking.findOne({
       _id: bookingId,
-      acceptedHosts: { $ne: hostProfile._id },
+      acceptedHosts: { $ne: userId },
     });
 
     if (!booking) {
@@ -241,7 +241,7 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     }
 
     // Add the host profile ID to the acceptedHosts array
-    booking.acceptedHosts.push(hostProfile.id);
+    booking.acceptedHosts.push(userId);
 
     // Save the updated booking
     await booking.save();
@@ -485,6 +485,7 @@ export const getRequestBooking = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 export const getUserRelatedBookings = async (
   req: Request,
