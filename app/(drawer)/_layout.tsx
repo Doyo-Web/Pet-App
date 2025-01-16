@@ -70,40 +70,50 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
 
   return (
     <DrawerContentScrollView {...props}>
-      <TouchableOpacity
-        style={styles.drawerarrowcontainer}
-        onPress={() => props.navigation.closeDrawer()}
-      >
-        <AntDesign name="arrowleft" size={26} color="black" />
-      </TouchableOpacity>
+      <View style={styles.drawertop}>
+        <TouchableOpacity
+          style={styles.drawerarrowcontainer}
+          onPress={() => props.navigation.closeDrawer()}
+        >
+          <AntDesign name="arrowleft" size={26} color="black" />
+        </TouchableOpacity>
 
-      <View style={styles.draweruserdetailscontainer}>
-        {/* <Image source={require("@/assets/images/profilepic.png")} /> */}
+        <Image
+          style={styles.logotop}
+          source={require("@/assets/images/logo.png")}
+        />
+      </View>
 
-        <View style={styles.avatarbox}>
-          <Image
-            style={styles.avatar}
-            source={{
-              uri:
-                ruser?.avatar?.url || user?.avatar?.url
-                  ? ruser?.avatar?.url || user?.avatar?.url
-                  : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
-            }}
-          />
-        </View>
+      <View style={styles.profilecardcontainer}>
+        <View style={styles.profilecardbackground}></View>
+        <View style={styles.draweruserdetailscontainer}>
+          {/* <Image source={require("@/assets/images/profilepic.png")} /> */}
 
-        <View style={styles.draweruserdetailsbox}>
-          <Text style={styles.draweruserdetailstext}>
-            {ruser?.fullname || user?.fullname}
-          </Text>
-          <Text>{ruser?.phonenumber || user?.phonenumber}</Text>
-          <TouchableOpacity
-            onPress={() => {
-              router.push("/(tabs)/editprofile");
-            }}
-          >
-            <Text style={styles.linkText}>Edit Profile</Text>
-          </TouchableOpacity>
+          <View style={styles.avatarbox}>
+            <Image
+              style={styles.avatar}
+              source={{
+                uri:
+                  ruser?.avatar?.url || user?.avatar?.url
+                    ? ruser?.avatar?.url || user?.avatar?.url
+                    : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
+              }}
+            />
+          </View>
+
+          <View style={styles.draweruserdetailsbox}>
+            <Text style={styles.draweruserdetailstext}>
+              {ruser?.fullname || user?.fullname}
+            </Text>
+            <Text>{ruser?.phonenumber || user?.phonenumber}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                router.push("/(tabs)/editprofile");
+              }}
+            >
+              <Text style={styles.linkText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -461,6 +471,18 @@ const Layout: React.FC = () => {
 export default Layout;
 
 const styles = StyleSheet.create({
+  drawertop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  logotop: {
+    width: 72,
+    height: 37,
+    marginTop: 28,
+    marginRight: 15,
+  },
+
   headerLogo: {
     width: 80, // Set the width of the logo
     height: 80, // Set the height of the logo
@@ -499,7 +521,26 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 40,
+    right: 18,
+    bottom: 40,
+    left: 28,
+    backgroundColor: "#FF6B6B",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   draweruserdetailscontainer: {
+    position: "relative",
     paddingVertical: 10,
     backgroundColor: "#fff",
     marginLeft: 20,

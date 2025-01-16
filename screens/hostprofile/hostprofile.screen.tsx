@@ -98,26 +98,31 @@ const DeleteConfirmationModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.warningIconContainer}>
-            <MaterialIcons name="warning" size={32} color="#FF6B6B" />
-          </View>
-          <Text style={styles.modalTitle}>
-            Are you sure you want to delete your Host Profile?
-          </Text>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.yesButton]}
-              onPress={onConfirm}
-            >
-              <Text style={[styles.buttonText, styles.yesButtonText]}>YES</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.noButton]}
-              onPress={onClose}
-            >
-              <Text style={[styles.buttonText, styles.noButtonText]}>NO</Text>
-            </TouchableOpacity>
+        <View style={styles.profilecardcontainermodel}>
+          <View style={styles.profilecardbackgroundmodel}></View>
+          <View style={styles.modalContent}>
+            <View style={styles.warningIconContainer}>
+              <MaterialIcons name="warning" size={32} color="#FF6B6B" />
+            </View>
+            <Text style={styles.modalTitle}>
+              Are you sure you want to delete your Host Profile?
+            </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.yesButton]}
+                onPress={onConfirm}
+              >
+                <Text style={[styles.buttonText, styles.yesButtonText]}>
+                  YES
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.noButton]}
+                onPress={onClose}
+              >
+                <Text style={[styles.buttonText, styles.noButtonText]}>NO</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -276,24 +281,27 @@ export default function HostProfileScreen() {
             style={styles.loader}
           />
         ) : host ? (
-          <View style={styles.profileCard}>
-            <Image
-              source={{
-                uri:
-                  host.hostProfile?.profileImage ||
-                  "https://via.placeholder.com/80",
-              }}
-              style={styles.profileImage}
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{host.fullName}</Text>
-              <View style={styles.locationContainer}>
-                <Ionicons name="location" size={16} color="#666" />
-                <Text style={styles.locationText}>{host.city}</Text>
+          <View style={styles.profilecardcontainer}>
+            <View style={styles.profilecardbackground}></View>
+            <View style={styles.profileCard}>
+              <Image
+                source={{
+                  uri:
+                    host.hostProfile?.profileImage ||
+                    "https://via.placeholder.com/80",
+                }}
+                style={styles.profileImage}
+              />
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>{host.fullName}</Text>
+                <View style={styles.locationContainer}>
+                  <Ionicons name="location" size={16} color="#666" />
+                  <Text style={styles.locationText}>{host.city}</Text>
+                </View>
+                <Text style={styles.profileDescription}>
+                  {host.hostProfile?.bio || "No bio available"}
+                </Text>
               </View>
-              <Text style={styles.profileDescription}>
-                {host.hostProfile?.bio || "No bio available"}
-              </Text>
             </View>
           </View>
         ) : (
@@ -414,7 +422,27 @@ const styles = StyleSheet.create({
   earningsText: {
     fontWeight: "500",
   },
+
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 20,
+    right: 16,
+    bottom: 16,
+    left: 18,
+    backgroundColor: "#00D0C3",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   profileCard: {
+    position: 'relative',
     margin: 16,
     padding: 16,
     backgroundColor: "#fff",
@@ -550,6 +578,24 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
 
+  profilecardcontainermodel: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackgroundmodel: {
+    position: "absolute",
+    top: 5,
+    right: 30,
+    bottom: -2,
+    left: 10,
+    backgroundColor: "#00D0C3",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -558,6 +604,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
+    position: "relative",
     backgroundColor: "white",
     borderRadius: 16,
     padding: 24,

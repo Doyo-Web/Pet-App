@@ -158,26 +158,29 @@ export default function BookingScreenTwo() {
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.footprintIcon}>
-              <Ionicons name="paw" size={24} color="white" />
+        <View style={styles.profilecardcontainer}>
+          <View style={styles.profilecardbackground}></View>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.footprintIcon}>
+                <Ionicons name="paw" size={24} color="white" />
+              </View>
+              <Text style={styles.cardTitle}>Booking Confirmation Process</Text>
             </View>
-            <Text style={styles.cardTitle}>Booking Confirmation Process</Text>
+            <Text style={styles.stepText}>
+              <Text style={styles.boldText}>Step 1:</Text>
+              {"\n"}
+              Your request will be acknowledged by our hosts within 12 hours.
+              You will receive a notification in your notification bar and an
+              email update regarding the status.
+            </Text>
+            <Text style={styles.stepText}>
+              <Text style={styles.boldText}>Step 2:</Text>
+              {"\n"}
+              Once the hosts accept your request, you can select your preferred
+              host from the accepted hosts to proceed with the booking.
+            </Text>
           </View>
-          <Text style={styles.stepText}>
-            <Text style={styles.boldText}>Step 1:</Text>
-            {"\n"}
-            Your request will be acknowledged by our hosts within 12 hours. You
-            will receive a notification in your notification bar and an email
-            update regarding the status.
-          </Text>
-          <Text style={styles.stepText}>
-            <Text style={styles.boldText}>Step 2:</Text>
-            {"\n"}
-            Once the hosts accept your request, you can select your preferred
-            host from the accepted hosts to proceed with the booking.
-          </Text>
         </View>
 
         <Text style={styles.sectionTitle}>Matched Pawfect Hosts</Text>
@@ -279,6 +282,25 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 60,
   },
+
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 0,
+    right: -5,
+    bottom: 18,
+    left: 15,
+    backgroundColor: "#FF6B6B",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   card: {
     backgroundColor: "white",
     borderRadius: 12,

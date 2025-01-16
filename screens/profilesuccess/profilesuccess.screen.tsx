@@ -92,7 +92,7 @@ const ProfileSuccessScreen = () => {
             <Text style={styles.awesomeText}>Awesome!</Text>
           </View>
           <Text style={styles.descriptionText}>
-            Your Host Profile{"\n"}is successfully created!
+            Your Pet Profile{"\n"}is successfully created!
           </Text>
         </View>
         <View style={styles.buttonContainer}>

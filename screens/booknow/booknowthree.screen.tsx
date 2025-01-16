@@ -55,33 +55,36 @@ const HostCard: React.FC<HostCardProps> = ({
       host.fullName
     } as your host`}
   >
-    <View style={styles.cardContent}>
-      <Image
-        source={{ uri: host.profileImage }}
-        style={styles.avatar}
-        accessibilityLabel={`${host.fullName}'s profile picture`}
-      />
-      <View style={styles.hostInfo}>
-        <Text style={styles.hostName}>{host.fullName}</Text>
-        <Text style={styles.location}>{host.city}</Text>
-      </View>
-      <View style={styles.ratingContainer}>
-        <View style={styles.stars}>
-          {[...Array(5)].map((_, i) => (
-            <Icon
-              key={`star-${host._id}-${i}`}
-              name="star"
-              size={16}
-              color={i < host.rating ? "#FDD00D" : "#E0E0E0"}
-            />
-          ))}
+    <View style={styles.profilecardcontainer}>
+      <View style={styles.profilecardbackground}></View>
+      <View style={styles.cardContent}>
+        <Image
+          source={{ uri: host.profileImage }}
+          style={styles.avatar}
+          accessibilityLabel={`${host.fullName}'s profile picture`}
+        />
+        <View style={styles.hostInfo}>
+          <Text style={styles.hostName}>{host.fullName}</Text>
+          <Text style={styles.location}>{host.city}</Text>
         </View>
-        <TouchableOpacity
-          onPress={onKnowMore}
-          accessibilityLabel={`Learn more about ${host.fullName}`}
-        >
-          <Text style={styles.knowMore}>know more</Text>
-        </TouchableOpacity>
+        <View style={styles.ratingContainer}>
+          <View style={styles.stars}>
+            {[...Array(5)].map((_, i) => (
+              <Icon
+                key={`star-${host._id}-${i}`}
+                name="star"
+                size={16}
+                color={i < host.rating ? "#FDD00D" : "#E0E0E0"}
+              />
+            ))}
+          </View>
+          <TouchableOpacity
+            onPress={onKnowMore}
+            accessibilityLabel={`Learn more about ${host.fullName}`}
+          >
+            <Text style={styles.knowMore}>know more</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   </TouchableOpacity>
@@ -347,7 +350,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6FFE6",
     borderColor: "#4CAF50",
   },
+
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 40,
+    right: 18,
+    bottom: 40,
+    left: 28,
+    backgroundColor: "#FF6B6B",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   cardContent: {
+    position: "relative",
     flexDirection: "row",
     alignItems: "center",
   },

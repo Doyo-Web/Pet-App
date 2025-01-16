@@ -72,25 +72,28 @@ export default function PetParentProfile() {
               <ArrowLeft color="#000" size={24} />
             </View>
           </TouchableOpacity>
-          <View style={styles.profile}>
-            <Image
-              source={{
-                uri:
-                  ruser?.avatar?.url || user?.avatar?.url
-                    ? ruser?.avatar?.url || user?.avatar?.url
-                    : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
-              }}
-              style={styles.avatar}
-            />
-            <View style={styles.info}>
-              <Text style={styles.name}>
-                {ruser?.fullname || user?.fullname}
-              </Text>
-              <View style={styles.location}>
-                <MapPin color="#666" size={14} />
-                <Text style={styles.locationText}>
-                  {ruser?.profession || user?.profession}
+          <View style={styles.profilecardcontainer}>
+            <View style={styles.profilecardbackground}></View>
+            <View style={styles.profile}>
+              <Image
+                source={{
+                  uri:
+                    ruser?.avatar?.url || user?.avatar?.url
+                      ? ruser?.avatar?.url || user?.avatar?.url
+                      : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=",
+                }}
+                style={styles.avatar}
+              />
+              <View style={styles.info}>
+                <Text style={styles.name}>
+                  {ruser?.fullname || user?.fullname}
                 </Text>
+                <View style={styles.location}>
+                  <MapPin color="#666" size={14} />
+                  <Text style={styles.locationText}>
+                    {ruser?.profession || user?.profession}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -253,7 +256,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 5,
+    backgroundColor: "#FDCF00",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   profile: {
+    position: "relative",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

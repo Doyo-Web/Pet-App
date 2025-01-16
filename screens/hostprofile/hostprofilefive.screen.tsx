@@ -236,45 +236,47 @@ export default function RequestsScreen() {
             </Text>
           ) : (
             bookings.map((booking) => (
-              <View key={booking._id} style={styles.requestContainer}>
-                <View style={styles.card}>
-                  <View style={styles.cardContent}>
-                    {booking.pets[0]?.image ? (
-                      <Image
-                        source={{ uri: booking.pets[0].image }}
-                        style={styles.petImage}
-                      />
-                    ) : (
-                      <View style={styles.petImage}>
-                        <Text style={styles.petImagePlaceholder}>🐾</Text>
-                      </View>
-                    )}
-                    <View style={styles.petInfo}>
-                      <Text style={styles.petName}>
-                        {booking.pets[0]?.name || "Pet"}{" "}
-                        <Text style={styles.breedText}>
-                          ({booking.pets[0]?.breed || "Unknown"})
-                        </Text>
-                      </Text>
-                      <Text style={styles.dateRange}>
-                        {formatDate(booking.startDateTime)}-
-                        {formatDate(booking.endDateTime)}
-                      </Text>
-                      {booking.paymentStatus === "completed" && (
-                        <Text style={styles.paymentComplete}>
-                          Payment Completed
-                        </Text>
+              <View style={styles.profilecardcontainer}>
+                <View style={styles.profilecardbackground}></View>
+                <View key={booking._id} style={styles.requestContainer}>
+                  <View style={styles.card}>
+                    <View style={styles.cardContent}>
+                      {booking.pets[0]?.image ? (
+                        <Image
+                          source={{ uri: booking.pets[0].image }}
+                          style={styles.petImage}
+                        />
+                      ) : (
+                        <View style={styles.petImage}>
+                          <Text style={styles.petImagePlaceholder}>🐾</Text>
+                        </View>
                       )}
+                      <View style={styles.petInfo}>
+                        <Text style={styles.petName}>
+                          {booking.pets[0]?.name || "Pet"}{" "}
+                          <Text style={styles.breedText}>
+                            ({booking.pets[0]?.breed || "Unknown"})
+                          </Text>
+                        </Text>
+                        <Text style={styles.dateRange}>
+                          {formatDate(booking.startDateTime)}-
+                          {formatDate(booking.endDateTime)}
+                        </Text>
+                        {booking.paymentStatus === "completed" && (
+                          <Text style={styles.paymentComplete}>
+                            Payment Completed
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleKnowMore(booking._id)}
+                        style={styles.knowMoreButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Text style={styles.knowMoreText}>know more</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleKnowMore(booking._id)}
-                      style={styles.knowMoreButton}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={styles.knowMoreText}>know more</Text>
-                    </TouchableOpacity>
                   </View>
-                </View>
 
                   <View style={styles.actionButtonsContainer}>
                     <TouchableOpacity
@@ -290,6 +292,7 @@ export default function RequestsScreen() {
                       <Text style={styles.acceptButtonText}>ACCEPT</Text>
                     </TouchableOpacity>
                   </View>
+                </View>
               </View>
             ))
           )}
@@ -353,9 +356,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 300,
   },
+
+  profilecardcontainer: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackground: {
+    position: "absolute",
+    top: 0,
+    right: -1,
+    bottom: 75,
+    left: 8,
+    backgroundColor: "#00D0C3",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   requestContainer: {
     marginBottom: 16,
   },
+
   card: {
     borderWidth: 1.5,
     borderColor: "#20B2AA",

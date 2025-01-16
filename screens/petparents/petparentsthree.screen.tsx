@@ -165,54 +165,57 @@ const renderStars = () => {
         onRequestClose={() => setShowReview(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Close Button */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowReview(false)}
-            >
-              <View style={styles.closeButtonCircle}>
-                <X size={20} color="black" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Review Content */}
-            <View style={styles.reviewContainer}>
-              <Text style={styles.reviewTitle}>
-                Please share your experience with DOYO.
-              </Text>
-
-              <Image
-                source={{ uri: "https://placeholder.com/100" }}
-                style={styles.hostImage}
-              />
-
-              <Text style={styles.ratingText}>Rate our Host's service</Text>
-
-              <View style={styles.starsContainer}>{renderStars()}</View>
-
-              <Text style={styles.feedbackLabel}>
-                Please give us your valuable feedback:
-              </Text>
-
-              <TextInput
-                style={styles.feedbackInput}
-                placeholder="Type here..."
-                value={review.feedback}
-                onChangeText={(text) =>
-                  setReview((prev) => ({ ...prev, feedback: text }))
-                }
-                multiline
-                numberOfLines={4}
-                placeholderTextColor="#666666"
-              />
-
+          <View style={styles.profilecardcontainermodel}>
+            <View style={styles.profilecardbackgroundmodel}></View>
+            <View style={styles.modalContent}>
+              {/* Close Button */}
               <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmitReview}
+                style={styles.closeButton}
+                onPress={() => setShowReview(false)}
               >
-                <Text style={styles.submitButtonText}>SUBMIT</Text>
+                <View style={styles.closeButtonCircle}>
+                  <X size={20} color="black" />
+                </View>
               </TouchableOpacity>
+
+              {/* Review Content */}
+              <View style={styles.reviewContainer}>
+                <Text style={styles.reviewTitle}>
+                  Please share your experience with DOYO.
+                </Text>
+
+                <Image
+                  source={{ uri: "https://placeholder.com/100" }}
+                  style={styles.hostImage}
+                />
+
+                <Text style={styles.ratingText}>Rate our Host's service</Text>
+
+                <View style={styles.starsContainer}>{renderStars()}</View>
+
+                <Text style={styles.feedbackLabel}>
+                  Please give us your valuable feedback:
+                </Text>
+
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Type here..."
+                  value={review.feedback}
+                  onChangeText={(text) =>
+                    setReview((prev) => ({ ...prev, feedback: text }))
+                  }
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor="#666666"
+                />
+
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSubmitReview}
+                >
+                  <Text style={styles.submitButtonText}>SUBMIT</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -291,6 +294,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  profilecardcontainermodel: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 400,
+    marginHorizontal: "auto",
+  },
+
+  profilecardbackgroundmodel: {
+    position: "absolute",
+    top: 40,
+    right: 18,
+    bottom: 40,
+    left: 28,
+    backgroundColor: "#FF6B6B",
+    borderRadius: 12,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+
   modalContent: {
     width: width - 32,
     backgroundColor: "white",

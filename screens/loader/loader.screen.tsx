@@ -40,9 +40,16 @@ useEffect(() => {
         source={require("@/assets/images/Loader_Image.gif")}
       />
 
-      <Text style={styles.text}>Get ready for pawsome care, just a sec!</Text>
+      <Text style={styles.text}>
+        Get ready for pawsome care, just{"\n"}a sec!
+      </Text>
 
-      <Progress.Bar progress={progress} width={300} color={"#FDCF00"} />
+      <Progress.Bar
+        progress={progress}
+        width={300}
+        color={"#FDCF00"}
+        style={styles.progressBar}
+      />
     </View>
   );
 }

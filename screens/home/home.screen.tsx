@@ -144,6 +144,9 @@ const HomeScreen: React.FC = () => {
     },
   ];
 
+  const handlehost = () => {
+    router.push("/(drawer)/(tabs)/host");
+  }
 
   const renderCarouselItem = (item: CarouselItem) => {
     return (
@@ -227,7 +230,10 @@ const HomeScreen: React.FC = () => {
                 Earn extra income and unlock new opportunities by sharing your
                 space with love for pets.
               </Text>
-              <TouchableOpacity style={styles.ctaButton}>
+              <TouchableOpacity
+                style={styles.ctaButton}
+                onPress={handlehost}
+              >
                 <Text style={styles.ctaText}>Join our Community</Text>
               </TouchableOpacity>
             </View>
@@ -546,7 +552,7 @@ const styles = StyleSheet.create({
   },
 
   testimonialcontainer: {
-    height: 600,
+    height: 550,
     flex: 1,
     justifyContent: "center",
   },
@@ -561,7 +567,7 @@ const styles = StyleSheet.create({
   testimonialCard: {
     width: responsiveWidth(90),
     alignItems: "center",
-    justifyContent: "center",
+    // justifyContent: "center",
     padding: 20,
     backgroundColor: "#f04f47",
     borderRadius: 10,
