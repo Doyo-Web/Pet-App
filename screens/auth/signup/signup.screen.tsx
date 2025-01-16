@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 16,
     backgroundColor: "white",
-    color: "#A1A1A1",
+    color: "#000",
     borderWidth: 1,
     borderColor: "#000",
   },

@@ -360,10 +360,10 @@ const styles = StyleSheet.create({
 
   profilecardbackground: {
     position: "absolute",
-    top: 40,
-    right: 18,
-    bottom: 40,
-    left: 28,
+    top: 20,
+    right: 16,
+    bottom: 16,
+    left: 18,
     backgroundColor: "#FF6B6B",
     borderRadius: 12,
     transform: [{ translateX: 4 }, { translateY: 4 }],
