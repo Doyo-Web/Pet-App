@@ -83,6 +83,7 @@ export default function BookingScreenTwo() {
 
       if (response.data && response.data.success && response.data.booking) {
         const newBooking = response.data.booking;
+        console.log("New Booking", newBooking);
         setBooking(newBooking);
 
         const newHostCount = newBooking.acceptedHosts.length;

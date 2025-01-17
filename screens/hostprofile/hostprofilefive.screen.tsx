@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -61,9 +62,9 @@ export default function RequestsScreen() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [hostCity, setHostCity] = useState<string>("");
-
-  useEffect(() => {
-    const fetchRequestData = async () => {
+const [refreshing, setRefreshing] = useState(false);
+  
+    const fetchRequestData = useCallback(async () => {
       try {
         const accessToken = await AsyncStorage.getItem("access_token");
         if (!accessToken) {
@@ -120,10 +121,22 @@ export default function RequestsScreen() {
         setLoading(false);
         Alert.alert("Error", "Failed to fetch booking data. Please try again.");
       }
-    };
+    }, []);
 
+  
+   useFocusEffect(
+     useCallback(() => {
+       fetchRequestData();
+       const interval = setInterval(fetchRequestData, 10000);
+       return () => clearInterval(interval);
+     }, [fetchRequestData])
+  );
+  
+  const handleRefresh = () => {
+    setRefreshing(true);
     fetchRequestData();
-  }, []);
+  };
+    
 
   const handleKnowMore = (bookingId: string) => {
     // Implement navigation to booking details screen
@@ -207,98 +220,109 @@ export default function RequestsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <View style={styles.backButtonCircle}>
-              <ArrowLeft size={24} color="#20B2AA" strokeWidth={2.5} />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.title}>Requests</Text>
-        </View>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={["#FF6B4A"]}
+          tintColor="#FF6B4A"
+        />
+      }
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View style={styles.backButtonCircle}>
+                <ArrowLeft size={24} color="#20B2AA" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.title}>Requests</Text>
+          </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollViewContent,
-            bookings.length === 0 && styles.emptyStateContainer,
-          ]}
-        >
-          {bookings.length === 0 ? (
-            <Text style={styles.noBookingsText}>
-              No booking requests at the moment
-            </Text>
-          ) : (
-            bookings.map((booking) => (
-              <View style={styles.profilecardcontainer}>
-                <View style={styles.profilecardbackground}></View>
-                <View key={booking._id} style={styles.requestContainer}>
-                  <View style={styles.card}>
-                    <View style={styles.cardContent}>
-                      {booking.pets[0]?.image ? (
-                        <Image
-                          source={{ uri: booking.pets[0].image }}
-                          style={styles.petImage}
-                        />
-                      ) : (
-                        <View style={styles.petImage}>
-                          <Text style={styles.petImagePlaceholder}>🐾</Text>
-                        </View>
-                      )}
-                      <View style={styles.petInfo}>
-                        <Text style={styles.petName}>
-                          {booking.pets[0]?.name || "Pet"}{" "}
-                          <Text style={styles.breedText}>
-                            ({booking.pets[0]?.breed || "Unknown"})
-                          </Text>
-                        </Text>
-                        <Text style={styles.dateRange}>
-                          {formatDate(booking.startDateTime)}-
-                          {formatDate(booking.endDateTime)}
-                        </Text>
-                        {booking.paymentStatus === "completed" && (
-                          <Text style={styles.paymentComplete}>
-                            Payment Completed
-                          </Text>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.scrollViewContent,
+              bookings.length === 0 && styles.emptyStateContainer,
+            ]}
+          >
+            {bookings.length === 0 ? (
+              <Text style={styles.noBookingsText}>
+                No booking requests at the moment
+              </Text>
+            ) : (
+              bookings.map((booking) => (
+                <View style={styles.profilecardcontainer}>
+                  <View style={styles.profilecardbackground}></View>
+                  <View key={booking._id} style={styles.requestContainer}>
+                    <View style={styles.card}>
+                      <View style={styles.cardContent}>
+                        {booking.pets[0]?.image ? (
+                          <Image
+                            source={{ uri: booking.pets[0].image }}
+                            style={styles.petImage}
+                          />
+                        ) : (
+                          <View style={styles.petImage}>
+                            <Text style={styles.petImagePlaceholder}>🐾</Text>
+                          </View>
                         )}
+                        <View style={styles.petInfo}>
+                          <Text style={styles.petName}>
+                            {booking.pets[0]?.name || "Pet"}{" "}
+                            <Text style={styles.breedText}>
+                              ({booking.pets[0]?.breed || "Unknown"})
+                            </Text>
+                          </Text>
+                          <Text style={styles.dateRange}>
+                            {formatDate(booking.startDateTime)}-
+                            {formatDate(booking.endDateTime)}
+                          </Text>
+                          {booking.paymentStatus === "completed" && (
+                            <Text style={styles.paymentComplete}>
+                              Payment Completed
+                            </Text>
+                          )}
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleKnowMore(booking._id)}
+                          style={styles.knowMoreButton}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Text style={styles.knowMoreText}>know more</Text>
+                        </TouchableOpacity>
                       </View>
+                    </View>
+
+                    <View style={styles.actionButtonsContainer}>
                       <TouchableOpacity
-                        onPress={() => handleKnowMore(booking._id)}
-                        style={styles.knowMoreButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={styles.declineButton}
+                        onPress={() => handleDecline(booking._id)}
                       >
-                        <Text style={styles.knowMoreText}>know more</Text>
+                        <Text style={styles.declineButtonText}>DECLINE</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleAccept(booking._id)}
+                      >
+                        <Text style={styles.acceptButtonText}>ACCEPT</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
-
-                  <View style={styles.actionButtonsContainer}>
-                    <TouchableOpacity
-                      style={styles.declineButton}
-                      onPress={() => handleDecline(booking._id)}
-                    >
-                      <Text style={styles.declineButtonText}>DECLINE</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.acceptButton}
-                      onPress={() => handleAccept(booking._id)}
-                    >
-                      <Text style={styles.acceptButtonText}>ACCEPT</Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </View>
-    </SafeAreaView>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
