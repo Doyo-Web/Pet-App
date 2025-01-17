@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Image,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -35,11 +37,13 @@ const ChatListScreen: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Participant | null>(null); // Current logged-in user
   const [relatedUsers, setRelatedUsers] = useState<User[]>([]); // Related users list (hosts or pet parents)
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const fetchData = async () => {
+  
+
+ 
+      const fetchData =  useCallback(async () => {
         try {
           setLoading(true);
           const accessToken = await AsyncStorage.getItem("access_token");
@@ -64,11 +68,20 @@ const ChatListScreen: React.FC = () => {
         } finally {
           setLoading(false);
         }
-      };
+      }, []);
 
+
+
+    useFocusEffect(
+      useCallback(() => {
+        fetchData();
+      }, [fetchData])
+    );
+
+    const handleRefresh = () => {
+      setRefreshing(true);
       fetchData();
-    }, [])
-  );
+    };
 
   const openChat = (relatedUserId: string) => {
     if (!currentUser) return;
@@ -82,50 +95,63 @@ const ChatListScreen: React.FC = () => {
     });
   };
 
+  
+
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#6200ea" />
-      ) : relatedUsers.length > 0 && currentUser ? (
-        <>
-          <View style={styles.userInfo}>
-            <Image
-              source={{
-                uri:
-                  currentUser.avatar?.url || "https://via.placeholder.com/50",
-              }}
-              style={styles.avatar}
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={["#FF6B4A"]}
+          tintColor="#FF6B4A"
+        />
+      }
+    >
+      <View style={styles.container}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#6200ea" />
+        ) : relatedUsers.length > 0 && currentUser ? (
+          <>
+            <View style={styles.userInfo}>
+              <Image
+                source={{
+                  uri:
+                    currentUser.avatar?.url || "https://via.placeholder.com/50",
+                }}
+                style={styles.avatar}
+              />
+              <Text style={styles.userText}>
+                Logged in as: {currentUser.fullname} ({currentUser.email})
+              </Text>
+            </View>
+            <FlatList
+              data={relatedUsers}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.userItem}
+                  onPress={() => openChat(item._id)}
+                >
+                  <Image
+                    source={{
+                      uri: item.avatar?.url || "https://via.placeholder.com/50",
+                    }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userDetails}>
+                    <Text style={styles.userName}>{item.email}</Text>
+                    <Text style={styles.userId}>ID: {item._id}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             />
-            <Text style={styles.userText}>
-              Logged in as: {currentUser.fullname} ({currentUser.email})
-            </Text>
-          </View>
-          <FlatList
-            data={relatedUsers}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.userItem}
-                onPress={() => openChat(item._id)}
-              >
-                <Image
-                  source={{
-                    uri: item.avatar?.url || "https://via.placeholder.com/50",
-                  }}
-                  style={styles.avatar}
-                />
-                <View style={styles.userDetails}>
-                  <Text style={styles.userName}>{item.email}</Text>
-                  <Text style={styles.userId}>ID: {item._id}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        </>
-      ) : (
-        <Text style={styles.noUsersText}>No related users found</Text>
-      )}
-    </View>
+          </>
+        ) : (
+          <Text style={styles.noUsersText}>No related users found</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 

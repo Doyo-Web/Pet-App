@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
@@ -54,7 +55,8 @@ export default function BookingScreenTwo() {
   const [loading, setLoading] = useState(true);
   const [currentHostIndex, setCurrentHostIndex] = useState(0);
   const [previousHostCount, setPreviousHostCount] = useState(0);
-
+  const [refreshing, setRefreshing] = useState(false);
+  
   const bookingData = useSelector(
     (state: RootState) => state.booking.bookingData
   );
@@ -142,104 +144,125 @@ export default function BookingScreenTwo() {
 
   const currentHost = booking?.acceptedHosts[currentHostIndex];
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.boardingboxtwo}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(drawer)/(tabs)/booknow")}
-        >
-          <Icon name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerboardingbox}>Boarding</Text>
-      </View>
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchBooking();
+  };
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.profilecardcontainer}>
-          <View style={styles.profilecardbackground}></View>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.footprintIcon}>
-                <Ionicons name="paw" size={24} color="white" />
-              </View>
-              <Text style={styles.cardTitle}>Booking Confirmation Process</Text>
-            </View>
-            <Text style={styles.stepText}>
-              <Text style={styles.boldText}>Step 1:</Text>
-              {"\n"}
-              Your request will be acknowledged by our hosts within 12 hours.
-              You will receive a notification in your notification bar and an
-              email update regarding the status.
-            </Text>
-            <Text style={styles.stepText}>
-              <Text style={styles.boldText}>Step 2:</Text>
-              {"\n"}
-              Once the hosts accept your request, you can select your preferred
-              host from the accepted hosts to proceed with the booking.
-            </Text>
-          </View>
+  return (
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={["#FF6B4A"]}
+          tintColor="#FF6B4A"
+        />
+      }
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.boardingboxtwo}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/(drawer)/(tabs)/booknow")}
+          >
+            <Icon name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerboardingbox}>Boarding</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Matched Pawfect Hosts</Text>
-
-        {booking && booking.acceptedHosts.length > 0 ? (
-          <>
-            <View style={styles.hostCard}>
-              <Image
-                source={{ uri: currentHost?.profileImage }}
-                style={styles.hostImage}
-              />
-              <View style={styles.ratingContainer}>
-                {[...Array(5)].map((_, i) => (
-                  <Ionicons key={i} name="star" size={20} color="#FFD700" />
-                ))}
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.profilecardcontainer}>
+            <View style={styles.profilecardbackground}></View>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.footprintIcon}>
+                  <Ionicons name="paw" size={24} color="white" />
+                </View>
+                <Text style={styles.cardTitle}>
+                  Booking Confirmation Process
+                </Text>
               </View>
-              <View style={styles.hostInfo}>
-                <View style={styles.hostNameLocationContainer}>
-                  <View>
-                    <Text style={styles.hostName}>{currentHost?.fullName}</Text>
-                    <View style={styles.locationContainer}>
-                      <Ionicons name="location" size={16} color="#666" />
-                      <Text style={styles.locationText}>
-                        {currentHost?.city}
+              <Text style={styles.stepText}>
+                <Text style={styles.boldText}>Step 1:</Text>
+                {"\n"}
+                Your request will be acknowledged by our hosts within 12 hours.
+                You will receive a notification in your notification bar and an
+                email update regarding the status.
+              </Text>
+              <Text style={styles.stepText}>
+                <Text style={styles.boldText}>Step 2:</Text>
+                {"\n"}
+                Once the hosts accept your request, you can select your
+                preferred host from the accepted hosts to proceed with the
+                booking.
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Matched Pawfect Hosts</Text>
+
+          {booking && booking.acceptedHosts.length > 0 ? (
+            <>
+              <View style={styles.hostCard}>
+                <Image
+                  source={{ uri: currentHost?.profileImage }}
+                  style={styles.hostImage}
+                />
+                <View style={styles.ratingContainer}>
+                  {[...Array(5)].map((_, i) => (
+                    <Ionicons key={i} name="star" size={20} color="#FFD700" />
+                  ))}
+                </View>
+                <View style={styles.hostInfo}>
+                  <View style={styles.hostNameLocationContainer}>
+                    <View>
+                      <Text style={styles.hostName}>
+                        {currentHost?.fullName}
                       </Text>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location" size={16} color="#666" />
+                        <Text style={styles.locationText}>
+                          {currentHost?.city}
+                        </Text>
+                      </View>
                     </View>
+                    <TouchableOpacity
+                      style={styles.viewMoreButton}
+                      onPress={handleViewMore}
+                    >
+                      <Text style={styles.viewMoreText}>View More</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.viewMoreButton}
-                    onPress={handleViewMore}
-                  >
-                    <Text style={styles.viewMoreText}>View More</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
-            </View>
 
-            <View style={styles.navigationButtons}>
-              <TouchableOpacity onPress={prevHost} style={styles.navButton}>
-                <AntDesign name="left" size={24} color="#666" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={nextHost} style={styles.navButton}>
-                <AntDesign name="right" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <Text style={styles.noHostsText}>
-            No matched hosts available yet.
-          </Text>
-        )}
-      </ScrollView>
-      <TouchableOpacity
-        style={styles.bottomArrowContainer}
-        onPress={handleBottomArrowClick}
-      >
-        <AntDesign name="down" size={24} color="#F96247" />
-      </TouchableOpacity>
-    </SafeAreaView>
+              <View style={styles.navigationButtons}>
+                <TouchableOpacity onPress={prevHost} style={styles.navButton}>
+                  <AntDesign name="left" size={24} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={nextHost} style={styles.navButton}>
+                  <AntDesign name="right" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.noHostsText}>
+              No matched hosts available yet.
+            </Text>
+          )}
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.bottomArrowContainer}
+          onPress={handleBottomArrowClick}
+        >
+          <AntDesign name="down" size={24} color="#F96247" />
+        </TouchableOpacity>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
