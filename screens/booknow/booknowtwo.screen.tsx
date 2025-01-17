@@ -19,6 +19,7 @@ import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { useFocusEffect } from "@react-navigation/native";
 
 interface Host {
   _id: string;
@@ -97,11 +98,13 @@ export default function BookingScreenTwo() {
     }
   }, [bookingData?._id, previousHostCount]);
 
-  useEffect(() => {
-    fetchBooking();
-    const interval = setInterval(fetchBooking, 10000);
-    return () => clearInterval(interval);
-  }, [fetchBooking]);
+    useFocusEffect(
+      useCallback(() => {
+        fetchBooking();
+        const interval = setInterval(fetchBooking, 10000);
+        return () => clearInterval(interval);
+      }, [fetchBooking])
+    );
 
   const nextHost = () => {
     if (booking && booking.acceptedHosts.length > 0) {

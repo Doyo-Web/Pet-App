@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { router } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
+import { useFocusEffect } from "@react-navigation/native";
 
 interface Host {
   _id: string;
@@ -99,9 +100,9 @@ export default function BookingScreenThree() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchBooking();
-  }, []);
+  // useEffect(() => {
+  //   fetchBooking();
+  // }, []);
 
   const fetchBooking = async () => {
     try {
@@ -141,6 +142,14 @@ export default function BookingScreenThree() {
       setRefreshing(false);
     }
   };
+
+  useFocusEffect(
+        useCallback(() => {
+          fetchBooking();
+          const interval = setInterval(fetchBooking, 10000);
+          return () => clearInterval(interval);
+        }, [fetchBooking])
+      );
 
   const handleRefresh = () => {
     setRefreshing(true);
