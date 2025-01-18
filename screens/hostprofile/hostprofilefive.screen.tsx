@@ -221,6 +221,7 @@ const [refreshing, setRefreshing] = useState(false);
 
   return (
     <ScrollView
+      style={styles.safeArea}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

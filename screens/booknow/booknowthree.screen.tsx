@@ -56,8 +56,7 @@ const HostCard: React.FC<HostCardProps> = ({
       host.fullName
     } as your host`}
   >
-    <View style={styles.profilecardcontainer}>
-      <View style={styles.profilecardbackground}></View>
+   
       <View style={styles.cardContent}>
         <Image
           source={{ uri: host.profileImage }}
@@ -87,7 +86,6 @@ const HostCard: React.FC<HostCardProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
   </TouchableOpacity>
 );
 
@@ -100,9 +98,9 @@ export default function BookingScreenThree() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
 
-  // useEffect(() => {
-  //   fetchBooking();
-  // }, []);
+  useEffect(() => {
+    fetchBooking();
+  }, []);
 
   const fetchBooking = async () => {
     try {
@@ -143,18 +141,6 @@ export default function BookingScreenThree() {
     }
   };
 
-  useFocusEffect(
-        useCallback(() => {
-          fetchBooking();
-          const interval = setInterval(fetchBooking, 10000);
-          return () => clearInterval(interval);
-        }, [fetchBooking])
-      );
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchBooking();
-  };
 
   const handleKnowMore = (host: Host) => {
     Alert.alert("Host Details", `Name: ${host.fullName}\nBio: ${host.bio}`);
@@ -256,19 +242,10 @@ export default function BookingScreenThree() {
 
       <Text style={styles.subtitle}>Select Host(s) for your pet</Text>
 
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#FF6B4A"]}
-            tintColor="#FF6B4A"
-          />
-        }
-      >
-        {booking && booking.acceptedHosts.length > 0 ? (
-          booking.acceptedHosts.map((host) => (
+      {booking && booking.acceptedHosts.length > 0 ? (
+        booking.acceptedHosts.map((host) => (
+          <View style={styles.profilecardcontainer}>
+            <View style={styles.profilecardbackground}></View>
             <HostCard
               key={host._id}
               host={host}
@@ -276,13 +253,11 @@ export default function BookingScreenThree() {
               isSelected={selectedHostIds.includes(host._id)}
               onSelect={() => handleSelectHost(host._id)}
             />
-          ))
-        ) : (
-          <Text style={styles.noHostsText}>
-            No accepted hosts available yet.
-          </Text>
-        )}
-      </ScrollView>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.noHostsText}>No accepted hosts available yet.</Text>
+      )}
 
       <TouchableOpacity
         style={[
@@ -354,6 +329,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     padding: 12,
+    zIndex: 999,
+    backgroundColor: "#fff",
   },
   selectedCard: {
     backgroundColor: "#E6FFE6",
@@ -362,20 +339,19 @@ const styles = StyleSheet.create({
 
   profilecardcontainer: {
     position: "relative",
-    width: "100%",
-    maxWidth: 400,
+    width: "90%",
     marginHorizontal: "auto",
   },
 
   profilecardbackground: {
     position: "absolute",
-    top: 20,
-    right: 16,
-    bottom: 16,
-    left: 18,
+    top: 8,
+    right: -7,
+    bottom: 9,
+    left: 9,
     backgroundColor: "#FF6B6B",
     borderRadius: 12,
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+    transform: [],
   },
 
   cardContent: {

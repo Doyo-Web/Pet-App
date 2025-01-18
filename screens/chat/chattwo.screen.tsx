@@ -157,16 +157,6 @@ const ChatScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          colors={["#FF6B4A"]}
-          tintColor="#FF6B4A"
-        />
-      }
-    >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -222,7 +212,7 @@ const ChatScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </ScrollView>
+    
   );
 };
 
