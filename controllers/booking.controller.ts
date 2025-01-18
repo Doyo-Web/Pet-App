@@ -139,14 +139,8 @@ export const getBookingById = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the booking by ID and populate the acceptedHosts field
-    const booking = await Booking.findById(bookingId).populate({
-      path: "acceptedHosts",
-      model: HostProfile,
-    });
-
-    // Debugging: Log the populated booking
-    console.log("Populated Booking:", JSON.stringify(booking, null, 2));
+    // Find the booking by ID
+    const booking = await Booking.findById(bookingId);
 
     if (!booking) {
       return res.status(404).json({
@@ -155,10 +149,29 @@ export const getBookingById = async (req: Request, res: Response) => {
       });
     }
 
+    // Fetch the accepted host profiles
+    const acceptedHostProfiles = await HostProfile.find({
+      userId: {
+        $in: booking.acceptedHosts.map((id) => new mongoose.Types.ObjectId(id)),
+      },
+    });
+
+    // Create a new object with the booking data and populated acceptedHosts
+    const populatedBooking = {
+      ...booking.toObject(),
+      acceptedHosts: acceptedHostProfiles,
+    };
+
+    // Debugging: Log the populated booking
+    console.log(
+      "Populated Booking:",
+      JSON.stringify(populatedBooking, null, 2)
+    );
+
     // Send response with populated booking
     res.status(200).json({
       success: true,
-      booking,
+      booking: populatedBooking,
     });
   } catch (error) {
     // Debugging: Log the error
