@@ -27,7 +27,7 @@ const uploadImage = async (base64Image: string, folder: string) => {
       url: result.secure_url,
     };
   } catch (error) {
-    console.error("Image upload error:", error);
+    console.log("Image upload error:", error);
     throw new Error("Failed to upload image to Cloudinary.");
   }
 };
@@ -179,7 +179,7 @@ const uploadImage = async (base64Image: string, folder: string) => {
 //         hostProfile: savedHostProfile,
 //       });
 //     } catch (error: any) {
-//       console.error("Host Profile Creation Error:", error);
+//       console.log("Host Profile Creation Error:", error);
 //       return next(new ErrorHandler(error.message, 400));
 //     }
 //   }
@@ -345,7 +345,7 @@ export const createHostProfile = catchAsyncError(
         hostProfile: savedHostProfile,
       });
     } catch (error: any) {
-      console.error("Host Profile Creation Error:", error);
+      console.log("Host Profile Creation Error:", error);
       return next(new ErrorHandler(error.message, 400));
     }
   }
@@ -382,7 +382,7 @@ export const getHostBookings = async (req: Request, res: Response) => {
     });
   } catch (error) {
     // Debugging: Log the error
-    console.error("Error fetching host bookings:", error);
+    console.log("Error fetching host bookings:", error);
 
     // Respond with an error
     res.status(500).json({
@@ -404,8 +404,7 @@ export const getHost = async (req: Request, res: Response) => {
     }
 
     // Find bookings where the user is the selected host
-    const host = await HostProfileModel.findOne({ userId })
-      .populate("userId");
+    const host = await HostProfileModel.findOne({ userId }).populate("userId");
 
     if (!host) {
       return res.status(404).json({
@@ -421,7 +420,7 @@ export const getHost = async (req: Request, res: Response) => {
     });
   } catch (error) {
     // Debugging: Log the error
-    console.error("Error fetching host:", error);
+    console.log("Error fetching host:", error);
 
     // Respond with an error
     res.status(500).json({
@@ -467,7 +466,7 @@ export const deleteHostProfile = async (req: Request, res: Response) => {
       message: "Host profile successfully deleted.",
     });
   } catch (error: any) {
-    console.error("Error deleting host profile:", error);
+    console.log("Error deleting host profile:", error);
 
     res.status(500).json({
       success: false,
@@ -476,4 +475,3 @@ export const deleteHostProfile = async (req: Request, res: Response) => {
     });
   }
 };
-

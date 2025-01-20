@@ -18,7 +18,7 @@ export const extractTextFromImage = async (
 
     return text;
   } catch (error) {
-    console.error("Error during OCR processing: ", error);
+    console.log("Error during OCR processing: ", error);
     throw new Error("OCR extraction failed.");
   }
 };

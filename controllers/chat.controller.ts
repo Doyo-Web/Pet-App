@@ -70,6 +70,7 @@ export const createChat = async (req: Request, res: Response) => {
     const { participantId } = req.body;
     const userId = req.user?.id;
 
+
     // Check if the user is already a participant in any chat with the given participant
     const existingChat = await Chat.findOne({
       participants: { $all: [userId, participantId] },
@@ -103,7 +104,6 @@ export const createChat = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error creating chat", error });
   }
 };
-
 
 
 

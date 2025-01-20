@@ -31,10 +31,7 @@ import Tesseract from "tesseract.js";
 import fs from "fs"; // For file system operations
 import { PetProfileModel } from "../models/petprofile.model";
 
-
 dotenv.config();
-
-
 
 const getFileType = (base64String: string) => {
   const mime = base64String.match(/^data:([A-Za-z-+/]+);base64,/);
@@ -96,7 +93,7 @@ export const registrationUser = catchAsyncError(
 
       //     console.log("Message sent successfully:", message.sid);
       //   } catch (error) {
-      //     console.error("Error sending message:", error);
+      //     console.log("Error sending message:", error);
       //   }
       // }
 
@@ -153,7 +150,7 @@ export const activateUser = catchAsyncError(
     try {
       const { activation_token, activation_code } =
         req.body as IActivationRequest;
-      
+
       console.log("Activating user with activation token:", activation_token);
       console.log("Activation code received:", activation_code);
 
@@ -208,7 +205,6 @@ export const activateUser = catchAsyncError(
 
 //Login User
 
-
 // export const activateUser = catchAsyncError(
 //   async (req: Request, res: Response, next: NextFunction) => {
 //     try {
@@ -260,7 +256,7 @@ export const activateUser = catchAsyncError(
 //         success: true,
 //       });
 //     } catch (error: any) {
-//       console.error("Activation Error:", error); // Log full error for debugging
+//       console.log("Activation Error:", error); // Log full error for debugging
 //       return next(new ErrorHandler(error.message, 400));
 //     }
 //   }
@@ -492,7 +488,7 @@ export const ResendOtp = catchAsyncError(
           activationToken: activationToken.token,
         });
       } catch (error) {
-        console.error("Error sending message:", error);
+        console.log("Error sending message:", error);
       }
     }
 
@@ -686,7 +682,7 @@ export const ChangeUserPassword = catchAsyncError(
         .status(200)
         .json({ message: "Password Change successfully.", user: updatedUser });
     } catch (error) {
-      console.error("Caught an error:", error);
+      console.log("Caught an error:", error);
       return res.status(500).json({ message: "User update failed.", error });
     }
   }
@@ -779,11 +775,10 @@ export const UpdateAadhar = async (
       user: updatedUser,
     });
   } catch (error) {
-    console.error("Aadhaar update failed:", error);
+    console.log("Aadhaar update failed:", error);
     return res.status(500).json({ message: "Aadhaar update failed.", error });
   }
 };
-
 
 export const UpdateLocation = async (
   req: Request,
@@ -821,7 +816,7 @@ export const UpdateLocation = async (
       user: updatedUser,
     });
   } catch (error: any) {
-    console.error(error);
+    console.log(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

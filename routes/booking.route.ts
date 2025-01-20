@@ -23,7 +23,7 @@ router.put("/accepted-host", isAuthenticated, addAcceptedHost);
 router.post("/decline-host", isAuthenticated, declineHost);
 router.post("/get-booking-by-id", isAuthenticated, getBookingById);
 router.post("/confirm-booking", isAuthenticated, updateBookingWithSelectedHost);
-router.get("/get-billing", isAuthenticated, getBilling);
+router.post("/get-billing", isAuthenticated, getBilling);
 router.post("/create-razorpay-order", isAuthenticated, createRazorpayOrder);
 router.post("/save-payment", isAuthenticated, savePaymentDetails);
 router.get("/getrequestbooking", isAuthenticated, getRequestBooking);

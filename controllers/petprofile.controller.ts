@@ -71,25 +71,24 @@ export const CreatePetProfile = catchAsyncError(
       }
 
       // Upload images to Cloudinary and gather their URLs
-     const uploadedImages = await Promise.all(
-       filteredPetImages.map(async (base64Image: string) => {
-         try {
-           const result = await cloudinary.uploader.upload(base64Image, {
-             folder: "pet_profiles", // Folder where pet images will be stored
-             resource_type: "image", // Specify resource type
-             transformation: { width: 600, height: 600, crop: "fill" }, // Resize image if needed
-           });
-           return {
-             public_id: result.public_id,
-             url: result.secure_url,
-           };
-         } catch (uploadError) {
-           console.error("Image upload error:", uploadError);
-           throw new Error("Failed to upload image to Cloudinary.");
-         }
-       })
-     );
-
+      const uploadedImages = await Promise.all(
+        filteredPetImages.map(async (base64Image: string) => {
+          try {
+            const result = await cloudinary.uploader.upload(base64Image, {
+              folder: "pet_profiles", // Folder where pet images will be stored
+              resource_type: "image", // Specify resource type
+              transformation: { width: 600, height: 600, crop: "fill" }, // Resize image if needed
+            });
+            return {
+              public_id: result.public_id,
+              url: result.secure_url,
+            };
+          } catch (uploadError) {
+            console.log("Image upload error:", uploadError);
+            throw new Error("Failed to upload image to Cloudinary.");
+          }
+        })
+      );
 
       // Create a new pet profile with the uploaded images
       const newPetProfile = new PetProfileModel({
@@ -130,7 +129,7 @@ export const CreatePetProfile = catchAsyncError(
         petProfile: savedPetProfile,
       });
     } catch (error: any) {
-      console.error("Validation Error:", error);
+      console.log("Validation Error:", error);
       return next(new ErrorHandler(error.message, 400));
     }
   }
@@ -158,7 +157,7 @@ export const GetPetProfile = catchAsyncError(
         data: petProfiles,
       });
     } catch (error: any) {
-      console.error("Validation Error:", error);
+      console.log("Validation Error:", error);
       return next(new ErrorHandler(error.message, 400));
     }
   }

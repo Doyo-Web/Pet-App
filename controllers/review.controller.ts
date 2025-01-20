@@ -30,7 +30,7 @@ export const createReview = async (req: Request, res: Response) => {
       review: newReview,
     });
   } catch (error: any) {
-    console.error("Error creating review:", error);
+    console.log("Error creating review:", error);
     res.status(500).json({
       success: false,
       message: "An error occurred while submitting the review.",

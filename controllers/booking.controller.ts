@@ -28,13 +28,11 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
 
     res.json(order);
   } catch (error: any) {
-    console.error("Error creating Razorpay order:", error);
-    res
-      .status(500)
-      .json({
-        error: "Failed to create Razorpay order",
-        details: error.message,
-      });
+    console.log("Error creating Razorpay order:", error);
+    res.status(500).json({
+      error: "Failed to create Razorpay order",
+      details: error.message,
+    });
   }
 };
 
@@ -55,18 +53,10 @@ export const savePaymentDetails = async (req: Request, res: Response) => {
 
     res.json({ success: true, message: "Payment details saved successfully" });
   } catch (error) {
-    console.error("Error saving payment details:", error);
+    console.log("Error saving payment details:", error);
     res.status(500).json({ error: "Failed to save payment details" });
   }
 };
-
-
-
-
-
-
-
-
 
 // Controller to create a new booking
 export const createBooking = async (req: Request, res: Response) => {
@@ -117,7 +107,7 @@ export const createBooking = async (req: Request, res: Response) => {
       booking: newBooking,
     });
   } catch (error) {
-    console.error("Error creating booking:", error);
+    console.log("Error creating booking:", error);
     res.status(500).json({
       success: false,
       message: "Error creating booking",
@@ -125,7 +115,6 @@ export const createBooking = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const getBookingById = async (req: Request, res: Response) => {
   try {
@@ -162,12 +151,6 @@ export const getBookingById = async (req: Request, res: Response) => {
       acceptedHosts: acceptedHostProfiles,
     };
 
-    // Debugging: Log the populated booking
-    console.log(
-      "Populated Booking:",
-      JSON.stringify(populatedBooking, null, 2)
-    );
-
     // Send response with populated booking
     res.status(200).json({
       success: true,
@@ -175,7 +158,7 @@ export const getBookingById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     // Debugging: Log the error
-    console.error("Error fetching booking by ID:", error);
+    console.log("Error fetching booking by ID:", error);
 
     // Send error response
     res.status(500).json({
@@ -184,7 +167,6 @@ export const getBookingById = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const getBookings = async (req: Request, res: Response) => {
   try {
@@ -195,9 +177,6 @@ export const getBookings = async (req: Request, res: Response) => {
       path: "acceptedHosts",
       model: HostProfile,
     });
-
-    // Debugging: Log the populated bookings
-    console.log("Populated Bookings:", JSON.stringify(bookings, null, 2));
 
     if (!bookings || bookings.length === 0) {
       return res.status(404).json({
@@ -213,7 +192,7 @@ export const getBookings = async (req: Request, res: Response) => {
     });
   } catch (error) {
     // Debugging: Log the error
-    console.error("Error fetching bookings:", error);
+    console.log("Error fetching bookings:", error);
 
     // Send error response
     res.status(500).json({
@@ -270,7 +249,7 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
       booking: populatedBooking,
     });
   } catch (error) {
-    console.error("Error adding accepted host:", error);
+    console.log("Error adding accepted host:", error);
     res.status(500).json({
       success: false,
       message: "Error adding accepted host",
@@ -278,7 +257,6 @@ export const addAcceptedHost = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const declineHost = async (req: Request, res: Response) => {
   try {
@@ -296,9 +274,7 @@ export const declineHost = async (req: Request, res: Response) => {
     }
 
     // Remove the host ID from the `acceptedHosts` array in the specified booking
-    await Booking.updateOne(
-      { $pull: { acceptedHosts: hostProfile._id } }
-    );
+    await Booking.updateOne({ $pull: { acceptedHosts: hostProfile._id } });
 
     // Respond with a success message
     res.status(200).json({
@@ -306,7 +282,7 @@ export const declineHost = async (req: Request, res: Response) => {
       message: "Host profile declined successfully",
     });
   } catch (error) {
-    console.error("Error declining host:", error);
+    console.log("Error declining host:", error);
 
     // Handle unexpected errors gracefully
     res.status(500).json({
@@ -353,7 +329,7 @@ export const updateAcceptedHosts = async (req: Request, res: Response) => {
       booking,
     });
   } catch (error) {
-    console.error("Error updating accepted hosts:", error);
+    console.log("Error updating accepted hosts:", error);
     res.status(500).json({
       success: false,
       message: "Error updating accepted hosts",
@@ -362,9 +338,12 @@ export const updateAcceptedHosts = async (req: Request, res: Response) => {
   }
 };
 
-
-export const updateBookingWithSelectedHost = async (req: Request, res: Response) => {
+export const updateBookingWithSelectedHost = async (
+  req: Request,
+  res: Response
+) => {
   const { selectedHostIds } = req.body;
+  console.log("backend selected", selectedHostIds);
   const userId = req.user?.id; // Assuming req.user._id contains the authenticated user's ID
 
   try {
@@ -374,7 +353,7 @@ export const updateBookingWithSelectedHost = async (req: Request, res: Response)
 
     // Check that each host ID is valid and exists
     const validHosts = await HostProfile.find({
-      _id: { $in: selectedHostIds },
+      userId: { $in: selectedHostIds },
     });
 
     if (validHosts.length !== selectedHostIds.length) {
@@ -389,54 +368,73 @@ export const updateBookingWithSelectedHost = async (req: Request, res: Response)
 
     res.json({ success: true, message: "Booking confirmed successfully" });
   } catch (error) {
-    console.error("Error in confirmBooking:", error);
+    console.log("Error in confirmBooking:", error);
     res.status(500).json({ message: "Server error, please try again later" });
   }
 };
 
-
 export const getBilling = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming userId is in request user object
+    const { bookingId } = req.body; // Assuming `req.user` contains the authenticated user
 
-    // Find the bookings for the user and populate the acceptedHosts array
-    const bookings = await Booking.find({ userId }).populate({
-      path: "selectedHost",
-      model: HostProfile,
-    });
+    // Step 1: Retrieve bookings for the authenticated user
+    const booking = await Booking.find({ _id: bookingId }).lean(); // Use `lean()` for better performance
 
-    // Debugging: Log the populated bookings
-    console.log("Populated Bookings:", JSON.stringify(bookings, null, 2));
+    // if (!bookings || bookings.length === 0) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "No bookings found for this user.",
+    //   });
+    // }
 
-    if (!bookings || bookings.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No bookings found for this user",
-      });
-    }
+    // // Step 2: Extract unique `selectedHost` IDs from the bookings
+    // const selectedHostIds = [
+    //   ...new Set(bookings.map((booking) => booking.selectedHost).filter(Boolean)),
+    // ];
 
-    // Send response with populated bookings
-    res.status(200).json({
+    // if (selectedHostIds.length === 0) {
+    //   return res.status(404).json({
+    //     success: true,
+    //     message: "No hosts found for the user's bookings.",
+    //     bookings: bookings.map((booking) => ({ ...booking, hostDetails: null })),
+    //   });
+    // }
+
+    // Step 3: Fetch host profiles where userId matches `selectedHost`
+    const host = await HostProfile.find({
+      userId: booking[0].selectedHost,
+    }); // Exclude _id and __v for cleaner response
+
+    // // Step 4: Map host details to corresponding bookings
+    // const bookingsWithHostDetails = bookings.map((booking) => {
+    //   const hostDetails = hosts.find(
+    //     (host) => String(host.userId) === String(booking.selectedHost)
+    //   );
+    //   return {
+    //     ...booking,
+    //     hostDetails: hostDetails || null, // Add host details or null if not found
+    //   };
+    // });
+
+    // Step 5: Send the response with the enriched bookings
+    return res.status(200).json({
       success: true,
-      bookings,
+      message: "Billing details retrieved successfully.",
+      bookings: { ...booking[0], selectedHost: host[0] },
     });
   } catch (error) {
-    // Debugging: Log the error
-    console.error("Error fetching bookings:", error);
-
-    // Send error response
-    res.status(500).json({
+    console.log("Error fetching billing details:", error);
+    return res.status(500).json({
       success: false,
-      message: "An error occurred while fetching the bookings.",
+      message: "An error occurred while retrieving billing details.",
     });
   }
-}
-
+};
 
 export const getRequestBooking = async (req: Request, res: Response) => {
   try {
-
     const userId = req.user?.id; // Get the authenticated user's ID from the request object
+    console.log(userId);
 
     if (!userId) {
       return res.status(401).json({
@@ -485,10 +483,10 @@ export const getRequestBooking = async (req: Request, res: Response) => {
     // Send the filtered bookings in the response
     return res.status(200).json({
       success: true,
-      bookings
+      bookings,
     });
   } catch (error) {
-    console.error(
+    console.log(
       "Error fetching unaccepted bookings with matching cities:",
       error
     );
@@ -499,6 +497,154 @@ export const getRequestBooking = async (req: Request, res: Response) => {
   }
 };
 
+// export const getUserRelatedBookings = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const userId = req.user?.id;
+
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "User not authenticated",
+//       });
+//     }
+
+//     // Fetch the logged-in user's details
+//     const loggedInUser = await userModel.findById(userId);
+
+//     if (!loggedInUser) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Logged-in user details not found",
+//       });
+//     }
+
+//     const hostProfile = await HostProfile.findOne({ userId });
+//     let data;
+//     let message;
+
+//     if (hostProfile) {
+
+//       const bookings = await Booking.find({
+//         selectedHost: hostProfile.userId,
+//         paymentStatus: "completed",
+//       })
+//         .populate("userId", "name email phone")
+//         .select("userId");
+
+//       data = bookings.map((booking) => booking.userId);
+//       message = "Pet parent details for bookings where you are the host";
+
+//       return res.status(200).json({
+//         success: true,
+//         message,
+//         loggedInUser,
+//         petParents: data,
+//       });
+//     } else {
+//       const bookings = await Booking.find({
+//         userId,
+//         paymentStatus: "completed",
+//       });
+
+//       const hosts = await Promise.all(
+//         bookings.map((booking) => HostProfile.findById({userId: booking.selectedHost}))
+//       );
+
+//       data = bookings.map((booking) => booking.selectedHost);
+//       message = "Host details for bookings created by you";
+
+//       return res.status(200).json({
+//         success: true,
+//         message,
+//         loggedInUser,
+//         hosts: data,
+//       });
+//     }
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+// export const getUserRelatedBookings = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const userId = req.user?.id;
+
+//     // Check if userId exists
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "User not authenticated",
+//       });
+//     }
+
+//     // Fetch the logged-in user's details
+//     const loggedInUser = await userModel.findById(userId);
+//     if (!loggedInUser) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Logged-in user details not found",
+//       });
+//     }
+
+//     // Check if the user is a host
+//     const hostProfile = await HostProfile.findOne({ userId });
+//     if (hostProfile) {
+//       // Fetch bookings where the user is the selected host
+//       const bookings = await Booking.find({
+//         selectedHost: userId,
+//         paymentStatus: "completed",
+//       })
+//         .populate("userId", "name email phone") // Populate pet parent details
+//         .select("userId"); // Only return userId and populated data
+
+//       const petParents = bookings.map((booking) => booking.userId); // Extract populated user details
+//       const transformedPetParents = petParents.map((parent) => ({
+//         userId: parent._id,
+//         email: parent.email,
+//       }));
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Pet parent details for bookings where you are the host",
+//         loggedInUser,
+//         petParents: transformedPetParents,
+//       });
+//     }
+
+//     // If the user is not a host, fetch bookings they created
+//     const bookings = await Booking.find({
+//       userId,
+//       paymentStatus: "completed",
+//     });
+
+//     // Fetch HostProfile details for each booking's selectedHost
+//     const hosts = await Promise.all(
+//       bookings.map(async (booking) => {
+//         const host = await HostProfile.findOne({
+//           userId: booking.selectedHost,
+//         });
+//         return host ? host.toObject() : null; // Return host details if found
+//       })
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Host details for bookings created by you",
+//       loggedInUser,
+//       hosts: hosts.filter((host) => host !== null), // Exclude null values if any
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 export const getUserRelatedBookings = async (
   req: Request,
@@ -508,6 +654,7 @@ export const getUserRelatedBookings = async (
   try {
     const userId = req.user?.id;
 
+    // Check if userId exists
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -517,7 +664,6 @@ export const getUserRelatedBookings = async (
 
     // Fetch the logged-in user's details
     const loggedInUser = await userModel.findById(userId);
-
     if (!loggedInUser) {
       return res.status(404).json({
         success: false,
@@ -525,45 +671,69 @@ export const getUserRelatedBookings = async (
       });
     }
 
+    // Check if the user is a host
     const hostProfile = await HostProfile.findOne({ userId });
-    let data;
-    let message;
-
     if (hostProfile) {
+      // Fetch bookings where the user is the selected host
       const bookings = await Booking.find({
-        selectedHost: hostProfile._id,
+        selectedHost: userId,
         paymentStatus: "completed",
       })
-        .populate("userId", "name email phone")
-        .select("userId");
+        .populate("userId", "name email phone") // Populate pet parent details
+        .select("userId"); // Only return userId and populated data
 
-      data = bookings.map((booking) => booking.userId);
-      message = "Pet parent details for bookings where you are the host";
+      const uniquePetParents = new Set();
+      const transformedPetParents: { userId: Types.ObjectId; email: any }[] =
+        [];
 
-      return res.status(200).json({
-        success: true,
-        message,
-        loggedInUser,
-        petParents: data,
+      bookings.forEach((booking) => {
+        const parent = booking.userId;
+        if (parent && !uniquePetParents.has(parent._id.toString())) {
+          uniquePetParents.add(parent._id.toString());
+          transformedPetParents.push({
+            userId: parent._id,
+            email: parent.email,
+          });
+        }
       });
-    } else {
-      const bookings = await Booking.find({
-        userId,
-        paymentStatus: "completed",
-      })
-        .populate("selectedHost", "name email phone")
-        .select("selectedHost");
-
-      data = bookings.map((booking) => booking.selectedHost);
-      message = "Host details for bookings created by you";
 
       return res.status(200).json({
         success: true,
-        message,
+        message: "Pet parent details for bookings where you are the host",
         loggedInUser,
-        hosts: data,
+        petParents: transformedPetParents,
       });
     }
+
+    // If the user is not a host, fetch bookings they created
+    const bookings = await Booking.find({
+      userId,
+      paymentStatus: "completed",
+    });
+
+    // Fetch HostProfile details for each booking's selectedHost
+    const uniqueHosts = new Set();
+    const hosts = (
+      await Promise.all(
+        bookings.map(async (booking) => {
+          const host = await HostProfile.findOne({
+            userId: booking.selectedHost,
+          });
+          if (host && !uniqueHosts.has(host.userId.toString())) {
+            uniqueHosts.add(host.userId.toString());
+            return host.toObject();
+          }
+          return null;
+        })
+      )
+    ).filter((host) => host !== null); // Exclude null values if any
+
+    return res.status(200).json({
+      success: true,
+      message: "Host details for bookings created by you",
+      loggedInUser,
+      hosts,
+    });
   } catch (error) {
     next(error);
   }
