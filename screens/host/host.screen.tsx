@@ -42,30 +42,28 @@ export default function HostScreen() {
     longitudeDelta: 0.0421,
   });
 
-
- 
   useFocusEffect(
-     React.useCallback(() => {
-       const checkHostStatus = async () => {
-         const accessToken = await AsyncStorage.getItem("access_token");
-         try {
-           const response = await axios.get(`${SERVER_URI}/host`, {
-             headers: {
-               "Content-Type": "application/json",
-               access_token: accessToken,
-             },
-           });
-           if (response.data.host) {
-             router.push("/(drawer)/(tabs)/hostprofile");
-           }
-         } catch (error) {
-           console.log("Error checking host profile:", error);
-         }
-       };
+    React.useCallback(() => {
+      const checkHostStatus = async () => {
+        const accessToken = await AsyncStorage.getItem("access_token");
+        try {
+          const response = await axios.get(`${SERVER_URI}/host`, {
+            headers: {
+              "Content-Type": "application/json",
+              access_token: accessToken,
+            },
+          });
+          if (response.data.host) {
+            router.push("/(drawer)/(tabs)/hostprofile");
+          }
+        } catch (error) {
+          console.log("Error checking host profile:", error);
+        }
+      };
 
-       checkHostStatus();
-     }, [])
-   );
+      checkHostStatus();
+    }, [])
+  );
 
   // Add new state for button disabled status
   const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
@@ -229,7 +227,7 @@ export default function HostScreen() {
         }
       });
     } catch (error) {
-      console.error("Error reading image file:", error);
+      console.log("Error reading image file:", error);
       Alert.alert("Error", "There was an error processing the image.");
     }
   };
@@ -608,7 +606,7 @@ export default function HostScreen() {
         setShowMap(false);
       }
     } catch (error) {
-      console.error("Error getting location data:", error);
+      console.log("Error getting location data:", error);
     }
 
     setShowMap(false);
@@ -659,256 +657,245 @@ export default function HostScreen() {
     }));
   };
 
- 
-const handleHostProfile = async () => {
-  setIsLoadings(true); // Start loading indicator
-  const accessToken = await AsyncStorage.getItem("access_token");
+  const handleHostProfile = async () => {
+    setIsLoadings(true); // Start loading indicator
+    const accessToken = await AsyncStorage.getItem("access_token");
 
-  try {
-    // Send the profile data as JSON
-    const response = await axios.post(
-      `${SERVER_URI}/hostprofile-create`,
-      profile, // Send profile object directly
-      {
-        headers: {
-          "Content-Type": "application/json", // Specify JSON content
-          access_token: accessToken, // Include access token
-        },
-      }
-    );
-
-
-    // Check server response for success or specific conditions
-    if (response.data.message) {
-      // If host profile already exists
-      if (response.data.message === "User already has a host profile") {
-        Toast.show("You already have a host profile.", {
-          type: "info",
+    try {
+      // Send the profile data as JSON
+      const response = await axios.post(
+        `${SERVER_URI}/hostprofile-create`,
+        profile, // Send profile object directly
+        {
+          headers: {
+            "Content-Type": "application/json", // Specify JSON content
+            access_token: accessToken, // Include access token
+          },
         }
-        );
+      );
 
-      // Reset all state to initial values
-      setProfile({
-        fullName: "",
-        phoneNumber: "",
-        email: "",
-        age: "",
-        gender: "",
-        dateOfBirth: new Date(),
-        profession: "",
-        location: "",
-        line1: "",
-        line2: "",
-        city: "",
-        pincode: "",
-        residenceType: "",
-        builtUpArea: "",
-        petSize: [],
-        petGender: "",
-        petCount: "",
-        willingToWalk: "",
-        hasAreaRestrictions: "",
-        areaRestrictions: "",
-        walkFrequency: "",
-        walkDuration: "",
-        willingToCook: "",
-        cookingOptions: [],
-        groomPet: false,
-        hasPet: "",
-        pets: [{ ...initialPet }],
-        hasVetNearby: "",
-        vetInfo: {
-          name: "",
-          clinic: "",
-          phone: "",
-          address: "",
-        },
-        HostProfile: {
-          profileImage: "",
-          bio: "",
-          idProof: "",
-          facilityPictures: ["", "", "", ""],
-          petPictures: ["", ""],
-          pricingDaycare: "",
-          pricingBoarding: "",
-          pricingVegMeal: "",
-          pricingNonVegMeal: "",
-        },
-        paymentDetails: {
-          accountHolderName: "",
-          accountNumber: "",
-          ifscCode: "",
-          bankName: "",
-          upiid: "",
-        },
-      });
+      // Check server response for success or specific conditions
+      if (response.data.message) {
+        // If host profile already exists
+        if (response.data.message === "User already has a host profile") {
+          Toast.show("You already have a host profile.", {
+            type: "info",
+          });
 
-        setCurrentStep(1);
-        setTimeout(() => {
-          router.replace("/(tabs)/hostprofile");
-        }, 0);
-      } else {
-        // Success message for profile creation
-        Toast.show(response.data.message, {
-          type: "success",
-        });
+          // Reset all state to initial values
+          setProfile({
+            fullName: "",
+            phoneNumber: "",
+            email: "",
+            age: "",
+            gender: "",
+            dateOfBirth: new Date(),
+            profession: "",
+            location: "",
+            line1: "",
+            line2: "",
+            city: "",
+            pincode: "",
+            residenceType: "",
+            builtUpArea: "",
+            petSize: [],
+            petGender: "",
+            petCount: "",
+            willingToWalk: "",
+            hasAreaRestrictions: "",
+            areaRestrictions: "",
+            walkFrequency: "",
+            walkDuration: "",
+            willingToCook: "",
+            cookingOptions: [],
+            groomPet: false,
+            hasPet: "",
+            pets: [{ ...initialPet }],
+            hasVetNearby: "",
+            vetInfo: {
+              name: "",
+              clinic: "",
+              phone: "",
+              address: "",
+            },
+            HostProfile: {
+              profileImage: "",
+              bio: "",
+              idProof: "",
+              facilityPictures: ["", "", "", ""],
+              petPictures: ["", ""],
+              pricingDaycare: "",
+              pricingBoarding: "",
+              pricingVegMeal: "",
+              pricingNonVegMeal: "",
+            },
+            paymentDetails: {
+              accountHolderName: "",
+              accountNumber: "",
+              ifscCode: "",
+              bankName: "",
+              upiid: "",
+            },
+          });
 
-      // Reset all state to initial values
-      setProfile({
-        fullName: "",
-        phoneNumber: "",
-        email: "",
-        age: "",
-        gender: "",
-        dateOfBirth: new Date(),
-        profession: "",
-        location: "",
-        line1: "",
-        line2: "",
-        city: "",
-        pincode: "",
-        residenceType: "",
-        builtUpArea: "",
-        petSize: [],
-        petGender: "",
-        petCount: "",
-        willingToWalk: "",
-        hasAreaRestrictions: "",
-        areaRestrictions: "",
-        walkFrequency: "",
-        walkDuration: "",
-        willingToCook: "",
-        cookingOptions: [],
-        groomPet: false,
-        hasPet: "",
-        pets: [{ ...initialPet }],
-        hasVetNearby: "",
-        vetInfo: {
-          name: "",
-          clinic: "",
-          phone: "",
-          address: "",
-        },
-        HostProfile: {
-          profileImage: "",
-          bio: "",
-          idProof: "",
-          facilityPictures: ["", "", "", ""],
-          petPictures: ["", ""],
-          pricingDaycare: "",
-          pricingBoarding: "",
-          pricingVegMeal: "",
-          pricingNonVegMeal: "",
-        },
-        paymentDetails: {
-          accountHolderName: "",
-          accountNumber: "",
-          ifscCode: "",
-          bankName: "",
-          upiid: "",
-        },
-      });
+          setCurrentStep(1);
+          setTimeout(() => {
+            router.replace("/(tabs)/hostprofile");
+          }, 0);
+        } else {
+          // Success message for profile creation
+          Toast.show(response.data.message, {
+            type: "success",
+          });
 
+          // Reset all state to initial values
+          setProfile({
+            fullName: "",
+            phoneNumber: "",
+            email: "",
+            age: "",
+            gender: "",
+            dateOfBirth: new Date(),
+            profession: "",
+            location: "",
+            line1: "",
+            line2: "",
+            city: "",
+            pincode: "",
+            residenceType: "",
+            builtUpArea: "",
+            petSize: [],
+            petGender: "",
+            petCount: "",
+            willingToWalk: "",
+            hasAreaRestrictions: "",
+            areaRestrictions: "",
+            walkFrequency: "",
+            walkDuration: "",
+            willingToCook: "",
+            cookingOptions: [],
+            groomPet: false,
+            hasPet: "",
+            pets: [{ ...initialPet }],
+            hasVetNearby: "",
+            vetInfo: {
+              name: "",
+              clinic: "",
+              phone: "",
+              address: "",
+            },
+            HostProfile: {
+              profileImage: "",
+              bio: "",
+              idProof: "",
+              facilityPictures: ["", "", "", ""],
+              petPictures: ["", ""],
+              pricingDaycare: "",
+              pricingBoarding: "",
+              pricingVegMeal: "",
+              pricingNonVegMeal: "",
+            },
+            paymentDetails: {
+              accountHolderName: "",
+              accountNumber: "",
+              ifscCode: "",
+              bankName: "",
+              upiid: "",
+            },
+          });
 
-        setCurrentStep(1);
-        setTimeout(() => {
-          router.replace("/(tabs)/hostsuccess");
-        }, 0);
+          setCurrentStep(1);
+          setTimeout(() => {
+            router.replace("/(tabs)/hostsuccess");
+          }, 0);
+        }
       }
-    }
-  } catch (error: any) {
-    // Handle and log errors
-    if (error.response) {
-      console.log("Error Response Data:", error.response.data); // Log server response
-      console.log("Error Response Status:", error.response.status); // Log HTTP status
-      if (error.response.data.message) {
-        // Show specific error message from the server
-        Toast.show(error.response.data.message, {
+    } catch (error: any) {
+      // Handle and log errors
+      if (error.response) {
+        console.log("Error Response Data:", error.response.data); // Log server response
+        console.log("Error Response Status:", error.response.status); // Log HTTP status
+        if (error.response.data.message) {
+          // Show specific error message from the server
+          Toast.show(error.response.data.message, {
+            type: "error",
+          });
+          // Reset all state to initial values
+          setProfile({
+            fullName: "",
+            phoneNumber: "",
+            email: "",
+            age: "",
+            gender: "",
+            dateOfBirth: new Date(),
+            profession: "",
+            location: "",
+            line1: "",
+            line2: "",
+            city: "",
+            pincode: "",
+            residenceType: "",
+            builtUpArea: "",
+            petSize: [],
+            petGender: "",
+            petCount: "",
+            willingToWalk: "",
+            hasAreaRestrictions: "",
+            areaRestrictions: "",
+            walkFrequency: "",
+            walkDuration: "",
+            willingToCook: "",
+            cookingOptions: [],
+            groomPet: false,
+            hasPet: "",
+            pets: [{ ...initialPet }],
+            hasVetNearby: "",
+            vetInfo: {
+              name: "",
+              clinic: "",
+              phone: "",
+              address: "",
+            },
+            HostProfile: {
+              profileImage: "",
+              bio: "",
+              idProof: "",
+              facilityPictures: ["", "", "", ""],
+              petPictures: ["", ""],
+              pricingDaycare: "",
+              pricingBoarding: "",
+              pricingVegMeal: "",
+              pricingNonVegMeal: "",
+            },
+            paymentDetails: {
+              accountHolderName: "",
+              accountNumber: "",
+              ifscCode: "",
+              bankName: "",
+              upiid: "",
+            },
+          });
+
+          setCurrentStep(1);
+          setTimeout(() => {
+            router.replace("/(tabs)/hostprofile");
+          }, 0);
+        } else {
+          // Generic error toast
+          Toast.show("An error occurred. Please try again.", {
+            type: "error",
+          });
+        }
+      } else {
+        console.log("Error Message:", error.message); // Log general error message
+        Toast.show("Failed to connect to the server.", {
           type: "error",
         });
-      // Reset all state to initial values
-      setProfile({
-        fullName: "",
-        phoneNumber: "",
-        email: "",
-        age: "",
-        gender: "",
-        dateOfBirth: new Date(),
-        profession: "",
-        location: "",
-        line1: "",
-        line2: "",
-        city: "",
-        pincode: "",
-        residenceType: "",
-        builtUpArea: "",
-        petSize: [],
-        petGender: "",
-        petCount: "",
-        willingToWalk: "",
-        hasAreaRestrictions: "",
-        areaRestrictions: "",
-        walkFrequency: "",
-        walkDuration: "",
-        willingToCook: "",
-        cookingOptions: [],
-        groomPet: false,
-        hasPet: "",
-        pets: [{ ...initialPet }],
-        hasVetNearby: "",
-        vetInfo: {
-          name: "",
-          clinic: "",
-          phone: "",
-          address: "",
-        },
-        HostProfile: {
-          profileImage: "",
-          bio: "",
-          idProof: "",
-          facilityPictures: ["", "", "", ""],
-          petPictures: ["", ""],
-          pricingDaycare: "",
-          pricingBoarding: "",
-          pricingVegMeal: "",
-          pricingNonVegMeal: "",
-        },
-        paymentDetails: {
-          accountHolderName: "",
-          accountNumber: "",
-          ifscCode: "",
-          bankName: "",
-          upiid: "",
-        },
-      });
-
-        setCurrentStep(1);
-         setTimeout(() => {
-           router.replace("/(tabs)/hostprofile");
-         }, 0);
-      } else {
-        // Generic error toast
-        Toast.show("An error occurred. Please try again.", {
-          type: "error",
-        });
       }
-    } else {
-      console.log("Error Message:", error.message); // Log general error message
-      Toast.show("Failed to connect to the server.", {
-        type: "error",
-      });
+    } finally {
+      setIsLoadings(false); // Stop loading indicator
     }
-  } finally {
-    setIsLoadings(false); // Stop loading indicator
-  }
-};
-
-
-
-
-
-
-
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1969,10 +1956,12 @@ const handleHostProfile = async () => {
               ]}
               onPress={() => handleHostProfile()}
               disabled={isNextButtonDisabled}
-              >{isLoadings ? (
+            >
+              {isLoadings ? (
                 <ActivityIndicator size="small" color="#fff" />
-              ) :
-                (<Text style={styles.buttonText}>All done</Text>)}
+              ) : (
+                <Text style={styles.buttonText}>All done</Text>
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -2839,7 +2828,7 @@ const styles = StyleSheet.create({
   tabScrollView: {
     flexGrow: 0,
   },
-  
+
   tabContainer3: {
     flexDirection: "row",
     justifyContent: "space-between",

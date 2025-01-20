@@ -38,7 +38,7 @@ export const initSocket = async (): Promise<
   });
 
   socket.on("connect_error", (error) => {
-    console.error("Socket connection error:", error);
+    console.log("Socket connection error:", error);
   });
 
   return socket;

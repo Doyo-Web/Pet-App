@@ -96,7 +96,7 @@ const ChatScreen: React.FC = () => {
 
         setLoading(false);
       } catch (err) {
-        console.error("Error setting up chat:", err);
+        console.log("Error setting up chat:", err);
         setError("Failed to load chat. Please try again.");
         setLoading(false);
       }
@@ -130,15 +130,14 @@ const ChatScreen: React.FC = () => {
 
       setNewMessage("");
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.log("Error sending message:", err);
       setError("Failed to send message. Please try again.");
     }
   };
 
-  
-    const handleRefresh = () => {
-      setRefreshing(true);
-    };
+  const handleRefresh = () => {
+    setRefreshing(true);
+  };
 
   if (loading) {
     return (
@@ -157,62 +156,61 @@ const ChatScreen: React.FC = () => {
   }
 
   return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <View
-              style={[
-                styles.messageBubble,
-                item.sender._id === selectedHost
-                  ? styles.sentMessage
-                  : styles.receivedMessage,
-              ]}
-            >
-              <Image
-                source={{
-                  uri:
-                    item.sender.avatar?.url || "https://via.placeholder.com/40",
-                }}
-                style={styles.avatar}
-              />
-              <View style={styles.messageContent}>
-                <Text style={styles.senderName}>{item.sender.fullName}</Text>
-                <Text style={styles.messageText}>{item.content}</Text>
-                <Text style={styles.timestamp}>
-                  {new Date(item.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.messageBubble,
+              item.sender._id === userId
+                ? styles.receivedMessage
+                : styles.sentMessage,
+            ]}
+          >
+            <Image
+              source={{
+                uri:
+                  item.sender.avatar?.url || "https://via.placeholder.com/40",
+              }}
+              style={styles.avatar}
+            />
+            <View style={styles.messageContent}>
+              <Text style={styles.senderName}>{item.sender.fullName}</Text>
+              <Text style={styles.messageText}>{item.content}</Text>
+              <Text style={styles.timestamp}>
+                {new Date(item.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Text>
             </View>
-          )}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          </View>
+        )}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type a message..."
+          placeholderTextColor="#999"
         />
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={newMessage}
-            onChangeText={setNewMessage}
-            placeholder="Type a message..."
-            placeholderTextColor="#999"
-          />
-          <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 

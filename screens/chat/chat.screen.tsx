@@ -17,6 +17,7 @@ import { SERVER_URI } from "@/utils/uri";
 import { useFocusEffect } from "@react-navigation/native";
 
 type User = {
+  userId: string;
   _id: string;
   email: string;
   avatar?: {
@@ -25,6 +26,7 @@ type User = {
 };
 
 type Participant = {
+  userId: string | number | (string | number)[] | null | undefined;
   _id: string;
   fullname: string;
   email: string;
@@ -39,14 +41,15 @@ const ChatListScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-
   
 
  
-      const fetchData =  useCallback(async () => {
+  const fetchData = useCallback(async () => {
         try {
           setLoading(true);
           const accessToken = await AsyncStorage.getItem("access_token");
+
+          
           if (!accessToken) throw new Error("No access token found");
 
           const response = await axios.get(
@@ -90,7 +93,7 @@ const ChatListScreen: React.FC = () => {
       pathname: "/chat/chattwo", // Dynamic route
       params: {
         userId: relatedUserId,
-        selectedHost: currentUser._id, // Sending the logged-in user's ID
+        selectedHost: currentUser.userId, // Sending the logged-in user's ID
       },
     });
   };
@@ -98,60 +101,49 @@ const ChatListScreen: React.FC = () => {
   
 
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          colors={["#FF6B4A"]}
-          tintColor="#FF6B4A"
-        />
-      }
-    >
-      <View style={styles.container}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#6200ea" />
-        ) : relatedUsers.length > 0 && currentUser ? (
-          <>
-            <View style={styles.userInfo}>
-              <Image
-                source={{
-                  uri:
-                    currentUser.avatar?.url || "https://via.placeholder.com/50",
-                }}
-                style={styles.avatar}
-              />
-              <Text style={styles.userText}>
-                Logged in as: {currentUser.fullname} ({currentUser.email})
-              </Text>
-            </View>
-            <FlatList
-              data={relatedUsers}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.userItem}
-                  onPress={() => openChat(item._id)}
-                >
-                  <Image
-                    source={{
-                      uri: item.avatar?.url || "https://via.placeholder.com/50",
-                    }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.userDetails}>
-                    <Text style={styles.userName}>{item.email}</Text>
-                    <Text style={styles.userId}>ID: {item._id}</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color="#6200ea" />
+      ) : relatedUsers.length > 0 && currentUser ? (
+        <>
+          <View style={styles.userInfo}>
+            <Image
+              source={{
+                uri:
+                  currentUser.avatar?.url || "https://via.placeholder.com/50",
+              }}
+              style={styles.avatar}
             />
-          </>
-        ) : (
-          <Text style={styles.noUsersText}>No related users found</Text>
-        )}
-      </View>
-    </ScrollView>
+            <Text style={styles.userText}>
+              Logged in as: {currentUser.fullname} ({currentUser.email})
+            </Text>
+          </View>
+          <FlatList
+            data={relatedUsers}
+            keyExtractor={(item) => item.userId}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.userItem}
+                onPress={() => openChat(item.userId)}
+              >
+                <Image
+                  source={{
+                    uri: item.avatar?.url || "https://via.placeholder.com/50",
+                  }}
+                  style={styles.avatar}
+                />
+                <View style={styles.userDetails}>
+                  <Text style={styles.userName}>{item.email}</Text>
+                  <Text style={styles.userId}>ID: {item.userId}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </>
+      ) : (
+        <Text style={styles.noUsersText}>No related users found</Text>
+      )}
+    </View>
   );
 };
 

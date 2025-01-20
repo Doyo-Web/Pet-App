@@ -21,6 +21,7 @@ import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
 
 interface Host {
+  userId: string;
   _id: string;
   fullName: string;
   city: string;
@@ -56,36 +57,35 @@ const HostCard: React.FC<HostCardProps> = ({
       host.fullName
     } as your host`}
   >
-   
-      <View style={styles.cardContent}>
-        <Image
-          source={{ uri: host.profileImage }}
-          style={styles.avatar}
-          accessibilityLabel={`${host.fullName}'s profile picture`}
-        />
-        <View style={styles.hostInfo}>
-          <Text style={styles.hostName}>{host.fullName}</Text>
-          <Text style={styles.location}>{host.city}</Text>
-        </View>
-        <View style={styles.ratingContainer}>
-          <View style={styles.stars}>
-            {[...Array(5)].map((_, i) => (
-              <Icon
-                key={`star-${host._id}-${i}`}
-                name="star"
-                size={16}
-                color={i < host.rating ? "#FDD00D" : "#E0E0E0"}
-              />
-            ))}
-          </View>
-          <TouchableOpacity
-            onPress={onKnowMore}
-            accessibilityLabel={`Learn more about ${host.fullName}`}
-          >
-            <Text style={styles.knowMore}>know more</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={styles.cardContent}>
+      <Image
+        source={{ uri: host.profileImage }}
+        style={styles.avatar}
+        accessibilityLabel={`${host.fullName}'s profile picture`}
+      />
+      <View style={styles.hostInfo}>
+        <Text style={styles.hostName}>{host.fullName}</Text>
+        <Text style={styles.location}>{host.city}</Text>
       </View>
+      <View style={styles.ratingContainer}>
+        <View style={styles.stars}>
+          {[...Array(5)].map((_, i) => (
+            <Icon
+              key={`star-${host._id}-${i}`}
+              name="star"
+              size={16}
+              color={i < host.rating ? "#FDD00D" : "#E0E0E0"}
+            />
+          ))}
+        </View>
+        <TouchableOpacity
+          onPress={onKnowMore}
+          accessibilityLabel={`Learn more about ${host.fullName}`}
+        >
+          <Text style={styles.knowMore}>know more</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   </TouchableOpacity>
 );
 
@@ -98,6 +98,8 @@ export default function BookingScreenThree() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
 
+  console.log(selectedHostIds);
+
   useEffect(() => {
     fetchBooking();
   }, []);
@@ -106,7 +108,7 @@ export default function BookingScreenThree() {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
-        console.error("No access token found");
+        console.log("No access token found");
         setLoading(false);
         Alert.alert(
           "Error",
@@ -133,14 +135,13 @@ export default function BookingScreenThree() {
         Alert.alert("Error", "Failed to fetch booking. Please try again.");
       }
     } catch (error) {
-      console.error("Error fetching booking:", error);
+      console.log("Error fetching booking:", error);
       Alert.alert("Error", "Failed to fetch booking. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
-
 
   const handleKnowMore = (host: Host) => {
     Alert.alert("Host Details", `Name: ${host.fullName}\nBio: ${host.bio}`);
@@ -191,6 +192,8 @@ export default function BookingScreenThree() {
         }
       );
 
+      console.log(response.data);
+
       if (response.data.success) {
         Alert.alert("Success", "Booking confirmed successfully!", [
           { text: "OK", onPress: () => router.push("./booknowfour") },
@@ -203,7 +206,7 @@ export default function BookingScreenThree() {
         );
       }
     } catch (error) {
-      console.error("Error confirming booking:", error);
+      console.log("Error confirming booking:", error);
       Alert.alert("Error", "An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -247,11 +250,11 @@ export default function BookingScreenThree() {
           <View style={styles.profilecardcontainer}>
             <View style={styles.profilecardbackground}></View>
             <HostCard
-              key={host._id}
+              key={host.userId}
               host={host}
               onKnowMore={() => handleKnowMore(host)}
-              isSelected={selectedHostIds.includes(host._id)}
-              onSelect={() => handleSelectHost(host._id)}
+              isSelected={selectedHostIds.includes(host.userId)}
+              onSelect={() => handleSelectHost(host.userId)}
             />
           </View>
         ))

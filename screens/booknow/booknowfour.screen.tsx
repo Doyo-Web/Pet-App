@@ -15,6 +15,8 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "../../utils/uri";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface Booking {
   _id: string;
@@ -38,6 +40,10 @@ export default function BillingScreen() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const router = useRouter();
 
+  const bookingData = useSelector(
+    (state: RootState) => state.booking.bookingData
+  );
+
   useEffect(() => {
     fetchBookingData();
   }, []);
@@ -49,20 +55,23 @@ export default function BillingScreen() {
         throw new Error("No access token found");
       }
 
-      const response = await axios.get<{ bookings: Booking[] }>(
+      const response = await axios.post<{ bookings: Booking[] }>(
         `${SERVER_URI}/get-billing`,
+        {
+          bookingId: bookingData?._id,
+        },
         {
           headers: { access_token: accessToken },
         }
       );
 
-      if (response.data.bookings && response.data.bookings.length > 0) {
-        setBooking(response.data.bookings[0]);
+      if (response.data.bookings) {
+        setBooking(response.data.bookings);
       } else {
         throw new Error("No bookings found");
       }
     } catch (error) {
-      console.error("Error fetching booking data:", error);
+      console.log("Error fetching booking data:", error);
       Alert.alert(
         "Error",
         "Failed to load billing information. Please try again."
@@ -112,12 +121,12 @@ export default function BillingScreen() {
       await savePaymentDetails(mockPaymentData);
 
       // Navigate to chat screen after successful payment
-      router.push({
-        pathname: "/chat",
-        params: { bookingId: booking?._id },
-      });
+      // router.push({
+      //   pathname: "/chat",
+      //   params: { bookingId: booking?._id },
+      // });
     } catch (error: any) {
-      console.error("Error processing payment:", error.message);
+      console.log("Error processing payment:", error.message);
       Alert.alert("Error", "Failed to process payment. Please try again.");
     } finally {
       setPaymentLoading(false);
@@ -153,7 +162,7 @@ export default function BillingScreen() {
 
       Alert.alert("Success", "Payment completed successfully!");
     } catch (error) {
-      console.error("Error saving payment details:", error);
+      console.log("Error saving payment details:", error);
       Alert.alert(
         "Error",
         "Failed to save payment details. Please contact support."

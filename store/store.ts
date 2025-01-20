@@ -34,7 +34,7 @@ store.subscribe(() => {
   try {
     console.log("Store updated:", store.getState());
   } catch (error) {
-    console.error("Error updating store:", error);
+    console.log("Error updating store:", error);
   }
 });
 

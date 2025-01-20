@@ -36,7 +36,7 @@ export default function GalleryScreen() {
       try {
         const accessToken = await AsyncStorage.getItem("access_token");
         if (!accessToken) {
-          console.error("No access token found");
+          console.log("No access token found");
           setLoading(false);
           Alert.alert(
             "Error",
@@ -51,7 +51,7 @@ export default function GalleryScreen() {
         setHost(response.data.host);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching host data:", error);
+        console.log("Error fetching host data:", error);
         setLoading(false);
         Alert.alert("Error", "Failed to fetch host data. Please try again.");
       }

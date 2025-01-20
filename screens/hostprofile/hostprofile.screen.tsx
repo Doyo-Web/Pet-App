@@ -143,44 +143,44 @@ export default function HostProfileScreen() {
   };
 
   const handleHostProfileDelete = async () => {
-     try {
-       const accessToken = await AsyncStorage.getItem("access_token");
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
 
-       if (!accessToken) {
-         Toast.show("Access token not found. Please log in again.", {
-           type: "error",
-         });
-         return;
-       }
+      if (!accessToken) {
+        Toast.show("Access token not found. Please log in again.", {
+          type: "error",
+        });
+        return;
+      }
 
-       const response = await axios.delete(`${SERVER_URI}/hostprofile-delete`, {
-         headers: {
-           "Content-Type": "application/json",
-           access_token: accessToken,
-         },
-       });
+      const response = await axios.delete(`${SERVER_URI}/hostprofile-delete`, {
+        headers: {
+          "Content-Type": "application/json",
+          access_token: accessToken,
+        },
+      });
 
-       if (response.status === 200) {
-         Toast.show(response.data.message, {
-           type: "success",
-         });
-         router.push("/(tabs)/host");
-       }
-     } catch (error: any) {
-       if (error.response) {
-         console.error("Error Response Data:", error.response.data);
-         Toast.show("Failed to delete host profile.", {
-           type: "error",
-         });
-       } else {
-         console.error("Error Message:", error.message);
-         Toast.show("An unexpected error occurred", {
-           type: "error",
-         });
-       }
-     } finally {
-       setIsDeleteModalVisible(false);
-     }
+      if (response.status === 200) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
+        router.push("/(tabs)/host");
+      }
+    } catch (error: any) {
+      if (error.response) {
+        console.log("Error Response Data:", error.response.data);
+        Toast.show("Failed to delete host profile.", {
+          type: "error",
+        });
+      } else {
+        console.log("Error Message:", error.message);
+        Toast.show("An unexpected error occurred", {
+          type: "error",
+        });
+      }
+    } finally {
+      setIsDeleteModalVisible(false);
+    }
   };
 
   useEffect(() => {
@@ -188,7 +188,7 @@ export default function HostProfileScreen() {
       try {
         const accessToken = await AsyncStorage.getItem("access_token");
         if (!accessToken) {
-          console.error("No access token found");
+          console.log("No access token found");
           setLoading(false);
           Alert.alert(
             "Error",
@@ -204,7 +204,7 @@ export default function HostProfileScreen() {
         setHost(response.data.host);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching host data:", error);
+        console.log("Error fetching host data:", error);
         setLoading(false);
         Alert.alert("Error", "Failed to fetch host data. Please try again.");
       }
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   },
 
   profileCard: {
-    position: 'relative',
+    position: "relative",
     margin: 16,
     padding: 16,
     backgroundColor: "#fff",

@@ -57,7 +57,7 @@ export default function BookingScreenTwo() {
   const [currentHostIndex, setCurrentHostIndex] = useState(0);
   const [previousHostCount, setPreviousHostCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const bookingData = useSelector(
     (state: RootState) => state.booking.bookingData
   );
@@ -66,7 +66,7 @@ export default function BookingScreenTwo() {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
-        console.error("No access token found");
+        console.log("No access token found");
         setLoading(false);
         return;
       }
@@ -83,7 +83,6 @@ export default function BookingScreenTwo() {
 
       if (response.data && response.data.success && response.data.booking) {
         const newBooking = response.data.booking;
-        console.log("New Booking", newBooking);
         setBooking(newBooking);
 
         const newHostCount = newBooking.acceptedHosts.length;
@@ -93,19 +92,19 @@ export default function BookingScreenTwo() {
         }
       }
     } catch (error) {
-      console.error("Error fetching booking:", error);
+      console.log("Error fetching booking:", error);
     } finally {
       setLoading(false);
     }
   }, [bookingData?._id, previousHostCount]);
 
-    useFocusEffect(
-      useCallback(() => {
-        fetchBooking();
-        const interval = setInterval(fetchBooking, 10000);
-        return () => clearInterval(interval);
-      }, [fetchBooking])
-    );
+  useFocusEffect(
+    useCallback(() => {
+      fetchBooking();
+      const interval = setInterval(fetchBooking, 10000);
+      return () => clearInterval(interval);
+    }, [fetchBooking])
+  );
 
   const nextHost = () => {
     if (booking && booking.acceptedHosts.length > 0) {

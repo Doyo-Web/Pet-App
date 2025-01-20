@@ -11,11 +11,13 @@ import {
   Image,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import Icon from "react-native-vector-icons/Ionicons";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -29,14 +31,11 @@ import { addPetProfile, setIsLoading, setError } from "@/store/petProfileSlice";
 import { RootState } from "@/store/store";
 
 export default function ProfileScreen() {
- 
   const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
-
 
   const [currentStep, setCurrentStep] = useState(1);
 
- 
-   const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   // Define the ImageFile interface to represent the structure of pet images
   interface ImageFile {
@@ -192,7 +191,6 @@ export default function ProfileScreen() {
     setIsNextButtonDisabled(!isValid);
   }, [currentStep, formState]);
 
-  
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -301,11 +299,11 @@ export default function ProfileScreen() {
 
   const totalSteps = 4;
 
- const nextStep = () => {
-   if (currentStep < totalSteps && !isNextButtonDisabled) {
-     setCurrentStep(currentStep + 1);
-   }
- };
+  const nextStep = () => {
+    if (currentStep < totalSteps && !isNextButtonDisabled) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
   const prevStep = () => {
     if (currentStep > 1) {
@@ -418,90 +416,89 @@ export default function ProfileScreen() {
 
   console.log("store petprofile data", petProfiles);
 
- const handlePetProfile = async () => {
+  const handlePetProfile = async () => {
+    dispatch(setIsLoading(true));
 
-   dispatch(setIsLoading(true));
+    const accessToken = await AsyncStorage.getItem("access_token");
 
-   const accessToken = await AsyncStorage.getItem("access_token");
+    try {
+      const response = await axios.post(
+        `${SERVER_URI}/petprofile-create`,
+        formState,
+        {
+          headers: {
+            access_token: accessToken,
+          },
+        }
+      );
 
-   try {
-     const response = await axios.post(
-       `${SERVER_URI}/petprofile-create`,
-       formState,
-       {
-         headers: {
-           access_token: accessToken,
-         },
-       }
-     );
+      if (response.data) {
+        Toast.show(response.data.message, {
+          type: "success",
+        });
 
-     if (response.data) {
-       Toast.show(response.data.message, {
-         type: "success",
-       });
+        console.log(response.data.petProfile);
 
-       console.log(response.data.petProfile);
+        // Add the new pet profile to Redux state
+        dispatch(addPetProfile(response.data.petProfile));
 
-       // Add the new pet profile to Redux state
-       dispatch(addPetProfile(response.data.petProfile));
+        // Reset the form state to initial values
+        setFormState({
+          petType: "",
+          petName: "",
+          petBreed: "",
+          petAgeYears: "",
+          petAgeMonths: "",
+          petGender: "",
+          lastHeatCycle: "",
+          isNeutered: false,
+          neuteredDate: "",
+          pottyTraining: "",
+          toiletBreaks: "",
+          walkPerDay: "",
+          bathingFrequency: "",
+          dailyCombing: false,
+          dietSchedule: [{ time: "", portion: "" }],
+          foodAllergy: "",
+          vaccinationDate: new Date(),
+          dewormingDate: new Date(),
+          tickTreatmentDate: new Date(),
+          medicationDetails: {
+            nameFrequency: "",
+            reason: "",
+            administration: "",
+          },
+          aggressiveTendencies: {
+            maleDog: false,
+            femaleDog: false,
+            human: false,
+            otherAnimals: false,
+          },
+          resourceGuarding: false,
+          groomingAggression: false,
+          collarAggression: false,
+          foodAggression: false,
+          petImages: ["", "", "", ""],
+        });
 
-       // Reset the form state to initial values
-       setFormState({
-         petType: "",
-         petName: "",
-         petBreed: "",
-         petAgeYears: "",
-         petAgeMonths: "",
-         petGender: "",
-         lastHeatCycle: "",
-         isNeutered: false,
-         neuteredDate: "",
-         pottyTraining: "",
-         toiletBreaks: "",
-         walkPerDay: "",
-         bathingFrequency: "",
-         dailyCombing: false,
-         dietSchedule: [{ time: "", portion: "" }],
-         foodAllergy: "",
-         vaccinationDate: new Date(),
-         dewormingDate: new Date(),
-         tickTreatmentDate: new Date(),
-         medicationDetails: {
-           nameFrequency: "",
-           reason: "",
-           administration: "",
-         },
-         aggressiveTendencies: {
-           maleDog: false,
-           femaleDog: false,
-           human: false,
-           otherAnimals: false,
-         },
-         resourceGuarding: false,
-         groomingAggression: false,
-         collarAggression: false,
-         foodAggression: false,
-         petImages: ["", "", "", ""],
-       });
-       
-       setCurrentStep(1);
-       router.push("/(tabs)/profilesuccess");
-     }
-   } catch (error: any) {
-     if (error.response) {
-       console.log("Error Response Data:", error.response.data);
-       console.log("Error Response Status:", error.response.status);
-       dispatch(
-         setError(error.response.data?.message || "Unknown error occurred.")
-       );
-     } else {
-       console.log("Error Message:", error.message);
-       dispatch(setError(error.message));
-     }
-   } finally {
-     dispatch(setIsLoading(false));
-   }
- };
+        setCurrentStep(1);
+        router.push("/(tabs)/profilesuccess");
+      }
+    } catch (error: any) {
+      if (error.response) {
+        console.log("Error Response Data:", error.response.data);
+        console.log("Error Response Status:", error.response.status);
+        dispatch(
+          setError(error.response.data?.message || "Unknown error occurred.")
+        );
+      } else {
+        console.log("Error Message:", error.message);
+        dispatch(setError(error.message));
+      }
+    } finally {
+      dispatch(setIsLoading(false));
+    }
+  };
 
   // Function to pick an image
   const pickImage = async (index: number) => {
@@ -549,12 +546,10 @@ export default function ProfileScreen() {
         petImages: updatedImages,
       }));
     } catch (error) {
-      console.error("Error reading image file:", error);
+      console.log("Error reading image file:", error);
       Alert.alert("Error", "There was an error processing the image.");
     }
   };
-  
-    
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1954,4 +1949,3 @@ const styles = StyleSheet.create({
 function setPetImages(updatedImages: any[]) {
   throw new Error("Function not implemented.");
 }
-

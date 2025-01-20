@@ -101,13 +101,12 @@ export default function VerifyAccountScreen() {
   //       router.push("/(routes)/login");
   //     })
   //     .catch((error: any) => {
-  //       console.error("Activation Error:", error.response.data);
+  //       console.log("Activation Error:", error.response.data);
   //       Toast.show(error.message, {
   //         type: "danger",
   //       });
   //     });
   // };
-
 
   const handleresendotp = async () => {
     const activation_token = await AsyncStorage.getItem("activation_token");

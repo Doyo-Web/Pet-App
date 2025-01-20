@@ -62,81 +62,79 @@ export default function RequestsScreen() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [hostCity, setHostCity] = useState<string>("");
-const [refreshing, setRefreshing] = useState(false);
-  
-    const fetchRequestData = useCallback(async () => {
-      try {
-        const accessToken = await AsyncStorage.getItem("access_token");
-        if (!accessToken) {
-          console.error("No access token found");
-          setLoading(false);
-          Alert.alert(
-            "Error",
-            "You are not logged in. Please log in and try again."
-          );
-          return;
-        }
+  const [refreshing, setRefreshing] = useState(false);
 
-        // First get host profile to get city
-        const hostResponse = await axios.get<Host>(`${SERVER_URI}/host`, {
-          headers: { access_token: accessToken },
-        });
-
-        console.log(hostResponse.data.host.city);
-        if (hostResponse.data && hostResponse.data.host.city) {
-          setHostCity(hostResponse.data.host.city);
-        } else {
-          console.error("Host city not found in response");
-          setLoading(false);
-          Alert.alert("Error", "Failed to fetch host data. Please try again.");
-          return;
-        }
-
-        // Then get booking requests
-        const bookingResponse = await axios.get<{ bookings: Booking[] }>(
-          `${SERVER_URI}/getrequestbooking`,
-          {
-            headers: { access_token: accessToken },
-          }
-        );
-
-        // Filter bookings based on city match
-        const filteredBookings = bookingResponse.data.bookings.filter(
-          (booking) =>
-            booking.location &&
-            booking.location.address &&
-            booking.location.address.toLowerCase() ===
-              hostResponse.data.host.city.toLowerCase()
-        );
-
-        console.log("Host city:", hostResponse.data.host.city);
-        console.log(
-          "Fetched and filtered bookings:",
-          JSON.stringify(filteredBookings, null, 2)
-        );
-        setBookings(filteredBookings);
+  const fetchRequestData = useCallback(async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        console.log("No access token found");
         setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setLoading(false);
-        Alert.alert("Error", "Failed to fetch booking data. Please try again.");
+        Alert.alert(
+          "Error",
+          "You are not logged in. Please log in and try again."
+        );
+        return;
       }
-    }, []);
 
-  
-   useFocusEffect(
-     useCallback(() => {
-       fetchRequestData();
-       const interval = setInterval(fetchRequestData, 10000);
-       return () => clearInterval(interval);
-     }, [fetchRequestData])
+      // First get host profile to get city
+      const hostResponse = await axios.get<Host>(`${SERVER_URI}/host`, {
+        headers: { access_token: accessToken },
+      });
+
+      console.log(hostResponse.data.host.city);
+      if (hostResponse.data && hostResponse.data.host.city) {
+        setHostCity(hostResponse.data.host.city);
+      } else {
+        console.log("Host city not found in response");
+        setLoading(false);
+        Alert.alert("Error", "Failed to fetch host data. Please try again.");
+        return;
+      }
+
+      // Then get booking requests
+      const bookingResponse = await axios.get<{ bookings: Booking[] }>(
+        `${SERVER_URI}/getrequestbooking`,
+        {
+          headers: { access_token: accessToken },
+        }
+      );
+
+      // Filter bookings based on city match
+      const filteredBookings = bookingResponse.data.bookings.filter(
+        (booking) =>
+          booking.location &&
+          booking.location.address &&
+          booking.location.address.toLowerCase() ===
+            hostResponse.data.host.city.toLowerCase()
+      );
+
+      console.log("Host city:", hostResponse.data.host.city);
+      console.log(
+        "Fetched and filtered bookings:",
+        JSON.stringify(filteredBookings, null, 2)
+      );
+      setBookings(filteredBookings);
+      setLoading(false);
+    } catch (error) {
+      console.log("Error fetching data:", error);
+      setLoading(false);
+      Alert.alert("Error", "Failed to fetch booking data. Please try again.");
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchRequestData();
+      const interval = setInterval(fetchRequestData, 10000);
+      return () => clearInterval(interval);
+    }, [fetchRequestData])
   );
-  
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchRequestData();
   };
-    
 
   const handleKnowMore = (bookingId: string) => {
     // Implement navigation to booking details screen
@@ -168,7 +166,7 @@ const [refreshing, setRefreshing] = useState(false);
       );
       setBookings(filteredBookings);
     } catch (error) {
-      console.error("Error accepting booking:", error);
+      console.log("Error accepting booking:", error);
       Alert.alert("Error", "Failed to accept booking. Please try again.");
     }
   };
@@ -198,7 +196,7 @@ const [refreshing, setRefreshing] = useState(false);
       );
       setBookings(filteredBookings);
     } catch (error) {
-      console.error("Error declining booking:", error);
+      console.log("Error declining booking:", error);
       Alert.alert("Error", "Failed to decline booking. Please try again.");
     }
   };

@@ -25,13 +25,12 @@ const { width } = Dimensions.get("window");
 const imageSize = (width - 48) / 2;
 
 export default function GalleryScreen() {
- const [showReview, setShowReview] = useState(false);
- const [review, setReview] = useState({
-   rating: 0,
-   feedback: "",
- });
+  const [showReview, setShowReview] = useState(false);
+  const [review, setReview] = useState({
+    rating: 0,
+    feedback: "",
+  });
   const [loading, setLoading] = useState(true);
-
 
   const { petProfiles, isLoading, error } = useSelector(
     (state: RootState) => state.petProfile
@@ -62,67 +61,66 @@ export default function GalleryScreen() {
     router.push("/(drawer)/(tabs)/petparents/petparentstwo");
   };
 
-const handleSubmitReview = async () => {
-  try {
-    const accessToken = await AsyncStorage.getItem("access_token");
-    if (!accessToken) {
-      console.error("No access token found");
-      setLoading(false);
-      Alert.alert(
-        "Error",
-        "You are not logged in. Please log in and try again."
-      );
-      return;
-    }
-
-    setLoading(true);
-
-    const response = await axios.post(
-      `${SERVER_URI}/create-review`,
-      review, // Send review object directly
-      {
-        headers: {
-          "Content-Type": "application/json", // Specify JSON content
-          access_token: accessToken, // Include access token
-        },
+  const handleSubmitReview = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        console.log("No access token found");
+        setLoading(false);
+        Alert.alert(
+          "Error",
+          "You are not logged in. Please log in and try again."
+        );
+        return;
       }
-    );
 
-    if (!response.data) {
-      throw new Error("Failed to submit review");
+      setLoading(true);
+
+      const response = await axios.post(
+        `${SERVER_URI}/create-review`,
+        review, // Send review object directly
+        {
+          headers: {
+            "Content-Type": "application/json", // Specify JSON content
+            access_token: accessToken, // Include access token
+          },
+        }
+      );
+
+      if (!response.data) {
+        throw new Error("Failed to submit review");
+      }
+
+      Toast.show(response.data.message, {
+        type: "success",
+      });
+      // Store the review submission status
+      await AsyncStorage.setItem("review_submitted", "true");
+
+      setShowReview(false);
+    } catch (error) {
+      console.log("Error submitting review:", error);
+      Alert.alert("Error", "Failed to submit review. Please try again.");
     }
+  };
 
-    Toast.show(response.data.message, {
-      type: "success",
-    });
-    // Store the review submission status
-    await AsyncStorage.setItem("review_submitted", "true");
-
-    setShowReview(false);
-  } catch (error) {
-    console.error("Error submitting review:", error);
-    Alert.alert("Error", "Failed to submit review. Please try again.");
-  }
-};
-
-const renderStars = () => {
-  return Array(5)
-    .fill(0)
-    .map((_, index) => (
-      <TouchableOpacity
-        key={index}
-        onPress={() => setReview((prev) => ({ ...prev, rating: index + 1 }))}
-        style={styles.starContainer}
-      >
-        <Text
-          style={[styles.star, index < review.rating && styles.starSelected]}
+  const renderStars = () => {
+    return Array(5)
+      .fill(0)
+      .map((_, index) => (
+        <TouchableOpacity
+          key={index}
+          onPress={() => setReview((prev) => ({ ...prev, rating: index + 1 }))}
+          style={styles.starContainer}
         >
-          ★
-        </Text>
-      </TouchableOpacity>
-    ));
-};
-
+          <Text
+            style={[styles.star, index < review.rating && styles.starSelected]}
+          >
+            ★
+          </Text>
+        </TouchableOpacity>
+      ));
+  };
 
   return (
     <SafeAreaView style={styles.container}>

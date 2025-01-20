@@ -91,7 +91,7 @@ export default function BookingsScreen() {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
-        console.error("No access token found");
+        console.log("No access token found");
         setLoading(false);
         Alert.alert(
           "Error",
@@ -116,7 +116,7 @@ export default function BookingsScreen() {
         Alert.alert("Error", "Failed to fetch bookings. Please try again.");
       }
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      console.log("Error fetching bookings:", error);
       Alert.alert("Error", "Failed to fetch bookings. Please try again.");
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Key, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -22,10 +22,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { setBookingData } from "@/store/bookingSlice";
-
-
+import { useFocusEffect } from "@react-navigation/native";
 
 interface Pet {
+  petName: string;
+  petImages: any;
+  _id: Key | null | undefined;
   id: string;
   name: string;
   image: string | null;
@@ -47,7 +49,6 @@ interface BookData {
 }
 
 export default function BookingScreen(): JSX.Element {
-
   const dispatch = useDispatch();
 
   const [bookData, setBookData] = useState<BookData>({
@@ -61,18 +62,47 @@ export default function BookingScreen(): JSX.Element {
   });
 
   const [showMap, setShowMap] = useState<boolean>(false);
-  const [showUnavailablePopup, setShowUnavailablePopup] = useState<boolean>(false);
+  const [showUnavailablePopup, setShowUnavailablePopup] =
+    useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [datePickerMode, setDatePickerMode] = useState<"date" | "time">("date");
-  const [currentDatePickerField, setCurrentDatePickerField] = useState<
-    keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
-  >("startDate");
+  const [currentDatePickerField, setCurrentDatePickerField] =
+    useState<
+      keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
+    >("startDate");
+  const [petProfiles, setPetProfiles] = useState<Pet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { petProfiles, isLoading, error } = useSelector(
-    (state: RootState) => state.petProfile
+  useFocusEffect(
+    useCallback(() => {
+      const fetchPetProfiles = async () => {
+        try {
+          setIsLoading(true);
+          const accessToken = await AsyncStorage.getItem("access_token");
+          const response = await axios.get(`${SERVER_URI}/petprofile-get`, {
+            headers: { access_token: accessToken },
+          });
+          if (response.data.success) {
+            console.log(response.data);
+            setPetProfiles(response.data.data);
+          } else {
+            setError("Failed to fetch pet profiles");
+          }
+        } catch (error) {
+          setError("An error occurred while fetching pet profiles");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchPetProfiles();
+    }, [])
   );
 
-  console.log("booking petprofile data", petProfiles);
+  // const { petProfiles, isLoading, error } = useSelector(
+  //   (state: RootState) => state.petProfile
+  // );
 
   const togglePetSelection = (pet: Pet) => {
     setBookData((prev) => {
@@ -104,7 +134,10 @@ export default function BookingScreen(): JSX.Element {
 
   const showDatePickerModal = (
     mode: "date" | "time",
-    field: keyof Pick<BookData, "startDate" | "startTime" | "endDate" | "endTime">
+    field: keyof Pick<
+      BookData,
+      "startDate" | "startTime" | "endDate" | "endTime"
+    >
   ): void => {
     setShowDatePicker(true);
     setDatePickerMode(mode);
@@ -121,7 +154,6 @@ export default function BookingScreen(): JSX.Element {
   };
 
   const handleBookNow = async () => {
-    
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       const response = await axios.post(`${SERVER_URI}/booking`, bookData, {
@@ -131,19 +163,21 @@ export default function BookingScreen(): JSX.Element {
         dispatch(setBookingData(response.data.booking));
         router.push("./booknowtwo");
       } else {
-        console.error("Booking failed:", response.data.message);
+        console.log("Booking failed:", response.data.message);
         Alert.alert(
           "Booking Failed",
-          response.data.message || "An error occurred while booking. Please try again."
+          response.data.message ||
+            "An error occurred while booking. Please try again."
         );
       }
     } catch (error) {
-      console.error("Error during booking:", error);
+      console.log("Error during booking:", error);
       if (axios.isAxiosError(error)) {
-        console.error("Axios error details:", error.response?.data);
+        console.log("Axios error details:", error.response?.data);
         Alert.alert(
           "Booking Error",
-          error.response?.data?.message || "An unexpected error occurred. Please try again."
+          error.response?.data?.message ||
+            "An unexpected error occurred. Please try again."
         );
       } else {
         Alert.alert("Error", "An unexpected error occurred. Please try again.");
@@ -171,15 +205,17 @@ export default function BookingScreen(): JSX.Element {
               key={pet._id}
               onPress={() =>
                 togglePetSelection({
-                  id: pet._id,
+                  id: pet.id,
                   name: pet.petName,
                   image: pet.petImages[0]?.url ?? null,
+                  _id: undefined,
+                  petName: "",
+                  petImages: undefined
                 })
               }
               style={[
                 styles.petItem,
-                bookData.pets.some((p) => p.id === pet._id) &&
-                  styles.petImage,
+                bookData.pets.some((p) => p.id === pet._id) && styles.petImage,
               ]}
             >
               <Image

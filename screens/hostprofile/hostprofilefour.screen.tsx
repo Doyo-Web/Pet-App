@@ -74,7 +74,7 @@ const MyReviewsScreen: React.FC = () => {
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
-        console.error("No access token found");
+        console.log("No access token found");
         Alert.alert(
           "Error",
           "You are not logged in. Please log in and try again."
@@ -96,7 +96,7 @@ const MyReviewsScreen: React.FC = () => {
 
       setReviews(response.data.reviews);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      console.log("Error fetching reviews:", error);
       Alert.alert("Error", "Failed to fetch reviews. Please try again.");
     } finally {
       setLoading(false);
@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
     color: "#757575",
     marginTop: 20,
   },
-  
 });
 
 export default MyReviewsScreen;
