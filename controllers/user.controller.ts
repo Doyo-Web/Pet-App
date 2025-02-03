@@ -30,6 +30,10 @@ import sharp from "sharp";
 import Tesseract from "tesseract.js";
 import fs from "fs"; // For file system operations
 import { PetProfileModel } from "../models/petprofile.model";
+import HostProfileModel from "../models/hostprofile.model";
+import bookingModel from "../models/booking.model";
+import { Review } from "../models/review.model";
+import chatModel from "../models/chat.model";
 
 dotenv.config();
 
@@ -599,9 +603,22 @@ export const DeleteUser = catchAsyncError(
         userId: userId,
       });
 
-      console.log(
-        `Deleted ${deletedPetProfiles.deletedCount} pet profiles associated with the user.`
-      );
+      const deletedHostProfiles = await HostProfileModel.deleteMany({
+        userId: userId,
+      });
+
+       const deletedBooking = await bookingModel.deleteMany({
+         userId: userId,
+       });
+      
+       const deletedReview = await Review.deleteMany({
+         userId: userId,
+       });
+      
+      const deletedChat = await chatModel.deleteMany({
+        participants: userId,
+      });
+
     } else {
       console.log("User not found");
     }

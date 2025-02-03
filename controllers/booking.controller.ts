@@ -738,3 +738,47 @@ export const getUserRelatedBookings = async (
     next(error);
   }
 };
+
+export const getBookingEndDate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    const otherUser = req.body.participantId;
+
+    // Check if the user is a host
+    const hostProfile = await HostProfile.findOne({ userId });
+
+    if (hostProfile) {
+      const booking = await Booking.find({
+        userId: otherUser,
+        selectedHost: userId,
+        paymentStatus: "completed",
+      })
+        .sort({ createdAt: -1 })
+        .limit(1);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Host user booking",
+        booking,
+      });
+    } else {
+      const booking = await Booking.find({
+        userId: userId,
+        selectedHost: otherUser,
+        paymentStatus: "completed",
+      })
+        .sort({ createdAt: -1 })
+        .limit(1);
+
+      return res.status(200).json({
+        success: true,
+        message: "Pet Parents user booking",
+        booking,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+

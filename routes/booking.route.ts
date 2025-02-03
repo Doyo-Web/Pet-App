@@ -6,6 +6,7 @@ import {
   declineHost,
   getBilling,
   getBookingById,
+  getBookingEndDate,
   getBookings,
   getRequestBooking,
   getUserRelatedBookings,
@@ -28,5 +29,6 @@ router.post("/create-razorpay-order", isAuthenticated, createRazorpayOrder);
 router.post("/save-payment", isAuthenticated, savePaymentDetails);
 router.get("/getrequestbooking", isAuthenticated, getRequestBooking);
 router.get("/user-related-bookings", isAuthenticated, getUserRelatedBookings);
+router.post("/booking-enddate", isAuthenticated, getBookingEndDate);
 
 export default router;
