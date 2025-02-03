@@ -18,6 +18,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import io from "socket.io-client";
 import { SERVER_URI } from "@/utils/uri";
+import { Toast } from "react-native-toast-notifications";
 
 type Message = {
   _id: string;
@@ -46,6 +47,30 @@ const ChatScreen: React.FC = () => {
   const socketRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const intervalRef = useRef<any>(null); // Ref to hold the interval ID
+  const [enddate, setEndDate] = useState("");
+
+  useEffect(() => {
+    const getEndDate = async () => {
+      try {
+        const accessToken = await AsyncStorage.getItem("access_token");
+        if (!accessToken) throw new Error("No access token found");
+
+        // Create or get existing chat
+        const bookingResponse = await axios.post(
+          `${SERVER_URI}/booking-enddate`,
+          { participantId: userId },
+          { headers: { access_token: accessToken } }
+        );
+        setEndDate(bookingResponse.data.booking[0].endDateTime);
+      } catch (error: any) {
+      setError("Booking Not Found");
+      setLoading(false);
+      }
+    }
+
+    getEndDate();
+    }, []);
+  
 
   useEffect(() => {
     const setupChat = async () => {
@@ -116,7 +141,18 @@ const ChatScreen: React.FC = () => {
   }, [userId, selectedHost]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !chatId) return;
+
+    const now = new Date();
+    const bookingEndDate = new Date(enddate); // Convert endDate to Date object
+
+    if (now >= bookingEndDate) {
+      // Show toast message if booking is ended
+     Toast.show("booking is ended you cannot chat now", { type: "info" });
+      return;
+    }
+
+
+   if (!newMessage.trim() || !chatId) return;
 
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
