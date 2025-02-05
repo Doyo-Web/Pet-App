@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import {
   AntDesign,
@@ -51,6 +52,7 @@ import {
 } from "react-native-responsive-dimensions";
 import React from "react";
 
+const { width, height } = Dimensions.get("window");
 
 export default function SignUpScreen() {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
@@ -178,243 +180,226 @@ export default function SignUpScreen() {
    };
 
   return (
-    <View style={styles.container}>
-      <Image
-        style={styles.signInImage}
-        source={require("@/assets/images/shape.png")}
-      />
-      <Text style={[styles.welcomeText, { fontFamily: "OtomanopeeOne" }]}>
-        Create an account
-      </Text>
-      <Text style={styles.learningText}>Join us!</Text>
-      <View style={styles.inputContainer}>
-        <View>
-          <TextInput
-            style={[styles.input, { paddingLeft: 10 }]}
-            keyboardType="default"
-            value={userInfo.fullname}
-            placeholder="Full Name"
-            placeholderTextColor="#000000"
-            onChangeText={(value) =>
-              setUserInfo({ ...userInfo, fullname: value })
-            }
-          />
+    <ScrollView contentContainerStyle={styles.scrollViewContainer}>
+      <View style={styles.container}>
+        <Image
+          style={styles.signInImage}
+          source={require("@/assets/images/shape.png")}
+        />
+        <Text style={[styles.welcomeText, { fontFamily: "OtomanopeeOne" }]}>
+          Create an account
+        </Text>
+        <Text style={styles.learningText}>Join us!</Text>
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[styles.input, { paddingLeft: 10 }]}
+              keyboardType="default"
+              value={userInfo.fullname}
+              placeholder="Full Name"
+              placeholderTextColor="#000000"
+              onChangeText={(value) =>
+                setUserInfo({ ...userInfo, fullname: value })
+              }
+            />
 
-          <Image
-            style={{
-              position: "absolute",
-              right: 12,
-              top: 20,
-              width: 18,
-              height: 18,
-              objectFit: "contain",
-            }}
-            source={require("@/assets/icons/fullnameicon.png")}
-          />
-          {/* <AntDesign
+            <Image
+              style={styles.inputIcon}
+              source={require("@/assets/icons/fullnameicon.png")}
+            />
+
+            {/* <AntDesign
             style={{ position: "absolute", right: 12, top: 14 }}
             name="user"
             size={20}
             color={"#000000"}
           /> */}
-        </View>
+          </View>
 
-        <View>
-          <TextInput
-            style={[styles.input, { paddingLeft: 10 }]}
-            keyboardType="numeric"
-            value={userInfo.phonenumber}
-            placeholder="Phone Number"
-            placeholderTextColor="#000000"
-            onChangeText={(value) =>
-              setUserInfo({ ...userInfo, phonenumber: value })
-            }
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[styles.input, { paddingLeft: 10 }]}
+              keyboardType="numeric"
+              value={userInfo.phonenumber}
+              placeholder="Phone Number"
+              placeholderTextColor="#000000"
+              onChangeText={(value) =>
+                setUserInfo({ ...userInfo, phonenumber: value })
+              }
+            />
 
-          <Image
-            style={{
-              position: "absolute",
-              right: 12,
-              top: 20,
-              width: 18,
-              height: 18,
-              objectFit: "contain",
-            }}
-            source={require("@/assets/icons/phonenumbericon.png")}
-          />
+            <Image
+              style={styles.inputIcon}
+              source={require("@/assets/icons/phonenumbericon.png")}
+            />
 
-          {/* <Ionicons
+            {/* <Ionicons
             style={{ position: "absolute", right: 12, top: 14 }}
             name="location-outline"
             size={24}
             color="#000"
           /> */}
-        </View>
+          </View>
 
-        <View>
-          <TextInput
-            style={[styles.input, { paddingLeft: 10 }]}
-            keyboardType="email-address"
-            value={userInfo.email}
-            placeholder="Email"
-            placeholderTextColor="#000000"
-            onChangeText={(value) => setUserInfo({ ...userInfo, email: value })}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[styles.emailinput, { paddingLeft: 10 }]}
+              keyboardType="email-address"
+              value={userInfo.email}
+              placeholder="Email"
+              placeholderTextColor="#000000"
+              onChangeText={(value) =>
+                setUserInfo({ ...userInfo, email: value })
+              }
+            />
 
-          <Image
-            style={{
-              position: "absolute",
-              right: 12,
-              top: 20,
-              width: 20,
-              height: 16,
-              objectFit: "contain",
-            }}
-            source={require("@/assets/icons/emailicon.png")}
-          />
+            <Image
+              style={styles.inputIcon}
+              source={require("@/assets/icons/emailicon.png")}
+            />
 
-          {/* <Fontisto
+            {/* <Fontisto
             style={{ position: "absolute", right: 12, top: 17.8 }}
             name="email"
             size={20}
             color={"#000"}
           /> */}
 
-          {required && (
-            <View style={commonStyles.errorContainer}>
-              <Entypo name="cross" size={18} color={"red"} />
-            </View>
-          )}
+            {required && (
+              <View style={commonStyles.errorContainer}>
+                <Entypo name="cross" size={18} color={"red"} />
+              </View>
+            )}
 
-          <View>
-            <TextInput
-              style={[styles.input, { paddingLeft: 10, marginTop: 10 }]}
-              keyboardType="default"
-              secureTextEntry={!isPasswordVisible}
-              placeholder="Create a password"
-              placeholderTextColor="#000000"
-              onChangeText={(value) =>
-                setUserInfo({ ...userInfo, password: value })
-              }
-              // onChangeText={handlePasswordValidation}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[
+                  styles.passwordinput,
+                  { paddingLeft: 10, marginTop: 10 },
+                ]}
+                keyboardType="default"
+                secureTextEntry={!isPasswordVisible}
+                placeholder="Create a password"
+                placeholderTextColor="#000000"
+                onChangeText={(value) =>
+                  setUserInfo({ ...userInfo, password: value })
+                }
+                // onChangeText={handlePasswordValidation}
+              />
+
+              <TouchableOpacity
+                style={styles.visibleIcon}
+                onPress={() => setPasswordVisible(!isPasswordVisible)}
+              >
+                {isPasswordVisible ? (
+                  // <Ionicons name="eye-off-outline" size={23} color={"#000"} />
+                  <Image
+                    style={{ position: "absolute", right: 2, top: 10 }}
+                    source={require("@/assets/icons/eyecuticon.png")}
+                  />
+                ) : (
+                  <Ionicons
+                    style={{ position: "absolute", right: 2, top: 8 }}
+                    name="eye-outline"
+                    size={20}
+                    color={"#000"}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {error.password && (
+              <View style={[commonStyles.errorContainer, { top: 145 }]}>
+                <Entypo name="cross" size={18} color={"red"} />
+                <Text style={{ color: "red", fontSize: 11, marginTop: -1 }}>
+                  {error.password}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <SelectDropdown
+                data={data}
+                onSelect={(selectedItem, index) => {
+                  setUserInfo({ ...userInfo, hearaboutus: selectedItem.title });
+                }}
+                renderButton={(selectedItem: any, isOpen: any) => {
+                  return (
+                    <View style={styles.dropdownButtonStyle}>
+                      <Text style={styles.dropdownButtonTxtStyle}>
+                        {(selectedItem && selectedItem.title) ||
+                          "How did you hear about us ?"}
+                      </Text>
+                      <MaterialCommunityIcons
+                        name={isOpen ? "chevron-up" : "chevron-down"}
+                        style={styles.dropdownButtonArrowStyle}
+                      />
+                    </View>
+                  );
+                }}
+                renderItem={(item, index, isSelected) => {
+                  return (
+                    <View
+                      style={{
+                        ...styles.dropdownItemStyle,
+                        ...(isSelected && { backgroundColor: "#fff" }),
+                      }}
+                    >
+                      <Text style={styles.dropdownItemTxtStyle}>
+                        {item.title}
+                      </Text>
+                    </View>
+                  );
+                }}
+                showsVerticalScrollIndicator={false}
+                dropdownStyle={styles.dropdownMenuStyle}
+              />
+            </View>
 
             <TouchableOpacity
-              style={styles.visibleIcon}
-              onPress={() => setPasswordVisible(!isPasswordVisible)}
+              style={[styles.signUpButton, isLoading && styles.disabledButton]}
+              onPress={handleSignup}
+              disabled={isLoading}
             >
-              {isPasswordVisible ? (
-                // <Ionicons name="eye-off-outline" size={23} color={"#000"} />
-                <Image
-                  style={{
-                    position: "absolute",
-                    right: 2,
-                    top: 8,
-                    width: 22,
-                    height: 22,
-                    objectFit: "contain",
-                  }}
-                  source={require("@/assets/icons/eyecuticon.png")}
-                />
+              {isLoading ? (
+                <ActivityIndicator size="small" color="white" />
               ) : (
-                <Ionicons
-                  style={{ position: "absolute", right: 2, top: 8 }}
-                  name="eye-outline"
-                  size={22}
-                  color={"#000"}
-                />
+                <Text style={styles.signUpButtonText}>Sign Up</Text>
               )}
             </TouchableOpacity>
-          </View>
 
-          {error.password && (
-            <View style={[commonStyles.errorContainer, { top: 145 }]}>
-              <Entypo name="cross" size={18} color={"red"} />
-              <Text style={{ color: "red", fontSize: 11, marginTop: -1 }}>
-                {error.password}
+            <Text style={styles.bottomtext}>
+              By signing in or signing up, I agree to Doyopets.com’s{" "}
+              <Text
+                style={{ color: "#206FF2" }}
+                onPress={() => {
+                  () => router.push("/(routes)/signup");
+                }}
+              >
+                Terms of service
+              </Text>{" "}
+              and{" "}
+              <Text
+                style={{ color: "#206FF2" }}
+                onPress={() => {
+                  () => router.push("/(routes)/signup");
+                }}
+              >
+                Privacy Policy
               </Text>
-            </View>
-          )}
-
-          <SelectDropdown
-            data={data}
-            onSelect={(selectedItem, index) => {
-              setUserInfo({ ...userInfo, hearaboutus: selectedItem.title });
-            }}
-            renderButton={(selectedItem: any, isOpen: any) => {
-              return (
-                <View style={styles.dropdownButtonStyle}>
-                  <Text style={styles.dropdownButtonTxtStyle}>
-                    {(selectedItem && selectedItem.title) ||
-                      "How did you hear about us ?"}
-                  </Text>
-                  <MaterialCommunityIcons
-                    name={isOpen ? "chevron-up" : "chevron-down"}
-                    style={styles.dropdownButtonArrowStyle}
-                  />
-                </View>
-              );
-            }}
-            renderItem={(item, index, isSelected) => {
-              return (
-                <View
-                  style={{
-                    ...styles.dropdownItemStyle,
-                    ...(isSelected && { backgroundColor: "#fff" }),
-                  }}
-                >
-                  <Text style={styles.dropdownItemTxtStyle}>{item.title}</Text>
-                </View>
-              );
-            }}
-            showsVerticalScrollIndicator={false}
-            dropdownStyle={styles.dropdownMenuStyle}
-          />
-
-          <TouchableOpacity
-            style={[styles.signUpButton, isLoading && styles.disabledButton]}
-            onPress={handleSignup}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text style={styles.signUpButtonText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
-
-          <Text style={styles.bottomtext}>
-            By signing in or signing up, I agree to Doyopets.com’s{" "}
-            <Text
-              style={{ color: "#206FF2" }}
-              onPress={() => {
-                () => router.push("/(routes)/signup");
-              }}
-            >
-              Terms of service
-            </Text>{" "}
-            and{" "}
-            <Text
-              style={{ color: "#206FF2" }}
-              onPress={() => {
-                () => router.push("/(routes)/signup");
-              }}
-            >
-              Privacy Policy
+              , confirm that I am 18 years of age or older, and consent to
+              receiving email communication.
             </Text>
-            , confirm that I am 18 years of age or older, and consent to
-            receiving email communication.
-          </Text>
 
-          <View
-            style={{
-              borderBottomColor: "black",
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              marginVertical: 10,
-            }}
-          />
+            <View
+              style={{
+                borderBottomColor: "black",
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                marginVertical: 10,
+              }}
+            />
 
-          {/* <View
+            {/* <View
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -431,27 +416,30 @@ export default function SignUpScreen() {
             </TouchableOpacity>
           </View> */}
 
-          <View style={styles.signupRedirect}>
-            <Text
-              style={{ fontSize: hp("2%"), fontFamily: "Nunito_500Medium" }}
-            >
-              Already have a Doyo account?
-            </Text>
+            <View style={styles.signupRedirect}>
+              <Text
+                style={{
+                  fontSize: width * 0.04,
+                  fontFamily: "Nunito_500Medium",
+                }}
+              >
+                Already have a Doyo account?
+              </Text>
 
-            <Text
-              style={{
-                fontSize: 16,
-                color: "#33D9CF",
-                marginLeft: 2,
-                fontFamily: "Nunito_500Medium",
-                textDecorationLine: "underline",
-              }}
-              onPress={() => router.push("/(routes)/login")}
-            >
-              Sign in now.
-            </Text>
+              <Text
+                style={{
+                  fontSize: width * 0.04,
+                  color: "#33D9CF",
+                  marginLeft: width * 0.01,
+                  fontFamily: "Nunito_500Medium",
+                  textDecorationLine: "underline",
+                }}
+                onPress={() => router.push("/(routes)/login")}
+              >
+                Sign in now.
+              </Text>
 
-            {/* <TouchableOpacity onPress={() => router.push("/(routes)/login")}>
+              {/* <TouchableOpacity onPress={() => router.push("/(routes)/login")}>
                 <Text
                   style={{
                     fontSize: 18,
@@ -463,20 +451,25 @@ export default function SignUpScreen() {
                   Sign In
                 </Text>
               </TouchableOpacity> */}
+            </View>
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollViewContainer: {
+    flexGrow: 1,
+  },
+
   container: {
-    width: "100%",
-    height: "100%",
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: width * 0.05,
+    paddingVertical: height * 0.05,
   },
 
   signInImage: {
@@ -486,38 +479,87 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     textAlign: "center",
-    fontSize: hp("3%"),
+    fontSize: width * 0.06,
+    fontFamily: "OtomanopeeOne",
+    marginBottom: height * 0.001,
+    marginTop: height * 0.08,
   },
   learningText: {
     textAlign: "center",
     color: "#575757",
-    fontSize: hp("2.2%"),
-    marginTop: 5,
+    fontSize: width * 0.04,
     fontFamily: "Nunito_400Regular",
+    marginBottom: height * 0.06,
   },
 
   inputContainer: {
-    marginTop: 30,
-    rowGap: 10,
+    width: "100%",
+    alignItems: "center",
   },
+
+  inputWrapper: {
+    width: "100%",
+    marginBottom: height * 0.01,
+  },
+
   input: {
-    width: responsiveWidth(92),
-    height: responsiveHeight(8),
+    width: "100%",
+    height: height * 0.07,
     borderRadius: 8,
-    fontSize: 16,
+    fontSize: width * 0.04,
     backgroundColor: "white",
     color: "#000",
     borderWidth: 1,
     borderColor: "#000",
+    paddingLeft: width * 0.03,
+    paddingRight: width * 0.1,
+  },
+
+  passwordinput: {
+    width: "100%",
+    height: height * 0.07,
+    borderRadius: 8,
+    fontSize: width * 0.04,
+    backgroundColor: "white",
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#000",
+    paddingLeft: width * 0.03,
+    paddingRight: width * 0.1,
+    marginTop: height * 0.01,
+  },
+
+  emailinput: {
+    width: "100%",
+    height: height * 0.07,
+    borderRadius: 8,
+    fontSize: width * 0.04,
+    backgroundColor: "white",
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#000",
+    paddingLeft: width * 0.03,
+    paddingRight: width * 0.1,
+  },
+
+  inputIcon: {
+    position: "absolute",
+    right: width * 0.03,
+    top: height * 0.025,
+    width: width * 0.04,
+    height: width * 0.04,
+    objectFit: "contain",
   },
   visibleIcon: {
     position: "absolute",
-    right: 12,
-    top: 24,
+    right: width * 0.03,
+    top: height * 0.025,
+    width: width * 0.05,
+    height: width * 0.05,
   },
   icon2: {
     position: "absolute",
-    left: 23,
+    left: 24,
     top: 17.8,
     marginTop: -2,
   },
@@ -537,17 +579,17 @@ const styles = StyleSheet.create({
   },
 
   dropdownButtonStyle: {
-    width: responsiveWidth(92),
-    height: responsiveHeight(8),
+    width: "100%",
+    height: height * 0.07,
     backgroundColor: "#fff",
     borderRadius: 12,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 12,
-    marginTop: 10,
     borderWidth: 1,
     borderColor: "#000",
+    marginBottom: height * 0.02,
   },
   dropdownButtonTxtStyle: {
     flex: 1,
@@ -556,10 +598,10 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   dropdownButtonArrowStyle: {
-    fontSize: 38,
+    fontSize: 36,
     position: "absolute",
     right: 7,
-    top: 14,
+    top: 10,
   },
   dropdownButtonIconStyle: {
     fontSize: 28,
@@ -589,25 +631,26 @@ const styles = StyleSheet.create({
   },
 
   bottomtext: {
-    fontSize: hp("1.5%"),
+    fontSize: width * 0.032,
     textAlign: "center",
-    marginTop: 10,
-    marginBottom: 20,
+    marginBottom: height * 0.02,
   },
 
   signUpButton: {
     backgroundColor: "#00D0C3",
     borderRadius: 8,
-    paddingVertical: 20,
+    paddingVertical: height * 0.02,
     alignItems: "center",
-    marginTop: 15,
+    width: "100%",
+    marginTop: height * 0.03,
+    marginBottom: height * 0.02,
   },
   disabledButton: {
     opacity: 0.5,
   },
   signUpButtonText: {
     color: "white",
-    fontSize: hp("2.2%"),
+    fontSize: width * 0.05,
     fontFamily: "OtomanopeeOne",
   },
 });

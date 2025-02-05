@@ -32,7 +32,7 @@ const persistor = persistStore(store);
 
 store.subscribe(() => {
   try {
-    console.log("Store updated:", store.getState());
+    const storedata = store.getState();
   } catch (error) {
     console.log("Error updating store:", error);
   }

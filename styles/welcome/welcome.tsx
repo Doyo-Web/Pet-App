@@ -14,62 +14,80 @@ export const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+
+  welcomeImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
   },
 
   sparkle: {
     position: "absolute",
-    left: "70%",
-    top: "20%",
+    right: wp("20%"),
+    top: hp("13%"),
+    width: wp("14%"),
+    height: wp("14%"),
   },
 
   logobox: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 5,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: hp("24%"),
   },
 
   logo: {
     width: wp("75%"),
     height: hp("15%"),
-    objectFit: 'contain',
+    objectFit: "contain",
   },
 
   logotext: {
     fontSize: hp("3%"),
+    fontFamily: "OtomanopeeOne",
+    color: "#333",
+    marginTop: hp("2%"),
+    textAlign: "center",
   },
 
   btnbox: {
-    gap: 15,
+    width: "100%",
+    alignItems: "center",
     position: "absolute",
-    bottom: "8%",
+    bottom: hp("8%"),
   },
 
   button: {
     backgroundColor: "#F96247",
-    width: responsiveWidth(88),
-    height: responsiveHeight(9.5),
+    width: wp("88%"),
+    height: hp("7%"),
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: wp("2%"),
+    marginBottom: hp("2%"),
   },
 
   btntext: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: wp("4%"),
+    fontFamily: "OtomanopeeOne",
   },
 
   buttonlogin: {
-    backgroundColor: "#fff",
-    width: responsiveWidth(88),
-    height: responsiveHeight(9.5),
-    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    width: wp("88%"),
+    height: hp("7%"),
     justifyContent: "center",
+    alignItems: "center",
+    borderRadius: wp("2%"),
     borderWidth: 1,
     borderColor: "#F96247",
   },
 
   loginbtntext: {
     color: "#F96247",
-    fontWeight: "bold",
+    fontSize: wp("4%"),
     fontFamily: "OtomanopeeOne",
   },
 });

@@ -12,6 +12,10 @@ const WelcomeScreen = () => {
 
     return (
       <View style={styles.container}>
+          <Image
+                style={styles.welcomeImage}
+                source={require("@/assets/images/welcome_shape.png")}
+              />
         <Image
           style={styles.sparkle}
           source={require("@/assets/images/sparkle.png")}
