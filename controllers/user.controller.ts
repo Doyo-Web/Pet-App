@@ -33,7 +33,7 @@ import { PetProfileModel } from "../models/petprofile.model";
 import HostProfileModel from "../models/hostprofile.model";
 import bookingModel from "../models/booking.model";
 import { Review } from "../models/review.model";
-import chatModel from "../models/chat.model";
+import Chat  from "../models/chat.model";
 
 dotenv.config();
 
@@ -615,7 +615,7 @@ export const DeleteUser = catchAsyncError(
          userId: userId,
        });
       
-      const deletedChat = await chatModel.deleteMany({
+      const deletedChat = await Chat.deleteMany({
         participants: userId,
       });
 

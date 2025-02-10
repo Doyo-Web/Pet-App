@@ -16,6 +16,7 @@ import { joinChat, leaveChat } from "./controllers/chat.controller";
 
 const app: Application = express();
 const server = http.createServer(app);
+
 const io = new SocketIOServer(server, { cors: { origin: "*" } });
 
 app.use(cors());
