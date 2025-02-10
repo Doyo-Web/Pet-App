@@ -1345,13 +1345,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFF",
-    padding: 20,
-    marginTop: 30,
+    padding: screenWidth * 0.05,
+    marginTop: height * 0.04,
   },
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 130, // Add extra padding at the bottom for the fixed navigation
+    paddingBottom: height * 0.18,
   },
 
   header: {
@@ -1359,11 +1359,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
+    padding: screenWidth * 0.03,
+    borderRadius: 10,
+    marginBottom: height * 0.02,
   },
 
   arrowTouchable: {
-    padding: 5, // Increase the clickable area
+    padding: screenWidth * 0.01,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1373,16 +1375,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#FDCF00",
     justifyContent: "center",
     alignItems: "center",
-    width: 40,
-    height: 40,
-    borderRadius: 50,
+    width: screenWidth * 0.1,
+    height: screenWidth * 0.1,
+    borderRadius: screenWidth * 0.05,
     borderColor: "#000",
     borderWidth: 2,
   },
 
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "semibold",
+    fontSize: screenWidth * 0.05,
+    fontWeight: "600",
+    fontFamily: "OtomanopeeOne",
   },
 
   petneuteredbox: {
@@ -1418,8 +1421,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#000",
     borderRadius: 5,
-    padding: 10,
-    marginBottom: 20,
+    padding: screenWidth * 0.025,
+    marginBottom: height * 0.02,
+    fontSize: screenWidth * 0.04,
+    height: height * 0.06,
+    justifyContent: "center",
   },
 
   icon: {
@@ -1429,13 +1435,13 @@ const styles = StyleSheet.create({
   petTypeContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: 20,
+    marginBottom: height * 0.02,
   },
   petTypeButton: {
     justifyContent: "center",
     alignItems: "center",
-    gap: 5,
-    marginTop: 20,
+    gap: height * 0.005,
+    marginTop: height * 0.02,
   },
 
   selectedPetType: {
@@ -1444,15 +1450,16 @@ const styles = StyleSheet.create({
 
   petbackground: {
     position: "absolute",
-    top: -20,
-    left: -16,
-    width: 90,
-    height: 90,
-    borderRadius: 100,
+    top: -height * 0.02,
+    left: -screenWidth * 0.04,
+    width: screenWidth * 0.22,
+    height: screenWidth * 0.22,
+    borderRadius: screenWidth * 0.11,
     backgroundColor: "#FDCF0033",
   },
 
   petTypeText: {
+    fontSize: screenWidth * 0.04,
     fontWeight: "bold",
   },
   ageContainer: {
@@ -1574,7 +1581,7 @@ const styles = StyleSheet.create({
   },
 
   stepContainer: {
-    marginBottom: 20,
+    marginBottom: height * 0.02,
   },
   stepTitle: {
     fontSize: 20,
@@ -1662,15 +1669,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FDCF00",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: screenWidth * 0.05,
     borderRadius: 5,
-    gap: 5,
+    gap: screenWidth * 0.02,
   },
 
   buttonText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: screenWidth * 0.04,
     fontFamily: "OtomanopeeOne",
   },
 

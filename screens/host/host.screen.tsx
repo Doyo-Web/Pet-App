@@ -28,6 +28,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { s, vs } from "../../utils/responsive";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -1972,9 +1973,9 @@ export default function HostScreen() {
 
 const styles = StyleSheet.create({
   steponetext: {
-    fontSize: 18,
+    fontSize: s(18),
     fontFamily: "OtomanopeeOne",
-    marginBottom: 6,
+    marginBottom: vs(6),
   },
 
   inputWrapper: {
@@ -1982,19 +1983,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#000",
-    borderRadius: 4,
-    paddingVertical: 4,
+    borderRadius: s(4),
+    paddingVertical: vs(4),
+    paddingHorizontal: s(10),
   },
 
   pickerWrapper: {
-    paddingVertical: 4,
+    paddingVertical: vs(4),
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#000",
-    borderRadius: 4,
+    borderRadius: s(4),
   },
   picker: {
-    height: 40,
+    height: vs(40),
+    width: "100%",
   },
 
   mapContainer: {
@@ -2006,12 +2009,13 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: "absolute",
-    top: 40,
-    right: 20,
+    top: vs(40),
+    right: s(20),
     backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 5,
+    padding: s(10),
+    borderRadius: s(5),
   },
+
   closeButtonText: {
     color: "#20B2AA",
     fontWeight: "bold",
@@ -2023,9 +2027,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#000",
-    borderRadius: 4,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    borderRadius: s(4),
+    paddingVertical: vs(14),
+    paddingHorizontal: s(10),
   },
 
   locationButton: {
@@ -2034,22 +2038,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#000",
-    borderRadius: 4,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    borderRadius: s(4),
+    paddingVertical: vs(14),
+    paddingHorizontal: s(10),
+    marginBottom: vs(16),
   },
 
   container: {
     flex: 1,
     backgroundColor: "#FFF",
-    padding: 20,
-    marginTop: 30,
+    padding: s(20),
+    marginTop: vs(30),
   },
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 130,
-    marginTop: 20, // Add extra padding at the bottom for the fixed navigation
+    paddingBottom: vs(155),
+    marginTop: vs(20),
   },
 
   header: {
@@ -2057,11 +2062,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
+    padding: s(12),
   },
 
   arrowTouchable: {
-    padding: 5, // Increase the clickable area
+    padding: s(5),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -2071,15 +2076,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#00D0C3",
     justifyContent: "center",
     alignItems: "center",
-    width: 40,
-    height: 40,
-    borderRadius: 50,
+    width: s(40),
+    height: s(40),
+    borderRadius: s(20),
     borderColor: "#000",
     borderWidth: 2,
   },
 
   headerTitle: {
-    fontSize: 18,
+    fontSize: s(18),
     fontFamily: "OtomanopeeOne",
   },
 
@@ -2091,10 +2096,10 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 16,
+    fontSize: s(14),
+    marginBottom: vs(4),
     fontWeight: "bold",
-    marginBottom: 10,
-    marginTop: 10,
+    marginTop: vs(10),
   },
 
   textInput: {
@@ -2128,7 +2133,7 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-    padding: 10,
+    marginLeft: s(-30),
   },
 
   petTypeContainer: {
@@ -2290,7 +2295,7 @@ const styles = StyleSheet.create({
   },
 
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: vs(16),
   },
 
   radioContainer: {
@@ -2369,15 +2374,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#00D0C3",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 5,
+    padding: s(15),
+    borderRadius: s(8),
     gap: 5,
   },
 
   buttonText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: s(16),
     fontFamily: "OtomanopeeOne",
   },
 
@@ -2942,9 +2946,9 @@ const styles = StyleSheet.create({
   },
 
   profileImageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: s(100),
+    height: s(100),
+    borderRadius: s(50),
     backgroundColor: "#E0FFFF",
     justifyContent: "center",
     alignItems: "center",

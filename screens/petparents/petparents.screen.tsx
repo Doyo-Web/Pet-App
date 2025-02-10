@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Dimensions,
 } from "react-native";
 import {
   ArrowLeft,
@@ -24,6 +25,15 @@ import { router } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import useUser from "@/hooks/auth/useUser";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
+
+const { width, height } = Dimensions.get("window");
 
 export default function PetParentProfile() {
   const [expanded, setExpanded] = useState(false);
@@ -239,111 +249,110 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingBottom: 160,
+    paddingBottom: heightPixel(160),
+    paddingTop: heightPixel(20),
   },
   header: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
     backgroundColor: "#fff",
   },
   backButton: {
-    marginBottom: 16,
+    marginBottom: pixelSizeVertical(16),
   },
   backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: widthPixel(40),
+    height: heightPixel(40),
+    borderRadius: widthPixel(20),
     backgroundColor: "#FFD700",
     justifyContent: "center",
     alignItems: "center",
   },
-
   profilecardcontainer: {
     position: "relative",
     width: "100%",
-    maxWidth: 400,
+    maxWidth: widthPixel(400),
     marginHorizontal: "auto",
   },
-
   profilecardbackground: {
     position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
-    left: 5,
+    left: widthPixel(5),
     backgroundColor: "#FDCF00",
-    borderRadius: 12,
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+    borderRadius: widthPixel(12),
+    transform: [{ translateX: widthPixel(4) }, { translateY: heightPixel(4) }],
   },
-
   profile: {
     position: "relative",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: widthPixel(12),
+    padding: pixelSizeHorizontal(12),
     borderWidth: 1,
     borderColor: "#FFD700",
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: widthPixel(60),
+    height: heightPixel(60),
+    borderRadius: widthPixel(30),
   },
   info: {
-    marginLeft: 12,
+    marginLeft: pixelSizeHorizontal(12),
     alignItems: "center",
   },
   name: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "bold",
   },
   location: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: pixelSizeVertical(4),
   },
   locationText: {
-    marginLeft: 4,
+    marginLeft: pixelSizeHorizontal(4),
     color: "#666",
+    fontSize: fontPixel(14),
   },
   dashboard: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
     alignItems: "center",
   },
   dashboardTitle: {
-    fontSize: 24,
+    fontSize: fontPixel(24),
     fontWeight: "bold",
   },
   petProfilesContainer: {
-    margin: 16,
+    margin: pixelSizeHorizontal(16),
     backgroundColor: "#FFF8E1",
-    borderRadius: 12,
+    borderRadius: widthPixel(12),
     overflow: "hidden",
   },
   petProfilesHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
   },
   petProfilesHeaderContent: {
     flexDirection: "row",
     alignItems: "center",
   },
   paw: {
-    marginRight: 8,
+    marginRight: pixelSizeHorizontal(8),
   },
   pawText: {
-    fontSize: 20,
+    fontSize: fontPixel(20),
   },
   petProfilesHeaderText: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "600",
   },
   petProfilesContent: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
     paddingTop: 0,
   },
   petList: {
@@ -355,23 +364,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "relative",
     width: "30%",
+    marginBottom: pixelSizeVertical(16),
   },
   petImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: widthPixel(80),
+    height: heightPixel(80),
+    borderRadius: widthPixel(40),
   },
   petName: {
-    marginTop: 8,
-    fontSize: 16,
+    marginTop: pixelSizeVertical(8),
+    fontSize: fontPixel(16),
   },
   editButton: {
     position: "absolute",
     right: 0,
     top: 0,
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: widthPixel(12),
+    padding: pixelSizeHorizontal(4),
     borderWidth: 1,
     borderColor: "#eee",
   },
@@ -380,23 +390,23 @@ const styles = StyleSheet.create({
     width: "30%",
   },
   plusCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: widthPixel(80),
+    height: heightPixel(80),
+    borderRadius: widthPixel(40),
     backgroundColor: "#FFD700",
     justifyContent: "center",
     alignItems: "center",
   },
   addText: {
-    marginTop: 8,
-    fontSize: 16,
+    marginTop: pixelSizeVertical(8),
+    fontSize: fontPixel(16),
   },
   navigationSection: {
-    margin: 16,
+    margin: pixelSizeHorizontal(16),
     marginTop: 0,
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
     backgroundColor: "#FFF8E1",
-    borderRadius: 12,
+    borderRadius: widthPixel(12),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -406,19 +416,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   navigationIconContainer: {
-    marginRight: 12,
+    marginRight: pixelSizeHorizontal(12),
   },
   navigationTitle: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "600",
   },
   gallery: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
   },
   galleryTitle: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "600",
-    marginBottom: 16,
+    marginBottom: pixelSizeVertical(16),
   },
   galleryGrid: {
     flexDirection: "row",
@@ -427,36 +437,37 @@ const styles = StyleSheet.create({
   },
   galleryImageContainer: {
     width: "48%",
-    marginBottom: 16,
+    marginBottom: pixelSizeVertical(16),
   },
   galleryImage: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: widthPixel(8),
   },
   galleryImageCaption: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: pixelSizeVertical(4),
+    fontSize: fontPixel(14),
     textAlign: "center",
   },
   noImagesText: {
     textAlign: "center",
     color: "#666",
-    fontSize: 16,
+    fontSize: fontPixel(16),
   },
   seeMore: {
     textAlign: "center",
     color: "#666",
-    marginTop: 16,
+    marginTop: pixelSizeVertical(16),
     textDecorationLine: "underline",
   },
   footer: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
     alignItems: "center",
   },
   reportText: {
     color: "#666",
-    marginBottom: 16,
+    marginBottom: pixelSizeVertical(16),
+    fontSize: fontPixel(14),
   },
   logoutButton: {
     flexDirection: "row",
@@ -464,7 +475,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: "#ff4444",
-    fontSize: 16,
-    marginLeft: 8,
+    fontSize: fontPixel(16),
+    marginLeft: pixelSizeHorizontal(8),
   },
 });

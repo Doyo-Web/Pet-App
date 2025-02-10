@@ -374,7 +374,11 @@ const Layout: React.FC = () => {
 
            if (pathname === "/chat/chattwo") {
              return null; // Don't render anything for the profile screen
-           }
+          }
+          
+          if (pathname === "/profilesuccess") {
+            return null; // Don't render anything for the profile screen
+          }
           
           
           return (
@@ -454,6 +458,10 @@ const Layout: React.FC = () => {
           }
 
           if (pathname === "/chat/chattwo") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/profilesuccess") {
             return null; // Don't render anything for the profile screen
           }
           return (

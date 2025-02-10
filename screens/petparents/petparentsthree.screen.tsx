@@ -20,9 +20,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import { Toast } from "react-native-toast-notifications";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
 
 const { width } = Dimensions.get("window");
-const imageSize = (width - 48) / 2;
+const imageSize = (width - widthPixel(48)) / 2;
 
 export default function GalleryScreen() {
   const [showReview, setShowReview] = useState(false);
@@ -226,17 +233,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
+    paddingTop: 26,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: pixelSizeHorizontal(16),
+    paddingVertical: pixelSizeVertical(12),
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: widthPixel(40),
+    height: heightPixel(40),
+    borderRadius: widthPixel(20),
     backgroundColor: "#FCD34D",
     alignItems: "center",
     justifyContent: "center",
@@ -244,25 +252,25 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     textAlign: "center",
-    fontSize: 24,
+    fontSize: fontPixel(24),
     fontWeight: "bold",
-    marginRight: 40,
+    marginRight: widthPixel(40),
   },
   placeholder: {
-    width: 40,
+    width: widthPixel(40),
   },
   scrollContent: {
-    padding: 16,
+    padding: pixelSizeHorizontal(16),
   },
   gallery: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
+    gap: widthPixel(16),
   },
   imageContainer: {
     width: imageSize,
     height: imageSize,
-    borderRadius: 16,
+    borderRadius: widthPixel(16),
     overflow: "hidden",
   },
   image: {
@@ -272,16 +280,16 @@ const styles = StyleSheet.create({
   addButton: {
     width: imageSize,
     height: imageSize,
-    borderRadius: 16,
-    borderWidth: 2,
+    borderRadius: widthPixel(16),
+    borderWidth: widthPixel(2),
     borderColor: "#FCD34D",
     alignItems: "center",
     justifyContent: "center",
   },
   addButtonInner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: widthPixel(48),
+    height: heightPixel(48),
+    borderRadius: widthPixel(24),
     backgroundColor: "#FEF3C7",
     alignItems: "center",
     justifyContent: "center",
@@ -292,83 +300,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   profilecardcontainermodel: {
     position: "relative",
-    width: "100%",
-    maxWidth: 400,
+    maxWidth: widthPixel(400),
+    width: width - widthPixel(32),
     marginHorizontal: "auto",
   },
-
   profilecardbackgroundmodel: {
     position: "absolute",
-    top: 40,
-    right: 18,
-    bottom: 40,
-    left: 28,
+    top: heightPixel(0),
+    right: widthPixel(-2),
+    bottom: heightPixel(0),
+    left: widthPixel(8),
     backgroundColor: "#FF6B6B",
-    borderRadius: 12,
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+    borderRadius: widthPixel(12),
+    transform: [{ translateX: widthPixel(4) }, { translateY: heightPixel(4) }],
   },
-
   modalContent: {
-    width: width - 32,
+    width: width - widthPixel(32),
     backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: widthPixel(20),
+    padding: pixelSizeHorizontal(20),
     alignItems: "center",
     position: "relative",
-  },
-  userInfoContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  userName: {
-    marginLeft: 12,
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  locationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: "auto",
-  },
-  locationText: {
-    marginLeft: 4,
-    color: "#666666",
   },
   closeButton: {
     position: "absolute",
-    right: 10,
-    top: 10,
+    right: widthPixel(10),
+    top: heightPixel(10),
     zIndex: 1,
   },
   closeButtonCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: widthPixel(30),
+    height: heightPixel(30),
+    borderRadius: widthPixel(15),
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
+    borderWidth: widthPixel(2),
     borderColor: "#FFD700",
   },
   reviewContainer: {
@@ -376,60 +345,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   reviewTitle: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: pixelSizeVertical(20),
   },
   hostImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 16,
+    width: widthPixel(80),
+    height: heightPixel(80),
+    borderRadius: widthPixel(40),
+    marginBottom: pixelSizeVertical(16),
   },
   ratingText: {
-    fontSize: 16,
-    marginBottom: 12,
+    fontSize: fontPixel(16),
+    marginBottom: pixelSizeVertical(12),
   },
   starsContainer: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: pixelSizeVertical(20),
   },
   starContainer: {
-    padding: 4,
+    padding: pixelSizeHorizontal(4),
   },
   star: {
-    fontSize: 32,
+    fontSize: fontPixel(32),
     color: "#D1D5DB",
   },
   starSelected: {
     color: "#FCD34D",
   },
   feedbackLabel: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#666666",
     alignSelf: "flex-start",
-    marginBottom: 8,
+    marginBottom: pixelSizeVertical(8),
   },
   feedbackInput: {
     width: "100%",
-    height: 100,
+    height: heightPixel(100),
     backgroundColor: "#FEF9C3",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
+    borderRadius: widthPixel(12),
+    padding: pixelSizeHorizontal(12),
+    marginBottom: pixelSizeVertical(20),
     textAlignVertical: "top",
   },
   submitButton: {
     width: "100%",
     backgroundColor: "#FCD34D",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: widthPixel(12),
+    padding: pixelSizeHorizontal(16),
     alignItems: "center",
   },
   submitButtonText: {
     color: "black",
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontWeight: "600",
   },
 });

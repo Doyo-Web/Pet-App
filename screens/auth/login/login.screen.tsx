@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from "react-native";
 import {
   Entypo,
@@ -45,6 +46,8 @@ import {
   responsiveWidth,
 } from "react-native-responsive-dimensions";
 import React from "react";
+
+const { width, height } = Dimensions.get("window");
 
 export default function LoginScreen() {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
@@ -430,9 +433,11 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: "#FDCF00",
     borderRadius: 8,
-    paddingVertical: 20,
+    paddingVertical: height * 0.02,
     alignItems: "center",
-    marginTop: 20,
+    width: "100%",
+    marginTop: height * 0.03,
+    marginBottom: height * 0.02,
   },
   loginButtonText: {
     color: "white",

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -28,6 +29,9 @@ import {
   responsiveWidth,
 } from "react-native-responsive-dimensions";
 import React from "react";
+
+
+const { width, height } = Dimensions.get("window");
 
 export default function ForgotPassword() {
 
@@ -207,9 +211,9 @@ const styles = StyleSheet.create({
   },
 
   button: {
+    paddingVertical: height * 0.02,
     backgroundColor: "#F96247",
     width: responsiveWidth(90),
-    height: responsiveHeight(8),
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 5,

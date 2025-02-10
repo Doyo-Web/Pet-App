@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   Keyboard,
+  Dimensions,
 } from "react-native";
 import React, { useRef, useState } from "react";
 import { router } from "expo-router";
@@ -22,6 +23,8 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "react-native-responsive-dimensions";
+
+const { width, height } = Dimensions.get("window");
 
 export default function VerifyAccountScreen() {
   const [code, setCode] = useState(new Array(4).fill(""));
@@ -164,6 +167,7 @@ export default function VerifyAccountScreen() {
                     : "rgba(0, 208, 195, 0.2)", // Default color with 20% opacity
               },
               { color: code[index] ? "#fff" : "rgba(0, 208, 195, 0.2)" },
+              index === code.length - 1 && { marginRight: 0 },
             ]}
             keyboardType="number-pad"
             maxLength={1}
@@ -251,8 +255,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputBox: {
-    width: 70,
-    height: 70,
+    width: wp("20%"),
+    height: hp("10%"),
     borderWidth: 1,
     borderColor: "#00D0C3",
     textAlign: "center",
@@ -282,11 +286,12 @@ const styles = StyleSheet.create({
   backText: { fontSize: 16 },
 
   submitButton: {
-    padding: 16,
+    // padding: 16,
+    paddingVertical: height * 0.02,
     borderRadius: 8,
     marginTop: 15,
     width: responsiveWidth(90),
-    height: responsiveHeight(8),
+    // height: responsiveHeight(8),
     justifyContent: "center",
     alignItems: "center",
   },

@@ -12,12 +12,27 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
+
+// Responsive utilities
+const { width, height } = Dimensions.get("window");
+
+const guidelineBaseWidth = 375
+const guidelineBaseHeight = 812
+
+const scale = (size: number) => (width / guidelineBaseWidth) * size
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor
+
+const s = scale
+const vs = verticalScale
+const ms = moderateScale
 
 interface Booking {
   _id: string;
@@ -335,7 +350,8 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    paddingTop: 8,
+    // paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
@@ -344,26 +360,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingHorizontal: s(16),
+    paddingVertical: vs(20),
     borderBottomWidth: 1,
-    borderBottomColor: "#E8E8E8",
+    borderBottomColor: "#fff",
   },
   backButton: {
-    padding: 4,
+    padding: s(4),
   },
   backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: s(40),
+    height: s(40),
+    borderRadius: s(20),
     backgroundColor: "#E8F8F7",
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: s(24),
     fontWeight: "700",
-    marginLeft: 16,
+    marginLeft: s(16),
     color: "#000",
     letterSpacing: -0.5,
   },
@@ -371,41 +387,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
+    padding: s(16),
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 300,
+    minHeight: vs(300),
   },
-
   profilecardcontainer: {
     position: "relative",
     width: "100%",
-    maxWidth: 400,
+    maxWidth: s(400),
     marginHorizontal: "auto",
+    marginBottom: vs(16),
   },
-
   profilecardbackground: {
     position: "absolute",
     top: 0,
     right: -1,
-    bottom: 75,
-    left: 8,
+    bottom: vs(75),
+    left: s(8),
     backgroundColor: "#00D0C3",
-    borderRadius: 12,
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+    borderRadius: s(12),
+    transform: [{ translateX: s(4) }, { translateY: s(4) }],
   },
-
   requestContainer: {
-    marginBottom: 16,
+    marginBottom: vs(16),
   },
-
   card: {
     borderWidth: 1.5,
     borderColor: "#20B2AA",
-    borderRadius: 12,
+    borderRadius: s(12),
     backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: {
@@ -418,89 +431,89 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flexDirection: "row",
-    padding: 16,
+    padding: s(16),
     alignItems: "center",
   },
   petImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: s(56),
+    height: s(56),
+    borderRadius: s(28),
     backgroundColor: "#E8F8F7",
     alignItems: "center",
     justifyContent: "center",
   },
   petImagePlaceholder: {
-    fontSize: 24,
+    fontSize: s(24),
   },
   petInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: s(12),
   },
   petName: {
-    fontSize: 16,
+    fontSize: s(16),
     fontWeight: "600",
     color: "#000",
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   breedText: {
     fontWeight: "400",
     color: "#000",
   },
   dateRange: {
-    fontSize: 14,
+    fontSize: s(14),
     color: "#666",
     letterSpacing: -0.3,
   },
   paymentComplete: {
     color: "#4CAF50",
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: s(14),
+    marginTop: vs(4),
     fontWeight: "500",
   },
   knowMoreButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: s(8),
+    marginLeft: s(8),
   },
   knowMoreText: {
     color: "#20B2AA",
-    fontSize: 14,
+    fontSize: s(14),
     fontWeight: "500",
   },
   actionButtonsContainer: {
     flexDirection: "row",
-    marginTop: 8,
-    gap: 8,
+    marginTop: vs(8),
+    gap: s(8),
   },
   declineButton: {
     flex: 1,
     backgroundColor: "#FF6B6B",
-    paddingVertical: 16,
-    borderRadius: 8,
+    paddingVertical: vs(16),
+    borderRadius: s(8),
     alignItems: "center",
     justifyContent: "center",
   },
   acceptButton: {
     flex: 1,
     backgroundColor: "#4CAF50",
-    paddingVertical: 16,
-    borderRadius: 8,
+    paddingVertical: vs(16),
+    borderRadius: s(8),
     alignItems: "center",
     justifyContent: "center",
   },
   declineButtonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: s(14),
     letterSpacing: 0.5,
   },
   acceptButtonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: s(14),
     letterSpacing: 0.5,
   },
   noBookingsText: {
-    fontSize: 16,
+    fontSize: s(16),
     color: "#666",
     textAlign: "center",
   },

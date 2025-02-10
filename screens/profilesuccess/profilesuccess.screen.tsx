@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Dimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useRouter } from "expo-router";
 import useUser from "@/hooks/auth/useUser";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ProfileSuccessScreen = () => {
 
@@ -129,49 +132,48 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    marginTop: 15,
+    paddingHorizontal: "5%",
+    paddingTop: "5%",
+    marginTop: "4%",
   },
   backButton: {
-    padding: 5,
+    padding: "2%",
     borderColor: "#000",
     borderWidth: 1,
     borderRadius: 50,
   },
   logo: {
-    width: 100,
-    height: 40,
-    marginLeft: 20,
+    width: "30%",
+    height: "10%",
+    marginLeft: "5%",
   },
   content: {
     flex: 1,
     alignItems: "center",
-    paddingHorizontal: 40,
-    marginTop: 20,
+    paddingHorizontal: "10%",
+    marginTop: "5%",
   },
   checkmarkContainer: {
-    width: 200,
-    height: 200,
+    width: "50%",
+    aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: "5%",
   },
   checkmark: {
-    width: 200,
-    height: 200,
-    objectFit: "cover",
+    width: "100%",
+    height: "100%",
   },
   textContainer: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: "5%",
   },
   awesomeContainer: {
     backgroundColor: "white",
     borderRadius: 20,
-    paddingHorizontal: 25,
-    paddingVertical: 4,
-    marginBottom: 20,
+    paddingHorizontal: "6%",
+    paddingVertical: "1%",
+    marginBottom: "5%",
     borderColor: "#000",
     borderWidth: 2,
     shadowColor: "#F96247",
@@ -194,36 +196,34 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_600SemiBold",
   },
   buttonContainer: {
-    marginTop: 68,
+    marginTop: "34%",
     width: "100%",
   },
   viewProfileButton: {
     backgroundColor: "#FDCF00",
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: "3%",
+    paddingHorizontal: "5%",
     width: "100%",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: "2.5%",
   },
   viewProfileText: {
     color: "#000",
     fontFamily: "Nunito_700Bold",
-    fontSize: 18,
     fontWeight: "bold",
   },
   homePageButton: {
     borderColor: "#00D1C1",
     borderWidth: 2,
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: "3%",
+    paddingHorizontal: "5%",
     width: "100%",
     alignItems: "center",
   },
   homePageText: {
     color: "#00D1C1",
-    fontSize: 18,
     fontWeight: "bold",
   },
 });

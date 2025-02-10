@@ -19,6 +19,13 @@ import { SERVER_URI } from "@/utils/uri";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
 
 interface Host {
   userId: string;
@@ -285,53 +292,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingBottom: 190,
+    paddingBottom: pixelSizeVertical(190),
   },
   headerboardingbox: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     color: "#fff",
     fontFamily: "OtomanopeeOne",
   },
   boardingboxtwo: {
-    marginTop: 25,
+    marginTop: pixelSizeVertical(25),
     backgroundColor: "#F96247",
-    borderRadius: 6,
+    borderRadius: widthPixel(6),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
-    height: 70,
-    marginHorizontal: 16,
+    paddingHorizontal: pixelSizeHorizontal(10),
+    height: heightPixel(70),
+    marginHorizontal: pixelSizeHorizontal(16),
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: widthPixel(36),
+    height: heightPixel(36),
     position: "absolute",
-    left: 10,
+    left: pixelSizeHorizontal(10),
     alignItems: "center",
     justifyContent: "center",
     borderColor: "#fff",
     borderWidth: 1,
-    borderRadius: 50,
+    borderRadius: widthPixel(50),
   },
   subtitle: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "600",
-    marginHorizontal: 16,
-    marginBottom: 20,
-    marginTop: 20,
+    marginHorizontal: pixelSizeHorizontal(16),
+    marginBottom: pixelSizeVertical(20),
+    marginTop: pixelSizeVertical(20),
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: pixelSizeHorizontal(16),
   },
   card: {
     borderWidth: 1,
     borderColor: "#FF6B4A",
-    borderRadius: 12,
-    marginBottom: 16,
-    padding: 12,
+    borderRadius: widthPixel(12),
+    marginBottom: pixelSizeVertical(16),
+    padding: pixelSizeHorizontal(12),
     zIndex: 999,
     backgroundColor: "#fff",
   },
@@ -339,44 +346,41 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6FFE6",
     borderColor: "#4CAF50",
   },
-
   profilecardcontainer: {
     position: "relative",
     width: "90%",
     marginHorizontal: "auto",
   },
-
   profilecardbackground: {
     position: "absolute",
-    top: 8,
-    right: -7,
-    bottom: 9,
-    left: 9,
+    top: pixelSizeVertical(8),
+    right: pixelSizeHorizontal(-7),
+    bottom: pixelSizeVertical(9),
+    left: pixelSizeHorizontal(9),
     backgroundColor: "#FF6B6B",
-    borderRadius: 12,
+    borderRadius: widthPixel(12),
     transform: [],
   },
-
   cardContent: {
     position: "relative",
     flexDirection: "row",
     alignItems: "center",
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
+    width: widthPixel(60),
+    height: heightPixel(60),
+    borderRadius: widthPixel(30),
+    marginRight: pixelSizeHorizontal(12),
   },
   hostInfo: {
     flex: 1,
   },
   hostName: {
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontWeight: "600",
   },
   location: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#757575",
   },
   ratingContainer: {
@@ -386,29 +390,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   knowMore: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#FF6B4A",
   },
   confirmButton: {
     backgroundColor: "#FF6B4A",
-    borderRadius: 8,
-    paddingVertical: 16,
-    marginHorizontal: 16,
+    borderRadius: widthPixel(8),
+    paddingVertical: pixelSizeVertical(16),
+    marginHorizontal: pixelSizeHorizontal(16),
     alignItems: "center",
-    marginTop: 20,
+    marginTop: pixelSizeVertical(20),
   },
   confirmButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontWeight: "bold",
   },
   noHostsText: {
     textAlign: "center",
-    fontSize: 16,
+    fontSize: fontPixel(16),
     color: "#666",
-    marginTop: 20,
+    marginTop: pixelSizeVertical(20),
   },
   disabledButton: {
     backgroundColor: "#ccc",
   },
 });
+

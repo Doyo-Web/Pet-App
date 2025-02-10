@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -17,6 +18,20 @@ import { SERVER_URI } from "../../utils/uri";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
+
+const { width, height } = Dimensions.get("window");
+
+// Responsive sizing function
+const normalize = (size: number, factor = 0.25) => {
+  return size + (width / 400 - 1) * size * factor
+}
 
 interface Booking {
   _id: string;
@@ -120,11 +135,10 @@ export default function BillingScreen() {
 
       await savePaymentDetails(mockPaymentData);
 
-      // Navigate to chat screen after successful payment
-      // router.push({
-      //   pathname: "/chat",
-      //   params: { bookingId: booking?._id },
-      // });
+      //Navigate to chat screen after successful payment
+      router.push({
+        pathname: "/(drawer)/(tabs)/booknow/booknowsuccess",
+      });
     } catch (error: any) {
       console.log("Error processing payment:", error.message);
       Alert.alert("Error", "Failed to process payment. Please try again.");
@@ -283,59 +297,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? 25 : 0,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: normalize(20),
   },
   header: {
     backgroundColor: "#F96247",
-    borderRadius: 6,
+    borderRadius: normalize(6),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
-    height: 70,
-    marginHorizontal: 16,
+    paddingHorizontal: normalize(10),
+    height: normalize(70),
+    marginHorizontal: normalize(16),
+    marginTop: Platform.OS === "android" ? normalize(25) : 0,
   },
   backButton: {
     position: "absolute",
-    left: 10,
-    width: 36,
-    height: 36,
+    left: normalize(10),
+    width: normalize(36),
+    height: normalize(36),
     alignItems: "center",
     justifyContent: "center",
     borderColor: "#fff",
     borderWidth: 1,
-    borderRadius: 50,
+    borderRadius: normalize(50),
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: normalize(18),
     color: "#fff",
     fontWeight: "bold",
   },
   title: {
     textAlign: "center",
-    fontSize: 24,
+    fontSize: normalize(24),
     fontWeight: "600",
-    marginHorizontal: 16,
-    marginBottom: 20,
-    marginTop: 20,
+    marginHorizontal: normalize(16),
+    marginBottom: normalize(20),
+    marginTop: normalize(20),
   },
   card: {
     backgroundColor: "#FFE5E0",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    margin: normalize(16),
+    padding: normalize(16),
+    borderRadius: normalize(12),
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: normalize(16),
   },
   label: {
-    fontSize: 16,
+    fontSize: normalize(16),
     color: "#333",
   },
   value: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: "500",
     color: "#333",
   },
@@ -343,25 +361,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     backgroundColor: "#FF6B4A",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    margin: normalize(16),
+    padding: normalize(16),
+    borderRadius: normalize(12),
   },
   grandTotalLabel: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: "600",
     color: "#fff",
   },
   grandTotalValue: {
-    fontSize: 18,
+    fontSize: normalize(18),
     fontWeight: "600",
     color: "#fff",
   },
   paymentButton: {
     backgroundColor: "#FF6B4A",
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
+    margin: normalize(16),
+    padding: normalize(16),
+    borderRadius: normalize(8),
     alignItems: "center",
   },
   disabledButton: {
@@ -369,25 +387,25 @@ const styles = StyleSheet.create({
   },
   paymentButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: "600",
   },
   errorText: {
     textAlign: "center",
     color: "red",
-    fontSize: 16,
-    marginTop: 20,
+    fontSize: normalize(16),
+    marginTop: normalize(20),
   },
   chatButton: {
     backgroundColor: "#4CAF50",
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
+    margin: normalize(16),
+    padding: normalize(16),
+    borderRadius: normalize(8),
     alignItems: "center",
   },
   chatButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: "600",
   },
 });

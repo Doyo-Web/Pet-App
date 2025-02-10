@@ -17,6 +17,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import {
+  fontPixel, s, vs 
+} from "../../utils/responsive";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -299,50 +302,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingBottom: 200,
+    paddingBottom: vs(200),
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: s(16),
   },
   backButton: {
-    marginRight: 16,
-    padding: 12,
+    marginRight: s(16),
+    padding: s(12),
   },
   backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: s(40),
+    height: s(40),
+    borderRadius: s(20),
     backgroundColor: "#FFD700",
     justifyContent: "center",
     alignItems: "center",
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: fontPixel(24),
     fontWeight: "bold",
   },
   title: {
-    fontSize: 24,
+    fontSize: fontPixel(24),
     fontWeight: "bold",
   },
   tabs: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingHorizontal: s(16),
+    marginBottom: vs(16),
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginHorizontal: 4,
+    paddingVertical: vs(12),
+    borderRadius: s(8),
+    marginHorizontal: s(4),
     alignItems: "center",
   },
   activeTab: {
     backgroundColor: "#FFD700",
   },
   tabText: {
-    fontSize: 16,
+    fontSize: fontPixel(16),
     color: "#666",
   },
   activeTabText: {
@@ -361,41 +364,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   calendar: {
-    marginBottom: 16,
+    marginBottom: vs(16),
   },
   bookingItem: {
     flexDirection: "row",
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 8,
+    marginHorizontal: s(16),
+    marginBottom: vs(12),
+    borderRadius: s(8),
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: vs(1) },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowRadius: s(2),
   },
   yellowStrip: {
-    width: 4,
+    width: s(4),
     backgroundColor: "#FFD700",
   },
   bookingContent: {
     flex: 1,
     flexDirection: "row",
-    padding: 12,
+    padding: s(12),
     backgroundColor: "#FFFFFF",
   },
-
   imageContainer: {
-    marginRight: 12,
+    marginRight: s(12),
   },
-
   petImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
+    width: s(48),
+    height: s(48),
+    borderRadius: s(24),
+    marginRight: s(12),
   },
   bookingInfo: {
     flex: 1,
@@ -404,34 +405,34 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   calendarIcon: {
-    width: 16,
-    height: 16,
-    marginRight: 4,
+    width: s(16),
+    height: s(16),
+    marginRight: s(4),
   },
   dateText: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#666666",
   },
   petName: {
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontWeight: "500",
     color: "#000000",
-    marginBottom: 2,
+    marginBottom: vs(2),
   },
   serviceType: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#666666",
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   statusText: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     fontWeight: "500",
   },
   completedStatus: {
@@ -442,10 +443,10 @@ const styles = StyleSheet.create({
   },
   detailsButton: {
     justifyContent: "center",
-    paddingLeft: 12,
+    paddingLeft: s(12),
   },
   detailsText: {
-    fontSize: 12,
+    fontSize: fontPixel(12),
     color: "#666666",
   },
 });

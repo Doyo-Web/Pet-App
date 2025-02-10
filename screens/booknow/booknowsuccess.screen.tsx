@@ -6,10 +6,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Dimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useRouter } from "expo-router";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const BookSuccessScreen = () => {
 
@@ -48,7 +58,10 @@ const BookSuccessScreen = () => {
           </Text>
         </View>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.viewProfileButton}>
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={() => router.push("/petparents")}
+          >
             <Text style={styles.viewProfileText}>View your Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -147,32 +160,32 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   viewProfileButton: {
-    backgroundColor: "#F96247", // Matches button background color
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: "#F96247",
+    borderRadius: widthPixel(10),
+    paddingVertical: pixelSizeVertical(12),
+    paddingHorizontal: pixelSizeHorizontal(20),
     width: "100%",
     alignItems: "center",
-    marginBottom: 10, // Adjusted for spacing
+    marginBottom: pixelSizeVertical(10),
   },
   viewProfileText: {
     color: "#fff",
     fontFamily: "Nunito_700Bold",
-    fontSize: 18,
+    fontSize: fontPixel(18),
     fontWeight: "bold",
   },
   homePageButton: {
-    borderColor: "#F96247", // Matches border color
+    borderColor: "#F96247",
     borderWidth: 2,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    borderRadius: widthPixel(10),
+    paddingVertical: pixelSizeVertical(12),
+    paddingHorizontal: pixelSizeHorizontal(20),
     width: "100%",
     alignItems: "center",
   },
   homePageText: {
-    color: "#000", // Text color matches UI button
-    fontSize: 18,
+    color: "#000",
+    fontSize: fontPixel(18),
     fontWeight: "bold",
   },
 });

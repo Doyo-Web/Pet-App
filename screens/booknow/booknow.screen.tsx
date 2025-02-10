@@ -23,6 +23,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { setBookingData } from "@/store/bookingSlice";
 import { useFocusEffect } from "@react-navigation/native";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
 
 interface Pet {
   petName: string;
@@ -187,14 +194,16 @@ export default function BookingScreen(): JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.boardingbox}>
-        <TouchableOpacity style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.header}>Boarding</Text>
-      </View>
       <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.boardingbox}>
+          <TouchableOpacity style={styles.backButton}>
+            <Icon name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.header}>Boarding</Text>
+        </View>
+
         <Text style={styles.sectionTitle}>Choose your pet(s)</Text>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -210,7 +219,7 @@ export default function BookingScreen(): JSX.Element {
                   image: pet.petImages[0]?.url ?? null,
                   _id: undefined,
                   petName: "",
-                  petImages: undefined
+                  petImages: undefined,
                 })
               }
               style={[
@@ -267,10 +276,10 @@ export default function BookingScreen(): JSX.Element {
         <Text style={styles.sectionTitle}>Pick your Location</Text>
         <View style={styles.locationsContainer}>
           {["Home", "Work", "Friend"].map((locationType) => (
-            <View style={styles.locationsContainerbox} key={locationType}>
+            <View style={styles.locationItem} key={locationType}>
               <TouchableOpacity
                 style={[
-                  styles.locationItem,
+                  styles.locationButton,
                   bookData.location.type === locationType &&
                     styles.selectedLocation,
                   {
@@ -297,7 +306,7 @@ export default function BookingScreen(): JSX.Element {
                       ? "work"
                       : "person"
                   }
-                  size={50}
+                  size={fontPixel(50)}
                   color="#000"
                 />
               </TouchableOpacity>
@@ -306,9 +315,9 @@ export default function BookingScreen(): JSX.Element {
             </View>
           ))}
 
-          <View style={styles.locationsContainerbox}>
+          <View style={styles.locationItem}>
             <TouchableOpacity
-              style={[styles.locationItembox, { backgroundColor: "#FDCF00" }]}
+              style={[styles.locationButton, { backgroundColor: "#FDCF00" }]}
               onPress={() => setShowMap(true)}
             >
               <Icon name="add" size={50} color="#000" />
@@ -430,16 +439,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
+    paddingHorizontal: pixelSizeHorizontal(20),
   },
   boardingbox: {
-    backgroundColor: "#F96247",
-    borderRadius: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
-    height: 70,
+    paddingVertical: pixelSizeVertical(20),
+    backgroundColor: "#F96247",
+    borderRadius: widthPixel(6),
   },
   backButton: {
     zIndex: 1,
@@ -454,20 +462,20 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   header: {
-    fontSize: 18,
+    fontSize: fontPixel(18),
     color: "#fff",
     fontFamily: "OtomanopeeOne",
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontFamily: "Nunito_700Bold",
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: pixelSizeVertical(20),
+    marginBottom: pixelSizeVertical(10),
     textAlign: "center",
   },
   petsContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    marginBottom: pixelSizeVertical(20),
   },
   petItem: {
     alignItems: "center",
@@ -520,97 +528,91 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#000",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    borderRadius: widthPixel(5),
+    padding: pixelSizeHorizontal(10),
+    marginBottom: pixelSizeVertical(10),
   },
   locationsContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  locationsContainerbox: {
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  locationItembox: {
-    width: 70,
-    height: 70,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 100,
+    marginBottom: pixelSizeVertical(20),
   },
   locationItem: {
-    flex: 1,
     alignItems: "center",
+    width: "25%",
+    marginBottom: pixelSizeVertical(10),
+  },
+  locationButton: {
+    width: widthPixel(60),
+    height: heightPixel(60),
+    borderRadius: widthPixel(30),
     justifyContent: "center",
-    borderRadius: 100,
-    padding: 10,
-    marginBottom: 10,
+    alignItems: "center",
   },
   selectedLocation: {
-    borderColor: "#FFF",
-    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#000",
   },
   locationText: {
-    marginTop: 5,
+    marginTop: pixelSizeVertical(5),
+    fontSize: fontPixel(12),
   },
   locationAddress: {
-    fontSize: 12,
+    fontSize: fontPixel(10),
     color: "#666",
   },
   bookButton: {
-    backgroundColor: "#FF6347",
-    borderRadius: 5,
-    padding: 15,
+    backgroundColor: "#F96247",
+    borderRadius: widthPixel(5),
+    padding: pixelSizeVertical(15),
     alignItems: "center",
-    marginBottom: 156,
+    marginBottom: pixelSizeVertical(175),
   },
   bookButtonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: fontPixel(16),
     fontWeight: "bold",
   },
   mapContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   closeMapButton: {
-    position: "absolute",
-    bottom: 20,
-    alignSelf: "center",
-    backgroundColor: "#FF6347",
-    borderRadius: 5,
-    padding: 10,
+    backgroundColor: "#F96247",
+    padding: pixelSizeHorizontal(10),
+    borderRadius: widthPixel(5),
+    margin: pixelSizeVertical(10),
   },
   closeMapButtonText: {
     color: "#fff",
     fontWeight: "bold",
   },
   popupContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   popup: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
+    padding: pixelSizeHorizontal(20),
+    borderRadius: widthPixel(10),
     alignItems: "center",
   },
   popupText: {
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: fontPixel(16),
+    marginBottom: pixelSizeVertical(10),
     textAlign: "center",
   },
   popupButton: {
-    backgroundColor: "#FF6347",
-    borderRadius: 5,
-    padding: 10,
+    backgroundColor: "#F96247",
+    padding: pixelSizeHorizontal(10),
+    borderRadius: widthPixel(5),
   },
   popupButtonText: {
     color: "#fff",
@@ -618,32 +620,29 @@ const styles = StyleSheet.create({
   },
   dietContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    marginVertical: 20,
+    justifyContent: "space-between",
+    marginBottom: pixelSizeVertical(20),
   },
   dietItem: {
     alignItems: "center",
-    justifyContent: "center",
+    width: "48%",
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#F0F0F0",
-    alignItems: "center",
+    width: widthPixel(80),
+    height: heightPixel(80),
+    borderRadius: widthPixel(40),
+    backgroundColor: "#f0f0f0",
     justifyContent: "center",
-    marginBottom: 10,
+    alignItems: "center",
+    marginBottom: pixelSizeVertical(10),
   },
   dietText: {
-    fontSize: 16,
+    fontSize: fontPixel(14),
     fontWeight: "bold",
-    textAlign: "center",
   },
   dietSubtext: {
-    fontSize: 12,
-    color: "#999",
-    textAlign: "center",
+    fontSize: fontPixel(12),
+    color: "#666",
   },
   selectedDiet: {
     borderColor: "#000",

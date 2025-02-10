@@ -44,6 +44,19 @@ import * as DocumentPicker from "expo-document-picker";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser, setLoading, setError } from "@/store/userSlice";
 
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+  s,
+  vs,
+  ms,
+} from "../../utils/responsive";
+
+const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
+
 const EditProfileScreen = () => {
 
   const dispatch = useDispatch();
@@ -647,7 +660,16 @@ useEffect(() => {
               <View style={{ justifyContent: "center" }}>
                 <FlatList
                   data={addresses}
-                  renderItem={renderAddress}
+                  renderItem={({ item, index }) => (
+                    <View
+                      style={[
+                        styles.addressItem,
+                        index === addresses.length - 1 && { marginRight: 0 }, // Ensures last item in the entire list has no margin
+                      ]}
+                    >
+                      {renderAddress({ item })}
+                    </View>
+                  )}
                   keyExtractor={(item) => item.id}
                   numColumns={4}
                   contentContainerStyle={styles.addressList}
@@ -658,9 +680,9 @@ useEffect(() => {
                   <View style={styles.addCard}>
                     <View
                       style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: 50,
+                        width: s(60),
+                        height: s(60),
+                        borderRadius: s(50),
                         backgroundColor: "#FDCF00",
                         justifyContent: "center",
                         alignItems: "center",
@@ -1041,340 +1063,350 @@ useEffect(() => {
 const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 140,
+    paddingBottom: vs(140),
     backgroundColor: "rgba(253, 207, 0, 0.4)",
   },
-
   maincontent: {
-    marginTop: 40,
+    marginTop: vs(40),
     height: "100%",
   },
-
   container: {
     flex: 1,
     backgroundColor: "#fff",
   },
   header: {
     position: "absolute",
-    top: 60,
-    left: 140,
+    top: vs(60),
+    left: s(140),
     zIndex: 999,
     borderColor: "#000",
-    borderWidth: 2,
-    borderRadius: 60,
+    borderWidth: s(2),
+    borderRadius: s(60),
   },
-
   kyctitle: {
     backgroundColor: "#FDCF00",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 50,
+    marginBottom: vs(16),
+    paddingVertical: vs(8),
+    paddingHorizontal: s(50),
   },
-
   kyctext: {
     fontFamily: "OtomanopeeOne",
     fontWeight: "600",
+    fontSize: ms(16),
   },
-
   kycheader: {
-    width: 300,
-    height: 300,
+    width: s(300),
+    height: vs(300),
     justifyContent: "center",
     alignItems: "center",
     borderColor: "#000",
-    borderWidth: 2,
-    borderRadius: 18,
+    borderWidth: s(2),
+    borderRadius: s(18),
   },
-
   kycavatarContainer: {},
-
   avatarContainer: {
     position: "relative",
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
+    width: s(120),
+    height: s(120),
+    borderRadius: s(60),
+    borderWidth: s(4),
     borderColor: "#fff",
   },
-
   kycavatar: {
-    width: 290,
-    height: 295,
-    borderRadius: 15,
+    width: s(290),
+    height: vs(295),
+    borderRadius: s(15),
   },
-
   editIcon: {
     position: "absolute",
     bottom: 0,
-    right: 10,
+    right: s(10),
     backgroundColor: "#FDCF00",
     borderColor: "#000",
-    borderWidth: 1,
-    padding: 5,
-    borderRadius: 20,
+    borderWidth: s(1),
+    padding: s(5),
+    borderRadius: s(20),
   },
-
   kyceditIcon: {
-    width: 60,
-    height: 60,
+    width: s(60),
+    height: s(60),
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
-    bottom: -28,
-    right: 112,
+    bottom: vs(-28),
+    right: s(112),
     backgroundColor: "#FDCF00",
     borderColor: "#000",
-    borderWidth: 1,
-    borderRadius: 50,
+    borderWidth: s(1),
+    borderRadius: s(50),
   },
-
   personalinfo: {
-    marginTop: 80,
-    height: " 100%",
+    marginTop: vs(80),
+    height: "100%",
     backgroundColor: "#fff",
-    borderTopRightRadius: 48,
-    borderTopLeftRadius: 48,
-    paddingTop: 70,
+    borderTopRightRadius: s(48),
+    borderTopLeftRadius: s(48),
+    paddingTop: vs(70),
   },
-
   personalinfoicon: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 15,
-    marginBottom: 16,
+    gap: s(15),
+    marginBottom: vs(16),
   },
-
   personalinfoiconbox: {
-    width: 36,
-    height: 36,
-    borderRadius: 50,
+    width: s(36),
+    height: s(36),
+    borderRadius: s(50),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FDCF00",
   },
-
   sectionTitle: {
     textAlign: "center",
-    fontSize: 20,
+    fontSize: ms(20),
     fontWeight: "bold",
-    marginVertical: 16,
+    marginVertical: vs(16),
   },
   form: {
-    paddingHorizontal: 20,
+    paddingHorizontal: s(20),
   },
-
   label: {
-    fontSize: 14, // Customize font size
-    color: "#000", // Text color
-    marginBottom: 5, // Space between label and input group
+    fontSize: ms(14),
+    color: "#000",
+    marginBottom: vs(5),
   },
-
   locationbox: {
     flexDirection: "row",
-    gap: 3,
+    gap: s(3),
     justifyContent: "center",
     alignItems: "center",
   },
-
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: s(1),
     borderColor: "#000",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginBottom: 12,
+    borderRadius: s(10),
+    paddingHorizontal: s(12),
+    paddingVertical: vs(5),
+    marginBottom: vs(12),
   },
-
   input: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: vs(10),
+    fontSize: ms(16),
   },
-
   icon: {
-    marginRight: 8,
+    marginRight: s(8),
   },
-
   updateButton: {
     backgroundColor: "#FDCF00",
-    paddingVertical: 15,
-    borderRadius: 10,
-    marginHorizontal: 20,
+    paddingVertical: vs(15),
+    borderRadius: s(10),
+    marginHorizontal: s(20),
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
+    marginTop: vs(40),
+    marginBottom: vs(20),
   },
-
   disabledButton: {
     opacity: 0.5,
   },
-
   kycupdateButton: {
     backgroundColor: "#FDCF00",
     width: "90%",
-    height: 60,
+    height: vs(60),
     justifyContent: "center",
-    borderRadius: 10,
-    marginHorizontal: 20,
+    borderRadius: s(10),
+    marginHorizontal: s(20),
     alignItems: "center",
-    marginTop: 50,
-    marginBottom: 60,
+    marginTop: vs(50),
+    marginBottom: vs(60),
   },
-
   resetbutton: {
     backgroundColor: "#FDCF00",
-    paddingVertical: 15,
-    borderRadius: 10,
-    marginHorizontal: 20,
+    paddingVertical: vs(15),
+    borderRadius: s(10),
+    marginHorizontal: s(20),
     alignItems: "center",
-    marginTop: 100,
-    marginBottom: 20,
+    marginTop: vs(100),
+    marginBottom: vs(20),
   },
-
   updateButtonText: {
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: "bold",
     color: "#000",
   },
-
   addressList: {
     flexGrow: 1,
     justifyContent: "center",
   },
-
   addressCard: {
-    width: 125,
+    width: s(115),
     backgroundColor: "#fff",
-    borderRadius: 10,
-    margin: 3,
-    padding: 8,
+    borderRadius: s(10),
+    margin: s(6),
+    // marginLeft: s(6),
+    marginRight: s(10),
+    padding: s(8),
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: s(2) },
     shadowOpacity: 0.5,
-    shadowRadius: 4,
+    shadowRadius: s(4),
     elevation: 5,
-    borderWidth: 2,
+    borderWidth: s(2),
     borderColor: "#000",
   },
-
   addressText: {
     alignItems: "center",
   },
-
   location: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: "#777",
   },
-
   addButton: {
-    marginTop: 10,
-    marginLeft: 5,
+    marginTop: vs(10),
+    marginLeft: s(5),
   },
-
   managecontainer: {
-    marginTop: 100,
-    padding: 10,
+    marginTop: vs(100),
+    padding: s(10),
   },
-
   manageheader: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
-
   manageline: {
-    borderBottomColor: "#FDCF00", // Color of the line
-    borderBottomWidth: 1,
-    marginBottom: 30, // Thickness of the line
+    borderBottomColor: "#FDCF00",
+    borderBottomWidth: s(1),
+    marginBottom: vs(30),
   },
-
   manageiconContainer: {
     backgroundColor: "#FFD700",
-    padding: 20,
-    borderRadius: 50,
+    padding: s(20),
+    borderRadius: s(50),
   },
-
   manageicon: {
-    width: 50,
-    height: 50,
+    width: s(50),
+    height: s(50),
     tintColor: "#000",
   },
-
   managelabel: {
     fontFamily: "Nunito_500Medium",
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: vs(10),
+    marginBottom: vs(5),
+    fontSize: ms(14),
   },
-
   manageinput: {
-    borderWidth: 1,
+    borderWidth: s(1),
     borderColor: "#000",
-    borderRadius: 10,
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 15,
+    borderRadius: s(10),
+    marginBottom: vs(10),
+    paddingHorizontal: s(12),
+    paddingVertical: vs(15),
+    fontSize: ms(16),
   },
-
   managelocationContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   managelocationIcon: {
     position: "absolute",
-    right: 10,
+    right: s(10),
   },
-
   addCard: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    width: 120,
-    height: 120,
+    borderRadius: s(10),
+    width: s(115),
+    height: vs(120),
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: s(2),
     borderColor: "#000",
     shadowColor: "#FDCF00",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: s(2) },
     shadowOpacity: 0.5,
-    shadowRadius: 4,
+    shadowRadius: s(4),
     elevation: 5,
   },
   addText: {
-    marginTop: 10,
-    fontSize: 16,
+    marginTop: vs(10),
+    fontSize: ms(16),
     fontWeight: "bold",
     color: "#000",
   },
-
   changepasscontainer: {
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
-    padding: 10,
+    marginTop: vs(10),
+    padding: s(10),
   },
-
   changepassinput: {
-    width: responsiveWidth(92),
-    height: responsiveHeight(8),
-    borderRadius: 8,
-    fontSize: 16,
+    width: s(350),
+    height: vs(60),
+    borderRadius: s(8),
+    fontSize: ms(16),
     backgroundColor: "white",
     color: "#A1A1A1",
-    borderWidth: 1,
+    borderWidth: s(1),
     borderColor: "#000",
+    paddingLeft: s(10),
+    marginTop: vs(10),
   },
-
   visibleIcon: {
     position: "absolute",
-    right: 12,
-    top: 24,
+    right: s(12),
+    top: vs(24),
+  },
+  inputContainer: {
+    marginBottom: vs(20),
+  },
+  labelText: {
+    fontSize: fontPixel(16),
+    color: "#000",
+    marginBottom: vs(10),
+  },
+  textInput: {
+    height: vs(48),
+    borderWidth: s(1),
+    borderColor: "#ccc",
+    borderRadius: s(8),
+    paddingHorizontal: s(15),
+    fontSize: fontPixel(16),
+  },
+  bioInput: {
+    height: vs(100),
+    textAlignVertical: "top",
+  },
+  mapContainer: {
+    height: vs(200),
+    marginBottom: vs(20),
+  },
+  map: {
+    width: "100%",
+    height: "100%",
+  },
+  saveButton: {
+    backgroundColor: "#FDCF00",
+    paddingVertical: vs(15),
+    borderRadius: s(8),
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#000",
+    fontSize: fontPixel(18),
+    fontWeight: "bold",
+  },
+
+  addressItem: {
+    flex: 1,
+    marginRight: 0, // Default margin for spacing between items
   },
 });
 

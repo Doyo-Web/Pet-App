@@ -15,6 +15,13 @@ import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
+import {
+  widthPixel,
+  heightPixel,
+  fontPixel,
+  pixelSizeVertical,
+  pixelSizeHorizontal,
+} from "../../utils/responsive";
 
 // Define the type for a single review
 interface Review {
@@ -154,8 +161,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: pixelSizeHorizontal(16),
+    paddingTop: pixelSizeVertical(36),
   },
   loaderContainer: {
     flex: 1,
@@ -163,62 +170,62 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: fontPixel(24),
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: pixelSizeVertical(16),
     textAlign: "center",
   },
   listContainer: {
-    paddingBottom: 16,
+    paddingBottom: pixelSizeVertical(16),
   },
   card: {
     backgroundColor: "#E0F7FA",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: widthPixel(10),
+    padding: pixelSizeHorizontal(16),
+    marginBottom: pixelSizeVertical(16),
     elevation: 2,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: pixelSizeVertical(10),
   },
   image: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+    width: widthPixel(50),
+    height: heightPixel(50),
+    borderRadius: widthPixel(25),
+    marginRight: pixelSizeHorizontal(12),
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: fontPixel(16),
     fontWeight: "bold",
   },
   date: {
-    fontSize: 12,
+    fontSize: fontPixel(12),
     color: "#757575",
   },
   ratingContainer: {
     flexDirection: "row",
   },
   feedback: {
-    fontSize: 14,
+    fontSize: fontPixel(14),
     color: "#424242",
-    marginBottom: 12,
+    marginBottom: pixelSizeVertical(12),
   },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
   },
   icon: {
-    marginHorizontal: 8,
+    marginHorizontal: pixelSizeHorizontal(8),
   },
   noReviewsText: {
     textAlign: "center",
     color: "#757575",
-    marginTop: 20,
+    marginTop: pixelSizeVertical(20),
   },
 });
 
