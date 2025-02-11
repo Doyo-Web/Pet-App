@@ -9,6 +9,9 @@ export interface IBooking extends Document {
   }>;
   startDateTime: Date;
   endDateTime: Date;
+  city: {
+    type: string;
+  };
   location: {
     type: string;
     address: string;
@@ -50,11 +53,18 @@ const bookingSchema: Schema = new Schema(
       type: Date,
       required: true,
     },
+
+    city: {
+        type: String,
+        required: true,
+    },
+    
     location: {
       type: {
         type: String,
         required: true,
       },
+      
       address: {
         type: String,
         required: true,

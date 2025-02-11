@@ -61,7 +61,7 @@ export const savePaymentDetails = async (req: Request, res: Response) => {
 // Controller to create a new booking
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { pets, startDate, startTime, endDate, endTime, location, diet } =
+    const { pets, startDate, startTime, endDate, endTime, city, location, diet } =
       req.body;
     const userId = (req as any).user.id; // Extract the logged-in user's ID
 
@@ -90,6 +90,7 @@ export const createBooking = async (req: Request, res: Response) => {
       pets: formattedPets,
       startDateTime,
       endDateTime,
+      city,
       location: {
         type: location.type,
         address: location.address,

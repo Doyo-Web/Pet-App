@@ -3,7 +3,7 @@ import Chat, { IChat } from "../models/chat.model";
 import userModel, { IUser } from "../models/user.model";
 import HostProfile from "../models/hostprofile.model";
 import Booking, { IBooking } from "../models/booking.model";
-import { io } from "../app";
+// import { io } from "../app";
 
 export const getChatList = async (req: Request, res: Response) => {
   try {
@@ -56,8 +56,6 @@ export const sendMessage = async (req: Request, res: Response) => {
     chat.messages.push(newMessage);
     chat.lastMessage = newMessage;
     await chat.save();
-
-    io.to(chatId).emit("message", newMessage);
 
     res.json(newMessage);
   } catch (error) {

@@ -13,11 +13,13 @@ import chatRouter from "./routes/chat.route";
 import reviewRouter from "./routes/review.route";
 import { ErrorMiddleware } from "./middleware/error";
 import { joinChat, leaveChat } from "./controllers/chat.controller";
+import initializeSocket from "./utils/socket";
 
 const app: Application = express();
 const server = http.createServer(app);
+initializeSocket(server);
 
-const io = new SocketIOServer(server, { cors: { origin: "*" } });
+// const io = new SocketIOServer(server, { cors: { origin: "*" } });
 
 app.use(cors());
 app.use(cookieParser());
@@ -52,15 +54,15 @@ app.all("*", (req, res, next) => {
 
 app.use(ErrorMiddleware);
 
-io.on("connection", (socket) => {
-  console.log("New client connected");
+// io.on("connection", (socket) => {
+//   console.log("New client connected");
 
-  socket.on("joinChat", (chatId) => joinChat(socket, chatId));
-  socket.on("leaveChat", (chatId) => leaveChat(socket, chatId));
+//   socket.on("joinChat", (chatId) => joinChat(socket, chatId));
+//   socket.on("leaveChat", (chatId) => leaveChat(socket, chatId));
 
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
-  });
-});
+//   socket.on("disconnect", () => {
+//     console.log("Client disconnected");
+//   });
+// });
 
-export { app, server, io };
+export { app, server };
