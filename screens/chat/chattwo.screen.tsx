@@ -19,6 +19,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import io from "socket.io-client";
 import { SERVER_URI } from "@/utils/uri";
 import { Toast } from "react-native-toast-notifications";
+import useUser from "@/hooks/auth/useUser";
+import { createSocketConnection } from "@/utils/socket";
 
 type Message = {
   _id: string;
@@ -34,11 +36,16 @@ type Message = {
 };
 
 const ChatScreen: React.FC = () => {
-  const { userId, selectedHost } = useLocalSearchParams<{
+  const { userId } = useLocalSearchParams<{
     userId: string;
-    selectedHost: string;
   }>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<
+    { fullname: string; text: string }[]
+    >([]);
+  
+  const [responsemessages, setResponseMessages] = useState<[]
+  >([]);
+
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,6 +55,8 @@ const ChatScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const intervalRef = useRef<any>(null); // Ref to hold the interval ID
   const [enddate, setEndDate] = useState("");
+  const { user } = useUser();
+  const LoggedInuserId = user?._id;
 
   useEffect(() => {
     const getEndDate = async () => {
@@ -85,39 +94,36 @@ const ChatScreen: React.FC = () => {
           { participantId: userId },
           { headers: { access_token: accessToken } }
         );
+        
         const chatId = chatResponse.data._id;
         setChatId(chatId);
 
         // Fetch messages
-        const messagesResponse = await axios.get(
-          `${SERVER_URI}/${chatId}/messages`,
-          {
-            headers: { access_token: accessToken },
-          }
-        );
-        setMessages(messagesResponse.data);
-
-        // Setup Socket.IO
-        socketRef.current = io(SERVER_URI, {
-          query: { accessToken },
+        const chat = await axios.get(`${SERVER_URI}/${chatId}/messages`, {
+          headers: { access_token: accessToken },
         });
-
-        socketRef.current.emit("joinChat", chatId);
-
-        socketRef.current.on("message", (newMessage: Message) => {
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        
+        const chatMessages = chat?.data?.map((msg: any) => {
+          const { content } = msg;
+          return {
+            text: content,
+            fullname: user?.fullname,
+          };
         });
+        setMessages(chatMessages);
 
-        // Set up message fetching every second
-        intervalRef.current = setInterval(async () => {
-          const messagesResponse = await axios.get(
-            `${SERVER_URI}/${chatId}/messages`,
-            {
-              headers: { access_token: accessToken },
-            }
-          );
-          setMessages(messagesResponse.data);
-        }, 1000); // Fetch messages every second
+
+        // // Set up message fetching every second
+        // intervalRef.current = setInterval(async () => {
+        //   const messagesResponse = await axios.get(
+        //     `${SERVER_URI}/${chatId}/messages`,
+        //     {
+        //       headers: { access_token: accessToken },
+        //     }
+        //   );
+          
+        //   setMessages(messagesResponse.data);
+        // }, 1000); // Fetch messages every second
 
         setLoading(false);
       } catch (err) {
@@ -129,18 +135,40 @@ const ChatScreen: React.FC = () => {
 
     setupChat();
 
+  }, [userId]);
+
+
+  useEffect(() => {
+    if (!LoggedInuserId) {
+      return;
+    }
+    const socket = createSocketConnection();
+    // As soon as the page loaded, the socket connection is made and joinChat event is emitted
+    socket.emit("joinChat", {
+      fullname: user.fullname,
+      userId,
+      LoggedInuserId,
+    });
+
+    socket.on("messageReceived", ({ fullname, text }) => {
+      setMessages((messages) => [...messages, { fullname, text }]);
+    });
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit("leaveChat", chatId);
-        socketRef.current.disconnect();
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current); // Clear the interval when the component unmounts
-      }
+      socket.disconnect();
     };
-  }, [userId, selectedHost]);
+  }, [userId, LoggedInuserId]);
 
   const sendMessage = async () => {
+
+     const socket = createSocketConnection();
+     socket.emit("sendMessage", {
+       fullname: user?.fullname,
+       userId,
+       LoggedInuserId,
+       text: newMessage,
+     });
+     setNewMessage("");
 
     const now = new Date();
     const bookingEndDate = new Date(enddate); // Convert endDate to Date object
@@ -198,42 +226,42 @@ const ChatScreen: React.FC = () => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
       <FlatList
-        ref={flatListRef}
         data={messages}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              item.sender._id === userId
-                ? styles.receivedMessage
-                : styles.sentMessage,
-            ]}
-          >
-            <Image
-              source={{
-                uri:
-                  item.sender.avatar?.url || "https://via.placeholder.com/40",
-              }}
-              style={styles.avatar}
-            />
-            <View style={styles.messageContent}>
-              <Text style={styles.senderName}>{item.sender.fullName}</Text>
-              <Text style={styles.messageText}>{item.content}</Text>
-              <Text style={styles.timestamp}>
-                {new Date(item.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </Text>
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => {
+          const isUserMessage = user?.fullname === item.fullname;
+
+          return (
+            <View
+              style={[
+                styles.chatContainer,
+                isUserMessage ? styles.chatEnd : styles.chatStart,
+              ]}
+            >
+              {/* Chat Header (Only for Other Users) */}
+              {!isUserMessage && (
+                <Text style={styles.chatHeader}>{item.fullname}</Text>
+              )}
+
+              {/* Chat Bubble */}
+              <View
+                style={[
+                  styles.chatBubble,
+                  isUserMessage
+                    ? styles.chatBubbleUser
+                    : styles.chatBubbleOther,
+                ]}
+              >
+                <Text style={styles.chatText}>{item.text}</Text>
+              </View>
+
+              {/* Chat Footer (Only for User's Messages) */}
+              {isUserMessage && <Text style={styles.chatFooter}>Seen</Text>}
             </View>
-          </View>
-        )}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        }
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          );
+        }}
       />
+
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -254,7 +282,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    paddingBottom: 150,
+    marginBottom: 150,
   },
   centerContainer: {
     flex: 1,
@@ -330,6 +358,48 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
+
+ chatContainer: {
+    marginVertical: 8,
+    paddingHorizontal: 10,
+  },
+  chatStart: {
+    alignSelf: "flex-start",
+    alignItems: "flex-start",
+  },
+  chatEnd: {
+    alignSelf: "flex-end",
+    alignItems: "flex-end",
+  },
+  chatHeader: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#555",
+    marginBottom: 2,
+  },
+
+  chatBubble: {
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: "75%",
+  },
+  chatBubbleUser: {
+    backgroundColor: "#007AFF",
+    alignSelf: "flex-end",
+  },
+  chatBubbleOther: {
+    backgroundColor: "#e5e5ea",
+    alignSelf: "flex-start",
+  },
+  chatText: {
+    color: "#fff",
+  },
+  chatFooter: {
+    fontSize: 10,
+    color: "#aaa",
+    marginTop: 2,
+  },
+
 });
 
 export default ChatScreen;

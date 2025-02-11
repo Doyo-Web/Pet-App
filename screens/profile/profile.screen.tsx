@@ -414,8 +414,6 @@ export default function ProfileScreen() {
     (state: RootState) => state.petProfile
   );
 
-  console.log("store petprofile data", petProfiles);
-
   const handlePetProfile = async () => {
     dispatch(setIsLoading(true));
 
@@ -437,7 +435,6 @@ export default function ProfileScreen() {
           type: "success",
         });
 
-        console.log(response.data.petProfile);
 
         // Add the new pet profile to Redux state
         dispatch(addPetProfile(response.data.petProfile));

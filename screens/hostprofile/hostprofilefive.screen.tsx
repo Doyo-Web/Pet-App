@@ -35,6 +35,7 @@ const vs = verticalScale
 const ms = moderateScale
 
 interface Booking {
+  city: any;
   _id: string;
   userId: string;
   pets: Array<{
@@ -97,13 +98,10 @@ export default function RequestsScreen() {
         headers: { access_token: accessToken },
       });
 
-      console.log(hostResponse.data.host.city);
       if (hostResponse.data && hostResponse.data.host.city) {
         setHostCity(hostResponse.data.host.city);
       } else {
-        console.log("Host city not found in response");
         setLoading(false);
-        Alert.alert("Error", "Failed to fetch host data. Please try again.");
         return;
       }
 
@@ -118,23 +116,19 @@ export default function RequestsScreen() {
       // Filter bookings based on city match
       const filteredBookings = bookingResponse.data.bookings.filter(
         (booking) =>
-          booking.location &&
-          booking.location.address &&
-          booking.location.address.toLowerCase() ===
-            hostResponse.data.host.city.toLowerCase()
+          booking.city &&
+          booking.city &&
+          booking.city.toLowerCase() ===
+            hostResponse.data.host.city.toLowerCase() &&
+          booking.userId._id !== hostResponse.data.host.userId._id // Exclude host's own booking
       );
+      
 
-      console.log("Host city:", hostResponse.data.host.city);
-      console.log(
-        "Fetched and filtered bookings:",
-        JSON.stringify(filteredBookings, null, 2)
-      );
       setBookings(filteredBookings);
       setLoading(false);
     } catch (error) {
       console.log("Error fetching data:", error);
       setLoading(false);
-      Alert.alert("Error", "Failed to fetch booking data. Please try again.");
     }
   }, []);
 
@@ -203,6 +197,8 @@ export default function RequestsScreen() {
           headers: { access_token: accessToken },
         }
       );
+
+
       const filteredBookings = bookingResponse.data.bookings.filter(
         (booking) =>
           booking.location &&

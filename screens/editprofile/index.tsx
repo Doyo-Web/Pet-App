@@ -163,13 +163,12 @@ useEffect(() => {
   };
   
   const handleMapLocationSelect = async (location: any) => {
-    console.log("location", location);
+    
     // Reverse geocoding to get the city and pincode
     const { latitude, longitude } = location;
 
     setCurrentLocation(location);
 
-    console.log(latitude, longitude);
 
     const response = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`

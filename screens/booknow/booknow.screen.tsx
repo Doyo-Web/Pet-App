@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Modal,
   Alert,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker, {
@@ -51,6 +52,7 @@ interface BookData {
   startTime: Date;
   endDate: Date;
   endTime: Date;
+  city: string;
   location: Location;
   diet: "packed" | "home";
 }
@@ -64,6 +66,7 @@ export default function BookingScreen(): JSX.Element {
     startTime: new Date(),
     endDate: new Date(),
     endTime: new Date(),
+    city: "",
     location: { type: "Home", address: "Mumbai" },
     diet: "packed",
   });
@@ -91,7 +94,6 @@ export default function BookingScreen(): JSX.Element {
             headers: { access_token: accessToken },
           });
           if (response.data.success) {
-            console.log(response.data);
             setPetProfiles(response.data.data);
           } else {
             setError("Failed to fetch pet profiles");
@@ -124,6 +126,13 @@ export default function BookingScreen(): JSX.Element {
 
   const addNewPet = () => {
     router.push("/(drawer)/(tabs)/profile");
+  };
+
+  const handleInputChange = (newCity: string) => {
+    setBookData((prev) => ({
+      ...prev,
+      city: newCity,
+    }));
   };
 
   const handleDateChange = (
@@ -272,6 +281,19 @@ export default function BookingScreen(): JSX.Element {
           <Text>{bookData.endTime.toLocaleTimeString()}</Text>
           <Icon name="access-time" size={24} color="#000" />
         </TouchableOpacity>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>City</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              value={bookData.city}
+              onChangeText={(text) => handleInputChange(text)}
+              placeholder="Enter city"
+            />
+            <Icon name="business" size={20} color="#999" style={styles.icon} />
+          </View>
+        </View>
 
         <Text style={styles.sectionTitle}>Pick your Location</Text>
         <View style={styles.locationsContainer}>
@@ -648,5 +670,36 @@ const styles = StyleSheet.create({
     borderColor: "#000",
     borderWidth: 2,
     borderRadius: 50,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+
+  label: {
+    fontSize: 14,
+    marginBottom: 4,
+    fontWeight: "bold",
+    marginTop: 10,
+    textAlign: "center",
+  },
+
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+
+  input: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 10,
+  },
+
+  icon: {
+    marginLeft: -30,
   },
 });

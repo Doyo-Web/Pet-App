@@ -59,7 +59,6 @@ const ChatListScreen: React.FC = () => {
             }
           );
 
-          console.log("API response:", response.data);
 
           // Set current user and related users based on response
           setCurrentUser(response.data.loggedInUser || null);
@@ -93,7 +92,6 @@ const ChatListScreen: React.FC = () => {
       pathname: "/chat/chattwo", // Dynamic route
       params: {
         userId: relatedUserId,
-        selectedHost: currentUser.userId, // Sending the logged-in user's ID
       },
     });
   };

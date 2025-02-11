@@ -123,7 +123,6 @@ export default function BookingsScreen() {
 
       if (response.data.success) {
         setBookings(response.data.bookings);
-        console.log("get bookings Data", response.data.bookings);
       } else {
         Alert.alert("Error", "Failed to fetch bookings. Please try again.");
       }

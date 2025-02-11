@@ -207,7 +207,7 @@ export default function HostProfileScreen() {
         const response = await axios.get<Host>(`${SERVER_URI}/host`, {
           headers: { access_token: accessToken },
         });
-        console.log(response.data);
+
         setHost(response.data.host);
         setLoading(false);
       } catch (error) {

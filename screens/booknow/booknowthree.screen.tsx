@@ -105,8 +105,6 @@ export default function BookingScreenThree() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
 
-  console.log(selectedHostIds);
-
   useEffect(() => {
     fetchBooking();
   }, []);
