@@ -9,6 +9,11 @@ export const createSocketConnection = () => {
   if (isLocalhost) {
     return io("http://192.168.47.182:8000");
   } else {
-    return io("/", { path: "/api/socket.io" });
+    // Connect to your production URL
+    return io("https://pet-app-4oso.onrender.com", {
+      transports: ["websocket"],
+      // Remove the path since it's not needed for your render.com deployment
+      // path: "/api/socket.io"
+    })
   }
 };
