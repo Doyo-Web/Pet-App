@@ -29,6 +29,7 @@ import { SERVER_URI } from "@/utils/uri";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { s, vs } from "../../utils/responsive";
+import useUser from "@/hooks/auth/useUser";
 
 export default function HostScreen() {
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
@@ -43,6 +44,11 @@ export default function HostScreen() {
     longitudeDelta: 0.0421,
   });
 
+  const { user } = useUser();
+
+  console.log("user FullName", user?.fullname);
+  console.log("user email", user?.email);
+  console.log("user email", user?.phonenumber);
   useFocusEffect(
     React.useCallback(() => {
       const checkHostStatus = async () => {
@@ -525,6 +531,17 @@ export default function HostScreen() {
     </TouchableOpacity>
   );
 
+   useEffect(() => {
+     if (user) {
+       setProfile((prevProfile) => ({
+         ...prevProfile,
+         fullName: user.fullname || "",
+         phoneNumber: user.phonenumber || "",
+         email: user.email || "",
+       }));
+     }
+   }, [user]);
+  
   // const handleInputChange = (name: keyof Profile, value: ProfileValue) => {
   //   setProfile((prevProfile) => ({ ...prevProfile, [name]: value }));
   // };

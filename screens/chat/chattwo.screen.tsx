@@ -41,10 +41,9 @@ const ChatScreen: React.FC = () => {
   }>();
   const [messages, setMessages] = useState<
     { fullname: string; text: string }[]
-    >([]);
-  
-  const [responsemessages, setResponseMessages] = useState<[]
   >([]);
+
+  const [responsemessages, setResponseMessages] = useState<[]>([]);
 
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -57,6 +56,7 @@ const ChatScreen: React.FC = () => {
   const [enddate, setEndDate] = useState("");
   const { user } = useUser();
   const LoggedInuserId = user?._id;
+
 
   useEffect(() => {
     const getEndDate = async () => {
@@ -72,14 +72,13 @@ const ChatScreen: React.FC = () => {
         );
         setEndDate(bookingResponse.data.booking[0].endDateTime);
       } catch (error: any) {
-      setError("Booking Not Found");
-      setLoading(false);
+        setError("Booking Not Found");
+        setLoading(false);
       }
-    }
+    };
 
     getEndDate();
-    }, []);
-  
+  }, []);
 
   useEffect(() => {
     const setupChat = async () => {
@@ -94,7 +93,7 @@ const ChatScreen: React.FC = () => {
           { participantId: userId },
           { headers: { access_token: accessToken } }
         );
-        
+
         const chatId = chatResponse.data._id;
         setChatId(chatId);
 
@@ -102,7 +101,7 @@ const ChatScreen: React.FC = () => {
         const chat = await axios.get(`${SERVER_URI}/${chatId}/messages`, {
           headers: { access_token: accessToken },
         });
-        
+
         const chatMessages = chat?.data?.map((msg: any) => {
           const { content } = msg;
           return {
@@ -112,7 +111,6 @@ const ChatScreen: React.FC = () => {
         });
         setMessages(chatMessages);
 
-
         // // Set up message fetching every second
         // intervalRef.current = setInterval(async () => {
         //   const messagesResponse = await axios.get(
@@ -121,7 +119,7 @@ const ChatScreen: React.FC = () => {
         //       headers: { access_token: accessToken },
         //     }
         //   );
-          
+
         //   setMessages(messagesResponse.data);
         // }, 1000); // Fetch messages every second
 
@@ -134,9 +132,13 @@ const ChatScreen: React.FC = () => {
     };
 
     setupChat();
-
   }, [userId]);
 
+  const scrollToBottom = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  };
 
   useEffect(() => {
     if (!LoggedInuserId) {
@@ -152,6 +154,7 @@ const ChatScreen: React.FC = () => {
 
     socket.on("messageReceived", ({ fullname, text }) => {
       setMessages((messages) => [...messages, { fullname, text }]);
+      scrollToBottom();
     });
 
     return () => {
@@ -159,7 +162,19 @@ const ChatScreen: React.FC = () => {
     };
   }, [userId, LoggedInuserId]);
 
+  
+
   const sendMessage = async () => {
+    const now = new Date();
+    const bookingEndDate = new Date(enddate); // Convert endDate to Date object
+
+    if (now >= bookingEndDate) {
+      // Show toast message if booking is ended
+      Toast.show("booking is ended you cannot chat now", { type: "info" });
+      return;
+    }
+
+    if (!newMessage.trim() || !chatId) return;
 
      const socket = createSocketConnection();
      socket.emit("sendMessage", {
@@ -169,19 +184,7 @@ const ChatScreen: React.FC = () => {
        text: newMessage,
      });
      setNewMessage("");
-
-    const now = new Date();
-    const bookingEndDate = new Date(enddate); // Convert endDate to Date object
-
-    if (now >= bookingEndDate) {
-      // Show toast message if booking is ended
-     Toast.show("booking is ended you cannot chat now", { type: "info" });
-      return;
-    }
-
-
-   if (!newMessage.trim() || !chatId) return;
-
+     scrollToBottom();
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) throw new Error("No access token found");
@@ -198,6 +201,8 @@ const ChatScreen: React.FC = () => {
       setError("Failed to send message. Please try again.");
     }
   };
+
+  
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -227,6 +232,9 @@ const ChatScreen: React.FC = () => {
     >
       <FlatList
         data={messages}
+        ref={flatListRef}
+        onContentSizeChange={scrollToBottom}
+        onLayout={scrollToBottom}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => {
           const isUserMessage = user?.fullname === item.fullname;
@@ -359,7 +367,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
- chatContainer: {
+  chatContainer: {
     marginVertical: 8,
     paddingHorizontal: 10,
   },
@@ -388,7 +396,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   chatBubbleOther: {
-    backgroundColor: "#e5e5ea",
+    backgroundColor: "#6200ea",
     alignSelf: "flex-start",
   },
   chatText: {
@@ -399,7 +407,6 @@ const styles = StyleSheet.create({
     color: "#aaa",
     marginTop: 2,
   },
-
 });
 
 export default ChatScreen;

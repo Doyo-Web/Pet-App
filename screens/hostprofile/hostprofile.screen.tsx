@@ -24,6 +24,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
+import useUser from "@/hooks/auth/useUser";
 
 // Define the Host interface
 interface Host {
