@@ -55,16 +55,17 @@ const bookingSchema: Schema = new Schema(
     },
 
     city: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
+      trim: true,
     },
-    
+
     location: {
       type: {
         type: String,
         required: true,
       },
-      
+
       address: {
         type: String,
         required: true,

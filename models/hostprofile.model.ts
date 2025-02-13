@@ -127,7 +127,7 @@ const ProfileSchema = new Schema<IHostProfileModel>({
   location: { type: String, required: false },
   line1: { type: String, required: false },
   line2: { type: String, required: false },
-  city: { type: String, required: false },
+  city: { type: String, required: true, trim: true },
   pincode: { type: String, required: false },
   residenceType: { type: String, required: false },
   builtUpArea: { type: String, required: false },
