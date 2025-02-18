@@ -41,8 +41,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="booknow/index" options={{ title: "BookNow" }} />
       <Tabs.Screen name="chat/index" options={{ title: "Chat" }} />
       <Tabs.Screen
-        name="profile/index"
-        options={{ title: "Profile" }}
+        name="petparents/index"
+        options={{ title: "Pet Profile" }}
       />
     </Tabs>
   );

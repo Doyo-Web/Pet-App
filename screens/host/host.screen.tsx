@@ -46,9 +46,6 @@ export default function HostScreen() {
 
   const { user } = useUser();
 
-  console.log("user FullName", user?.fullname);
-  console.log("user email", user?.email);
-  console.log("user email", user?.phonenumber);
   useFocusEffect(
     React.useCallback(() => {
       const checkHostStatus = async () => {
@@ -576,52 +573,43 @@ export default function HostScreen() {
   const handleMapPress = async (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
-    // Update the map region with the new marker position
     setMapRegion({
+      ...mapRegion,
       latitude,
       longitude,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
     });
 
     try {
-      // Use reverse geocoding to get the address based on lat/lng
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
       );
 
       if (response.data.results.length > 0) {
         const addressComponents = response.data.results[0].address_components;
+        const formattedAddress = response.data.results[0].formatted_address;
 
-        // Get city and pincode from the response
         const cityComponent = addressComponents.find(
-          (component: { types: string | string[] }) =>
+          (component: { types: string[] }) =>
             component.types.includes("locality") ||
             component.types.includes("administrative_area_level_1")
         );
         const pincodeComponent = addressComponents.find(
-          (component: { types: string | string[] }) =>
+          (component: { types: string[] }) =>
             component.types.includes("postal_code")
         );
 
-        const formattedAddress = response.data.results[0].formatted_address;
         const addressParts = formattedAddress.split(", ");
+        const line1 = addressParts[0] || "";
+        const line2 = addressParts.slice(1, -3).join(", ") || "";
 
-        // Assuming the address has at least 2 lines
-        const line1Value = addressParts[0] || "";
-        const line2Value = addressParts[1] || "";
-
-        // Update profile with location details
         setProfile((prevProfile) => ({
           ...prevProfile,
-          location: cityComponent ? cityComponent.long_name : "",
-          line1: line1Value,
-          line2: line2Value,
+          location: formattedAddress,
+          line1: line1,
+          line2: line2,
           city: cityComponent ? cityComponent.long_name : "",
           pincode: pincodeComponent ? pincodeComponent.long_name : "",
         }));
-
-        setShowMap(false);
       }
     } catch (error) {
       console.log("Error getting location data:", error);
@@ -1158,17 +1146,10 @@ export default function HostScreen() {
 
             <Modal visible={showMap} animationType="slide">
               <View style={styles.mapContainer}>
-                <MapView
-                  style={styles.map}
-                  region={mapRegion}
-                  onPress={handleMapPress}
-                >
+                <MapView style={styles.map} region={mapRegion} onPress={handleMapPress}>
                   <Marker coordinate={mapRegion} />
                 </MapView>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowMap(false)}
-                >
+                <TouchableOpacity style={styles.closeButton} onPress={() => setShowMap(false)}>
                   <Text style={styles.closeButtonText}>Close Map</Text>
                 </TouchableOpacity>
               </View>

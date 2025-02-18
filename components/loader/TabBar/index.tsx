@@ -62,7 +62,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         resizeMode="contain"
       />
     ),
-    "profile/index": (props: IconProps) => (
+    "petparents/index": (props: IconProps) => (
       <Image
         source={
           selectedIndex === 4
@@ -89,7 +89,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               route.name !== "booknow/booknowthree" &&
               route.name !== "booknow/booknowfour" &&
               route.name !== "booknow/booknowsuccess" &&
-              route.name !== "petparents/index" &&
+              route.name !== "profile/index" &&
               route.name !== "petparents/petparentstwo" &&
               route.name !== "petparents/petparentsthree" &&
               route.name !== "hostprofile/index" &&

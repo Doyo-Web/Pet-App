@@ -31,6 +31,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
+import { Toast } from "react-native-toast-notifications";
 
 interface Pet {
   petName: string;
@@ -170,6 +171,38 @@ export default function BookingScreen(): JSX.Element {
   };
 
   const handleBookNow = async () => {
+
+    if (petProfiles.length === 0) {
+      Toast.show("Please create a pet profile first", {
+        type: "info",
+        placement: "bottom",
+        duration: 4000,
+        animationType: "slide-in",
+      });
+      router.push("/(drawer)/(tabs)/profile");
+      return;
+    }
+
+    if (!bookData.city.trim()) {
+      Toast.show("Please enter a city", {
+        type: "info",
+        placement: "bottom",
+        duration: 4000,
+        animationType: "slide-in",
+      });
+      return;
+    }
+
+    if (bookData.startDate >= bookData.endDate) {
+      Toast.show("End date must be after start date", {
+        type: "info",
+        placement: "bottom",
+        duration: 4000,
+        animationType: "slide-in",
+      });
+      return;
+    }
+
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
       const response = await axios.post(`${SERVER_URI}/booking`, bookData, {
@@ -200,6 +233,49 @@ export default function BookingScreen(): JSX.Element {
       }
     }
   };
+
+
+    const [mapRegion, setMapRegion] = useState({
+      latitude: 19.076,
+      longitude: 72.8777,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    });
+
+    const handleMapPress = async (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      setMapRegion({
+        ...mapRegion,
+        latitude,
+        longitude,
+      });
+
+      // Use Google Maps Geocoding API to get the address
+      const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
+      try {
+        const response = await axios.get(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+        );
+        if (response.data.results.length > 0) {
+          const address = response.data.results[0].formatted_address;
+          const city = response.data.results[0].address_components.find(
+            (component: { types: string | string[]; }) =>
+              component.types.includes("locality") ||
+              component.types.includes("administrative_area_level_2")
+          )?.long_name;
+
+          setBookData((prev) => ({
+            ...prev,
+            location: { type: "Custom", address },
+            city: city || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching address:", error);
+      }
+
+      setShowMap(false);
+    };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -402,32 +478,10 @@ export default function BookingScreen(): JSX.Element {
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
-            initialRegion={{
-              latitude: 19.076,
-              longitude: 72.8777,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
+            region={mapRegion}
+            onPress={handleMapPress}
           >
-            <Marker
-              coordinate={{ latitude: 19.076, longitude: 72.8777 }}
-              title="Mumbai"
-              description="Available"
-              onPress={() =>
-                handleLocationSelect({ type: "Custom", address: "Mumbai" })
-              }
-            />
-            <Marker
-              coordinate={{ latitude: 19.1, longitude: 72.9 }}
-              title="Unavailable City"
-              description="Service not available"
-              onPress={() =>
-                handleLocationSelect({
-                  type: "Custom",
-                  address: "Unavailable City",
-                })
-              }
-            />
+            <Marker coordinate={mapRegion} />
           </MapView>
           <TouchableOpacity
             style={styles.closeMapButton}

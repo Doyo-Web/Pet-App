@@ -7,7 +7,7 @@ export const createSocketConnection = () => {
     Constants.expoConfig?.hostUri?.includes("192.168.");
 
   if (isLocalhost) {
-    return io("http://192.168.71.182:8000");
+    return io("http://192.168.99.182:8000");
   } else {
     // Connect to your production URL
     return io("https://pet-app-4oso.onrender.com", {
