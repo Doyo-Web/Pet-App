@@ -107,6 +107,12 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
       }
     } catch (error: any) {
       // Error handling
+
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       const errorMessage =
         error.response && error.response.data && error.response.data.message
           ? error.response.data.message
@@ -462,8 +468,12 @@ useEffect(() => {
         // setRefetch(true);
         // router.push("/(tabs)/");
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
     } finally {
       setLoader(false);
     }
@@ -499,8 +509,12 @@ useEffect(() => {
         setRefetch(true);
         router.push("/(tabs)/");
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
     } finally {
       setLoader(false);
     }
@@ -532,6 +546,12 @@ useEffect(() => {
         // router.push("/(tabs)/");
       }
     } catch (error: any) {
+
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       // Error handling
       const errorMessage =
         error.response && error.response.data && error.response.data.message

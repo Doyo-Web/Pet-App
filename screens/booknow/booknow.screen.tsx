@@ -49,10 +49,10 @@ interface Location {
 
 interface BookData {
   pets: Pet[];
-  startDate: Date;
-  startTime: Date;
-  endDate: Date;
-  endTime: Date;
+  startDate: Date | null;
+  startTime: Date | null;
+  endDate: Date | null;
+  endTime: Date | null;
   city: string;
   location: Location;
   diet: "packed" | "home";
@@ -63,10 +63,10 @@ export default function BookingScreen(): JSX.Element {
 
   const [bookData, setBookData] = useState<BookData>({
     pets: [],
-    startDate: new Date(),
-    startTime: new Date(),
-    endDate: new Date(),
-    endTime: new Date(),
+    startDate: null,
+    startTime: null,
+    endDate: null,
+    endTime: null,
     city: "",
     location: { type: "Home", address: "Mumbai" },
     diet: "packed",
@@ -99,7 +99,12 @@ export default function BookingScreen(): JSX.Element {
           } else {
             setError("Failed to fetch pet profiles");
           }
-        } catch (error) {
+        } catch (error: any) {
+           if (error.response?.status === 400) {
+             await AsyncStorage.removeItem("access_token");
+             await AsyncStorage.removeItem("refresh_token"); // Clear token
+             router.replace("/(routes)/login"); // Redirect to login page
+           }
           setError("An error occurred while fetching pet profiles");
         } finally {
           setIsLoading(false);
@@ -193,15 +198,25 @@ export default function BookingScreen(): JSX.Element {
       return;
     }
 
-    if (bookData.startDate >= bookData.endDate) {
-      Toast.show("End date must be after start date", {
-        type: "info",
-        placement: "bottom",
-        duration: 4000,
-        animationType: "slide-in",
-      });
-      return;
-    }
+   if (!bookData.startDate || !bookData.endDate) {
+     Toast.show("Please select both start and end dates", {
+       type: "info",
+       placement: "bottom",
+       duration: 4000,
+       animationType: "slide-in",
+     });
+     return;
+   }
+
+   if (bookData.startDate >= bookData.endDate) {
+     Toast.show("End date must be after start date", {
+       type: "info",
+       placement: "bottom",
+       duration: 4000,
+       animationType: "slide-in",
+     });
+     return;
+   }
 
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
@@ -219,8 +234,12 @@ export default function BookingScreen(): JSX.Element {
             "An error occurred while booking. Please try again."
         );
       }
-    } catch (error) {
-      console.log("Error during booking:", error);
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       if (axios.isAxiosError(error)) {
         console.log("Axios error details:", error.response?.data);
         Alert.alert(
@@ -331,14 +350,22 @@ export default function BookingScreen(): JSX.Element {
           style={styles.dateInput}
           onPress={() => showDatePickerModal("date", "startDate")}
         >
-          <Text>{bookData.startDate.toLocaleDateString()}</Text>
+          <Text>
+            {bookData.startDate
+              ? bookData.startDate.toLocaleDateString()
+              : "Select start Date"}
+          </Text>
           <Icon name="calendar-today" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.dateInput}
           onPress={() => showDatePickerModal("time", "startTime")}
         >
-          <Text>{bookData.startTime.toLocaleTimeString()}</Text>
+          <Text>
+            {bookData.startTime
+              ? bookData.startTime.toLocaleTimeString()
+              : "Select start time"}
+          </Text>
           <Icon name="access-time" size={24} color="#000" />
         </TouchableOpacity>
 
@@ -347,14 +374,22 @@ export default function BookingScreen(): JSX.Element {
           style={styles.dateInput}
           onPress={() => showDatePickerModal("date", "endDate")}
         >
-          <Text>{bookData.endDate.toLocaleDateString()}</Text>
+          <Text>
+            {bookData.endDate
+              ? bookData.endDate.toLocaleDateString()
+              : "Select end Date"}
+          </Text>
           <Icon name="calendar-today" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.dateInput}
           onPress={() => showDatePickerModal("time", "endTime")}
         >
-          <Text>{bookData.endTime.toLocaleTimeString()}</Text>
+          <Text>
+            {bookData.endTime
+              ? bookData.endTime.toLocaleTimeString()
+              : "Select end time"}
+          </Text>
           <Icon name="access-time" size={24} color="#000" />
         </TouchableOpacity>
 
@@ -466,7 +501,7 @@ export default function BookingScreen(): JSX.Element {
 
       {showDatePicker && (
         <DateTimePicker
-          value={bookData[currentDatePickerField]}
+          value={bookData[currentDatePickerField] ?? new Date()}
           mode={datePickerMode}
           is24Hour={true}
           display="default"

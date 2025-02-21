@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 export default function useUser() {
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,11 @@ export default function useUser() {
         setUser(data.user);
         await AsyncStorage.setItem("user", JSON.stringify(data.user)); // Cache user
       } catch (error: any) {
+         if (error.response?.status === 400) {
+           await AsyncStorage.removeItem("access_token");
+           await AsyncStorage.removeItem("refresh_token"); // Clear token
+           router.replace("/(routes)/login"); // Redirect to login page
+         }
         setError(error?.message);
       } finally {
         setLoading(false);

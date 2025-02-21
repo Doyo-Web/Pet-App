@@ -55,8 +55,12 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         });
         router.push("/(routes)/loader");
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
     } finally {
       setLoader(false);
     }

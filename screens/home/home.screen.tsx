@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     gap: 10,
     width: "100%",
     position: "absolute",
-    bottom: 20,
+    bottom: 12,
     paddingHorizontal: 20,
   },
   arrowButton: {

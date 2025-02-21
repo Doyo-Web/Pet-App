@@ -13,7 +13,7 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import io from "socket.io-client";
@@ -72,6 +72,11 @@ const ChatScreen: React.FC = () => {
         );
         setEndDate(bookingResponse.data.booking[0].endDateTime);
       } catch (error: any) {
+         if (error.response?.status === 400) {
+           await AsyncStorage.removeItem("access_token");
+           await AsyncStorage.removeItem("refresh_token"); // Clear token
+           router.replace("/(routes)/login"); // Redirect to login page
+         }
         setError("Booking Not Found");
         setLoading(false);
       }
@@ -124,7 +129,12 @@ const ChatScreen: React.FC = () => {
         // }, 1000); // Fetch messages every second
 
         setLoading(false);
-      } catch (err) {
+      } catch (err: any) {
+         if (err.response?.status === 400) {
+           await AsyncStorage.removeItem("access_token");
+           await AsyncStorage.removeItem("refresh_token"); // Clear token
+           router.replace("/(routes)/login"); // Redirect to login page
+         }
         console.log("Error setting up chat:", err);
         setError("Failed to load chat. Please try again.");
         setLoading(false);
@@ -196,7 +206,12 @@ const ChatScreen: React.FC = () => {
       );
 
       setNewMessage("");
-    } catch (err) {
+    } catch (err: any) {
+       if (err.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       console.log("Error sending message:", err);
       setError("Failed to send message. Please try again.");
     }

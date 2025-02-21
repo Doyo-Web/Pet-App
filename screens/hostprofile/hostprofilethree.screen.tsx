@@ -50,7 +50,13 @@ export default function GalleryScreen() {
         });
         setHost(response.data.host);
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
+
+         if (error.response?.status === 400) {
+           await AsyncStorage.removeItem("access_token");
+           await AsyncStorage.removeItem("refresh_token"); // Clear token
+           router.replace("/(routes)/login"); // Redirect to login page
+         }
         console.log("Error fetching host data:", error);
         setLoading(false);
         Alert.alert("Error", "Failed to fetch host data. Please try again.");

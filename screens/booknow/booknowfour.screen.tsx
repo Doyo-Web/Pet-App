@@ -85,7 +85,12 @@ export default function BillingScreen() {
       } else {
         throw new Error("No bookings found");
       }
-    } catch (error) {
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       console.log("Error fetching booking data:", error);
       Alert.alert(
         "Error",

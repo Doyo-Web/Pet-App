@@ -81,9 +81,9 @@ export default function ProfileScreen() {
     dailyCombing: boolean;
     dietSchedule: DietScheduleEntry[];
     foodAllergy: string;
-    vaccinationDate: Date;
-    dewormingDate: Date;
-    tickTreatmentDate: Date;
+    vaccinationDate: Date | null;
+    dewormingDate: Date | null;
+    tickTreatmentDate: Date | null;
     medicationDetails: MedicationDetails;
     aggressiveTendencies: AggressiveTendencies;
     resourceGuarding: boolean;
@@ -110,9 +110,9 @@ export default function ProfileScreen() {
     dailyCombing: false,
     dietSchedule: [{ time: "", portion: "" }],
     foodAllergy: "",
-    vaccinationDate: new Date(),
-    dewormingDate: new Date(),
-    tickTreatmentDate: new Date(),
+    vaccinationDate: null,
+    dewormingDate: null,
+    tickTreatmentDate: null,
     medicationDetails: {
       nameFrequency: "",
       reason: "",
@@ -457,9 +457,9 @@ export default function ProfileScreen() {
           dailyCombing: false,
           dietSchedule: [{ time: "", portion: "" }],
           foodAllergy: "",
-          vaccinationDate: new Date(),
-          dewormingDate: new Date(),
-          tickTreatmentDate: new Date(),
+          vaccinationDate: null,
+          dewormingDate: null,
+          tickTreatmentDate: null,
           medicationDetails: {
             nameFrequency: "",
             reason: "",
@@ -483,6 +483,12 @@ export default function ProfileScreen() {
       }
     } catch (error: any) {
       if (error.response) {
+
+        if (error.response?.status === 400) {
+          await AsyncStorage.removeItem("access_token");
+          await AsyncStorage.removeItem("refresh_token"); // Clear token
+          router.replace("/(routes)/login");
+        }
         console.log("Error Response Data:", error.response.data);
         console.log("Error Response Status:", error.response.status);
         dispatch(
@@ -925,7 +931,11 @@ export default function ProfileScreen() {
                 style={styles.stepthreedateInput}
                 onPress={() => setShowVaccinationPicker(true)}
               >
-                <Text>{formatDate(formState.vaccinationDate)}</Text>
+                <Text>
+                  {formState.vaccinationDate
+                    ? formatDate(formState.vaccinationDate)
+                    : "dd/mm/yyyy"}
+                </Text>
                 <Ionicons name="calendar-outline" size={24} color="black" />
               </TouchableOpacity>
 
@@ -934,7 +944,9 @@ export default function ProfileScreen() {
                 style={styles.stepthreedateInput}
                 onPress={() => setShowDewormingPicker(true)}
               >
-                <Text>{formatDate(formState.dewormingDate)}</Text>
+                <Text>
+                  {formState.dewormingDate ? formatDate(formState.dewormingDate) : "dd/mm/yyyy"}
+                </Text>
                 <Ionicons name="calendar-outline" size={24} color="black" />
               </TouchableOpacity>
 
@@ -945,7 +957,7 @@ export default function ProfileScreen() {
                 style={styles.stepthreedateInput}
                 onPress={() => setShowTickTreatmentPicker(true)}
               >
-                <Text>{formatDate(formState.tickTreatmentDate)}</Text>
+                <Text>{formState.tickTreatmentDate ? formatDate(formState.tickTreatmentDate) : "dd/mm/yyyy"}</Text>
                 <Ionicons name="calendar-outline" size={24} color="black" />
               </TouchableOpacity>
 

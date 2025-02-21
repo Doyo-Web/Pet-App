@@ -175,6 +175,13 @@ export default function HostProfileScreen() {
         router.push("/(tabs)/host");
       }
     } catch (error: any) {
+
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+      }
+      
       if (error.response) {
         console.log("Error Response Data:", error.response.data);
         Toast.show("Failed to delete host profile.", {
@@ -211,7 +218,12 @@ export default function HostProfileScreen() {
 
         setHost(response.data.host);
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
+         if (error.response?.status === 400) {
+           await AsyncStorage.removeItem("access_token");
+           await AsyncStorage.removeItem("refresh_token"); // Clear token
+           router.replace("/(routes)/login"); // Redirect to login page
+         }
         console.log("Error fetching host data:", error);
         setLoading(false);
         Alert.alert("Error", "Failed to fetch host data. Please try again.");
@@ -238,15 +250,18 @@ export default function HostProfileScreen() {
       case "services":
         return (
           <View style={styles.panelContent}>
-            <View>
+            <TouchableOpacity onPress={()=>router.push("/(drawer)/(tabs)/booknow")}>
               <View style={styles.boardingIconContainer}>
-                <MaterialIcons name="home" size={32} color="#00BFA6" />
+                <Image
+                  style={styles.boardingIcon}
+                  source={require("@/assets/icons/home_boarding.png")}
+                />
                 <View style={styles.editBadge}>
                   <MaterialIcons name="edit" size={16} color="#fff" />
                 </View>
               </View>
               <Text style={styles.boardingText}>Boarding</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         );
       case "requests":
@@ -534,10 +549,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  boardingIcon: {
+    width: 36,
+    height: 36,
+    objectFit: "cover",
+  },
+
   editBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -6,
+    right: -8,
     backgroundColor: "#00BFA6",
     borderRadius: 12,
     padding: pixelSizeHorizontal(4),

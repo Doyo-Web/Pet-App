@@ -60,7 +60,12 @@ export default function HostScreen() {
           if (response.data.host) {
             router.push("/(drawer)/(tabs)/hostprofile");
           }
-        } catch (error) {
+        } catch (error: any) {
+           if (error.response?.status === 400) {
+             await AsyncStorage.removeItem("access_token");
+             await AsyncStorage.removeItem("refresh_token"); // Clear token
+             router.replace("/(routes)/login"); // Redirect to login page
+           }
           console.log("Error checking host profile:", error);
         }
       };
@@ -818,6 +823,13 @@ export default function HostScreen() {
       }
     } catch (error: any) {
       // Handle and log errors
+
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+      }
+      
       if (error.response) {
         console.log("Error Response Data:", error.response.data); // Log server response
         console.log("Error Response Status:", error.response.status); // Log HTTP status

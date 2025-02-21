@@ -19,6 +19,7 @@ import { ArrowLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
+import { router } from "expo-router";
 
 // Responsive utilities
 const { width, height } = Dimensions.get("window");
@@ -126,7 +127,13 @@ export default function RequestsScreen() {
 
       setBookings(filteredBookings);
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
+
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       console.log("Error fetching data:", error);
       setLoading(false);
     }
@@ -174,7 +181,12 @@ export default function RequestsScreen() {
           booking.location.city.toLowerCase() === hostCity.toLowerCase()
       );
       setBookings(filteredBookings);
-    } catch (error) {
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       console.log("Error accepting booking:", error);
       Alert.alert("Error", "Failed to accept booking. Please try again.");
     }
@@ -206,7 +218,12 @@ export default function RequestsScreen() {
           booking.location.city.toLowerCase() === hostCity.toLowerCase()
       );
       setBookings(filteredBookings);
-    } catch (error) {
+    } catch (error: any) {
+       if (error.response?.status === 400) {
+         await AsyncStorage.removeItem("access_token");
+         await AsyncStorage.removeItem("refresh_token"); // Clear token
+         router.replace("/(routes)/login"); // Redirect to login page
+       }
       console.log("Error declining booking:", error);
       Alert.alert("Error", "Failed to decline booking. Please try again.");
     }
