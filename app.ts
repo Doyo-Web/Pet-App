@@ -11,6 +11,7 @@ import hostProfileRouter from "./routes/hostprofile.route";
 import bookingRouter from "./routes/booking.route";
 import chatRouter from "./routes/chat.route";
 import reviewRouter from "./routes/review.route";
+import paymentRouter from "./routes/payment.route";
 import { ErrorMiddleware } from "./middleware/error";
 import { joinChat, leaveChat } from "./controllers/chat.controller";
 import initializeSocket from "./utils/socket";
@@ -39,6 +40,7 @@ app.use("/api/v1", hostProfileRouter);
 app.use("/api/v1", bookingRouter);
 app.use("/api/v1", chatRouter);
 app.use("/api/v1", reviewRouter);
+app.use("/api/v1", paymentRouter);
 
 // Testing Route
 app.get("/testing", (_, res) => {
