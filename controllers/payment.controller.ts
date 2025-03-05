@@ -425,48 +425,132 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
 // };
 
 
+// export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
+//   try {
+//     const payload = req.rawBody || JSON.stringify(req.body); // Use rawBody if available
+//     const event = JSON.parse(payload);
+
+//     console.log("Webhook received:", JSON.stringify(event, null, 2));
+
+//     const signature = req.headers["x-webhook-signature"];
+//     if (!signature || typeof signature !== "string") {
+//       console.warn("Webhook signature missing");
+//       return res.status(401).json({ success: false, message: "Missing signature" });
+//     }
+
+//     if (!process.env.CASHFREE_SECRET_KEY) {
+//       console.error("CASHFREE_SECRET_KEY is not set");
+//       return res.status(500).json({ success: false, message: "Server configuration error" });
+//     }
+
+//     const computedSignature = crypto
+//       .createHmac("sha256", process.env.CASHFREE_SECRET_KEY)
+//       .update(payload)
+//       .digest("base64");
+
+//     console.log("Computed Signature:", computedSignature);
+//     console.log("Received Signature:", signature);
+
+//     if (computedSignature.trim() !== signature.trim()) {
+//       console.warn("Invalid webhook signature received");
+//       return res.status(401).json({ success: false, message: "Invalid signature" });
+//     }
+
+//     if (event?.data?.link?.link_id) {
+//       const orderId = event.data.link.link_id;
+//       const linkStatus = event.data.link.link_status;
+
+//       console.log(`Processing webhook for order ID ${orderId}, status: ${linkStatus}`);
+
+//       const payment = await Payment.findOne({ orderId });
+
+//       if (!payment) {
+//         console.warn(`Payment record not found for order ID: ${orderId}`);
+//         return res.status(404).json({ success: false, message: "Payment not found" });
+//       }
+
+//       let paymentStatus = "CREATED";
+//       if (linkStatus === "PAID") paymentStatus = "PAID";
+//       else if (linkStatus === "EXPIRED") paymentStatus = "FAILED";
+
+//       payment.status = paymentStatus;
+//       payment.paymentDetails = event.data;
+//       await payment.save();
+
+//       if (paymentStatus === "PAID") {
+//         await Booking.findByIdAndUpdate(payment.bookingId, {
+//           paymentStatus: "completed",
+//           paymentDate: new Date(),
+//         });
+//         console.log(`Payment for booking ${payment.bookingId} marked as completed`);
+//       }
+//     }
+
+//     return res.status(200).json({ success: true });
+//   } catch (error) {
+//     console.error("Error processing webhook:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to process webhook",
+//       error: error instanceof Error ? error.message : "Unknown error",
+//     });
+//   }
+// };
+
 export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
   try {
     const payload = req.rawBody || JSON.stringify(req.body); // Use rawBody if available
-    const event = JSON.parse(payload);
 
-    console.log("Webhook received:", JSON.stringify(event, null, 2));
+    console.log("Webhook received:", JSON.stringify(req.body, null, 2));
 
     const signature = req.headers["x-webhook-signature"];
     if (!signature || typeof signature !== "string") {
       console.warn("Webhook signature missing");
-      return res.status(401).json({ success: false, message: "Missing signature" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing signature" });
     }
 
     if (!process.env.CASHFREE_SECRET_KEY) {
       console.error("CASHFREE_SECRET_KEY is not set");
-      return res.status(500).json({ success: false, message: "Server configuration error" });
+      return res
+        .status(500)
+        .json({ success: false, message: "Server configuration error" });
     }
 
+    // ✅ Generate the correct computed signature
     const computedSignature = crypto
-      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY)
-      .update(payload)
-      .digest("base64");
+      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY) // Correct hashing algorithm
+      .update(payload, "utf8") // Ensure UTF-8 encoding
+      .digest("base64"); // Use Base64 encoding
 
     console.log("Computed Signature:", computedSignature);
     console.log("Received Signature:", signature);
 
+    // ✅ Compare signatures after trimming spaces (if any)
     if (computedSignature.trim() !== signature.trim()) {
       console.warn("Invalid webhook signature received");
-      return res.status(401).json({ success: false, message: "Invalid signature" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid signature" });
     }
 
-    if (event?.data?.link?.link_id) {
-      const orderId = event.data.link.link_id;
-      const linkStatus = event.data.link.link_status;
+    // ✅ Proceed with processing the webhook event
+    if (req.body?.data?.link?.link_id) {
+      const orderId = req.body.data.link.link_id;
+      const linkStatus = req.body.data.link.link_status;
 
-      console.log(`Processing webhook for order ID ${orderId}, status: ${linkStatus}`);
+      console.log(
+        `Processing webhook for order ID ${orderId}, status: ${linkStatus}`
+      );
 
       const payment = await Payment.findOne({ orderId });
 
       if (!payment) {
         console.warn(`Payment record not found for order ID: ${orderId}`);
-        return res.status(404).json({ success: false, message: "Payment not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Payment not found" });
       }
 
       let paymentStatus = "CREATED";
@@ -474,7 +558,7 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
       else if (linkStatus === "EXPIRED") paymentStatus = "FAILED";
 
       payment.status = paymentStatus;
-      payment.paymentDetails = event.data;
+      payment.paymentDetails = req.body.data;
       await payment.save();
 
       if (paymentStatus === "PAID") {
@@ -482,7 +566,9 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
           paymentStatus: "completed",
           paymentDate: new Date(),
         });
-        console.log(`Payment for booking ${payment.bookingId} marked as completed`);
+        console.log(
+          `Payment for booking ${payment.bookingId} marked as completed`
+        );
       }
     }
 
