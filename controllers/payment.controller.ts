@@ -239,16 +239,23 @@ export const handleWebhook = async (req: Request, res: Response) => {
     const event = req.body;
     console.log("Webhook received:", JSON.stringify(event));
 
+    console.log("webhook-signature", req.headers["x-webhook-signature"]);
     // Verify webhook signature if provided
     const signature = req.headers["x-webhook-signature"];
 
     if (signature && typeof signature === "string" && CASHFREE_SECRET_KEY) {
       // Create a signature using the webhook payload and secret key
       const payload = JSON.stringify(event);
+
+      console.log("CASHFREE_SECRET_KEY", CASHFREE_SECRET_KEY);
       const computedSignature = crypto
         .createHmac("sha256", CASHFREE_SECRET_KEY)
         .update(payload)
         .digest("hex");
+      
+      console.log("computed Signature", computedSignature);
+
+      console.log("signature", signature);
 
       // Compare signatures
       if (computedSignature !== signature) {
