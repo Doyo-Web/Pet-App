@@ -1,5 +1,11 @@
 import mongoose, { Date, Document, Schema } from "mongoose";
 
+
+export interface IOrder extends Document {
+  Id?: string;
+  payment_info: object;
+}
+
 export interface IBooking extends Document {
   userId: mongoose.Types.ObjectId;
   pets: Array<{
