@@ -24,7 +24,14 @@ initializeSocket(server);
 
 app.use(cors());
 app.use(cookieParser());
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf.toString(); // Store raw body for signature validation
+    },
+  })
+);
+
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const upload = multer({
