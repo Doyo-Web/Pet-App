@@ -1,8 +1,31 @@
 import type { Request, Response } from "express";
 import axios from "axios";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import Booking from "../models/booking.model";
 import Payment from "../models/payment.model";
+import { processPaymentToWallet } from "./wallet.controller";
+import { IUser } from "../models/user.model"; // Import the actual IUser interface
+
+// Define interfaces for your models
+interface IPayment {
+  bookingId: mongoose.Types.ObjectId;
+  orderId: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentGateway: string;
+  paymentDetails: any;
+  createdBy?: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Extend Request type to include rawBody
+interface RequestWithRawBody extends Request {
+  rawBody?: string;
+  user?: IUser; // Use the imported IUser interface
+}
 
 // Environment variables
 const CASHFREE_API_KEY =
@@ -12,13 +35,8 @@ const CASHFREE_SECRET_KEY =
   "TEST43af830766688976320c9e300d719b02965d3bc2";
 const CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg";
 
-// Extend Request type to include rawBody
-interface RequestWithRawBody extends Request {
-  rawBody?: string;
-}
-
 // Create a new payment order
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (req: RequestWithRawBody, res: Response) => {
   try {
     const {
       bookingId,
@@ -70,7 +88,7 @@ export const createOrder = async (req: Request, res: Response) => {
       },
       link_meta: {
         booking_id: bookingId,
-        user_id: req.user?._id || "guest_user",
+        user_id: req.user?._id ? req.user._id.toString() : "guest_user",
       },
       link_notify: {
         send_sms: false,
@@ -218,6 +236,15 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
           amount: payment.amount,
         },
       });
+
+      // Process payment to host wallet
+      // Cast _id to string to fix the 'unknown' type error
+      const paymentId =
+        payment._id instanceof mongoose.Types.ObjectId
+          ? payment._id.toString()
+          : String(payment._id);
+
+      await processPaymentToWallet(payment.bookingId.toString(), paymentId);
     }
 
     return res.status(200).json({
@@ -245,7 +272,6 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
 };
 
 // Handle webhook notifications from Cashfree
-
 export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
   try {
     const payload = req.rawBody || JSON.stringify(req.body);
@@ -377,6 +403,15 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
           `Payment for Booking ID ${bookingId} marked as completed with details:`,
           paymentDetails
         );
+
+        // Process payment to host wallet
+        // Cast _id to string to fix the 'unknown' type error
+        const paymentId =
+          existingPayment._id instanceof mongoose.Types.ObjectId
+            ? existingPayment._id.toString()
+            : String(existingPayment._id);
+
+        await processPaymentToWallet(bookingId, paymentId);
       }
     }
 
