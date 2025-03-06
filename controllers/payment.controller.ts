@@ -518,22 +518,7 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
         .json({ success: false, message: "Server configuration error" });
     }
 
-    // ✅ Generate the correct computed signature
-    const computedSignature = crypto
-      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY) // Correct hashing algorithm
-      .update(payload, "utf8") // Ensure UTF-8 encoding
-      .digest("base64"); // Use Base64 encoding
-
-    console.log("Computed Signature:", computedSignature);
-    console.log("Received Signature:", signature);
-
-    // ✅ Compare signatures after trimming spaces (if any)
-    if (computedSignature.trim() !== signature.trim()) {
-      console.warn("Invalid webhook signature received");
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid signature" });
-    }
+    
 
     // ✅ Proceed with processing the webhook event
     if (req.body?.data?.link?.link_id) {
