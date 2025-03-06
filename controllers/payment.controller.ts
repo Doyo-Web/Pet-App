@@ -12,7 +12,6 @@ const CASHFREE_SECRET_KEY =
   "TEST43af830766688976320c9e300d719b02965d3bc2";
 const CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg";
 
-
 // Extend Request type to include rawBody
 interface RequestWithRawBody extends Request {
   rawBody?: string;
@@ -243,46 +242,50 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
 
 export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
   try {
-    const payload = req.rawBody || JSON.stringify(req.body); // Use rawBody for HMAC validation
+    const payload = req.rawBody || JSON.stringify(req.body);
     console.log("Webhook received:", JSON.stringify(req.body, null, 2));
 
     const signature = req.headers["x-webhook-signature"];
     const timestamp = req.headers["x-webhook-timestamp"];
 
-    if (!signature || typeof signature !== "string") {
-      console.warn("Webhook signature missing");
-      return res
-        .status(401)
-        .json({ success: false, message: "Missing signature" });
+    // Skip signature validation in development for testing
+    if (process.env.NODE_ENV !== "development") {
+      if (!signature || typeof signature !== "string") {
+        console.warn("Webhook signature missing");
+        return res
+          .status(401)
+          .json({ success: false, message: "Missing signature" });
+      }
+
+      if (!process.env.CASHFREE_SECRET_KEY) {
+        console.error("CASHFREE_SECRET_KEY is not set");
+        return res
+          .status(500)
+          .json({ success: false, message: "Server configuration error" });
+      }
+
+      // Validate Webhook Signature using HMAC
+      const secretKey = process.env.CASHFREE_SECRET_KEY;
+      const hmac = crypto.createHmac("sha256", secretKey);
+      hmac.update(timestamp + payload);
+      const expectedSignature = hmac.digest("base64");
+
+      if (signature !== expectedSignature) {
+        console.warn("Invalid webhook signature");
+        return res
+          .status(403)
+          .json({ success: false, message: "Invalid signature" });
+      }
     }
 
-    if (!process.env.CASHFREE_SECRET_KEY) {
-      console.error("CASHFREE_SECRET_KEY is not set");
-      return res
-        .status(500)
-        .json({ success: false, message: "Server configuration error" });
-    }
-
-    // ✅ Validate Webhook Signature using HMAC
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-    const hmac = crypto.createHmac("sha256", secretKey);
-    hmac.update(timestamp + payload);
-    const expectedSignature = hmac.digest("base64");
-
-    if (signature !== expectedSignature) {
-      console.warn("Invalid webhook signature");
-      return res
-        .status(403)
-        .json({ success: false, message: "Invalid signature" });
-    }
-
-    // ✅ Extract necessary data from webhook payload
+    // Extract necessary data from webhook payload
     const { order, payment } = req.body.data;
-    const orderId = order?.order_id;
+    const cashfreeOrderId = order?.order_id; // Cashfree's order ID (CFPay_*)
+    const linkOrderId = order?.order_tags?.link_id; // Our original order ID
     const bookingId = order?.order_tags?.booking_id;
     const paymentStatus = payment?.payment_status;
 
-    if (!orderId || !bookingId) {
+    if (!cashfreeOrderId || !bookingId) {
       console.warn("Missing order ID or booking ID in webhook data");
       return res
         .status(400)
@@ -290,36 +293,73 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
     }
 
     console.log(
-      `Processing payment for Order ID: ${orderId}, Booking ID: ${bookingId}, Status: ${paymentStatus}`
+      `Processing payment for Order ID: ${cashfreeOrderId}, Booking ID: ${bookingId}, Status: ${paymentStatus}`
     );
 
-    // ✅ Find Payment Record
-    const existingPayment = await Payment.findOne({ orderId });
-
-    if (!existingPayment) {
-      console.warn(`Payment record not found for Order ID: ${orderId}`);
-      return res
-        .status(404)
-        .json({ success: false, message: "Payment record not found" });
+    // First try to find payment by the link_id from order_tags
+    let existingPayment = null;
+    if (linkOrderId) {
+      existingPayment = await Payment.findOne({ orderId: linkOrderId });
     }
 
-    // ✅ Update Payment Status
-    if (paymentStatus === "SUCCESS") {
-      existingPayment.status = "PAID";
-      existingPayment.paymentDetails = req.body.data;
-      await existingPayment.save();
+    // If not found, try to find by booking ID
+    if (!existingPayment) {
+      existingPayment = await Payment.findOne({ bookingId });
+      console.log(
+        `Payment record not found for Order ID: ${cashfreeOrderId}`,
+        existingPayment
+      );
+    }
 
-      // ✅ Update Booking Payment Status
-      await Booking.findByIdAndUpdate(bookingId, {
-        paymentStatus: "completed",
-        paymentDate: new Date(),
+    // If still not found, create a new payment record
+    if (!existingPayment) {
+      const booking = await Booking.findById(bookingId);
+      console.log(booking);
+
+      if (!booking) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Booking not found" });
+      }
+
+      // Create a new payment record based on the webhook data
+      existingPayment = new Payment({
+        bookingId,
+        orderId: linkOrderId || cashfreeOrderId,
+        amount: order.order_amount,
+        currency: order.order_currency,
+        status: paymentStatus === "SUCCESS" ? "PAID" : "FAILED",
+        paymentGateway: "CASHFREE",
+        paymentDetails: req.body.data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
-
-      console.log(`Payment for Booking ID ${bookingId} marked as completed`);
     } else {
-      existingPayment.status = "FAILED";
+      // Update existing payment record
+      existingPayment.status = paymentStatus === "SUCCESS" ? "PAID" : "FAILED";
       existingPayment.paymentDetails = req.body.data;
-      await existingPayment.save();
+      existingPayment.updatedAt = new Date();
+    }
+
+    // Save the payment record
+    await existingPayment.save();
+
+    // Update Booking Payment Status if payment was successful
+    if (paymentStatus === "SUCCESS") {
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        bookingId,
+        {
+          paymentStatus: "completed",
+          paymentDate: new Date(),
+        },
+        { new: true }
+      );
+
+      if (!updatedBooking) {
+        console.warn(`Booking ID ${bookingId} not found for payment update`);
+      } else {
+        console.log(`Payment for Booking ID ${bookingId} marked as completed`);
+      }
     }
 
     return res.status(200).json({ success: true });
