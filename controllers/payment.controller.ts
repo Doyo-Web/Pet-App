@@ -211,6 +211,12 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
       await Booking.findByIdAndUpdate(payment.bookingId, {
         paymentStatus: "completed",
         paymentDate: new Date(),
+        paymentDetails: {
+          paymentId: response.data.payments?.[0]?.payment_id || "",
+          orderId: payment.orderId,
+          signature: response.data.payments?.[0]?.bank_reference || "",
+          amount: payment.amount,
+        },
       });
     }
 
@@ -346,11 +352,20 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
 
     // Update Booking Payment Status if payment was successful
     if (paymentStatus === "SUCCESS") {
+      // Extract payment details for the booking
+      const paymentDetails = {
+        paymentId: payment.cf_payment_id.toString(),
+        orderId: linkOrderId || cashfreeOrderId,
+        signature: payment.bank_reference || payment.auth_id || "",
+        amount: payment.payment_amount,
+      };
+
       const updatedBooking = await Booking.findByIdAndUpdate(
         bookingId,
         {
           paymentStatus: "completed",
           paymentDate: new Date(),
+          paymentDetails: paymentDetails,
         },
         { new: true }
       );
@@ -358,7 +373,10 @@ export const handleWebhook = async (req: RequestWithRawBody, res: Response) => {
       if (!updatedBooking) {
         console.warn(`Booking ID ${bookingId} not found for payment update`);
       } else {
-        console.log(`Payment for Booking ID ${bookingId} marked as completed`);
+        console.log(
+          `Payment for Booking ID ${bookingId} marked as completed with details:`,
+          paymentDetails
+        );
       }
     }
 
