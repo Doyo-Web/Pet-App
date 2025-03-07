@@ -20,7 +20,8 @@ const GST_PERCENTAGE = 18;
 // Get wallet balance and transactions
 export const getWallet = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
+
 
     if (!userId) {
       return res.status(401).json({
