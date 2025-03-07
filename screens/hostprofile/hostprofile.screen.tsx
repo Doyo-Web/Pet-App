@@ -1,4 +1,6 @@
-import React, { useState, useEffect, SetStateAction } from "react";
+"use client";
+
+import { useState, useEffect, type SetStateAction } from "react";
 import {
   StyleSheet,
   View,
@@ -11,8 +13,8 @@ import {
   ActivityIndicator,
   Modal,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { router, useRouter } from "expo-router";
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
@@ -24,7 +26,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
-import useUser from "@/hooks/auth/useUser";
+import React from "react";
 
 // Define the Host interface
 interface Host {
@@ -89,6 +91,12 @@ interface Host {
   __v: { $numberInt: string };
 }
 
+// Define wallet interface
+interface Wallet {
+  balance: number;
+  totalEarned: number;
+}
+
 const DeleteConfirmationModal = ({
   visible,
   onClose,
@@ -141,6 +149,7 @@ const DeleteConfirmationModal = ({
 export default function HostProfileScreen() {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
   const [host, setHost] = useState<Host | null>(null);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
@@ -175,13 +184,12 @@ export default function HostProfileScreen() {
         router.push("/(tabs)/host");
       }
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
+      if (error.response?.status === 400) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
       }
-      
+
       if (error.response) {
         console.log("Error Response Data:", error.response.data);
         Toast.show("Failed to delete host profile.", {
@@ -217,13 +225,23 @@ export default function HostProfileScreen() {
         });
 
         setHost(response.data.host);
+
+        // Fetch wallet data
+        const walletResponse = await axios.get(`${SERVER_URI}/wallet`, {
+          headers: { access_token: accessToken },
+        });
+
+        if (walletResponse.data.success) {
+          setWallet(walletResponse.data.wallet);
+        }
+
         setLoading(false);
       } catch (error: any) {
-         if (error.response?.status === 400) {
-           await AsyncStorage.removeItem("access_token");
-           await AsyncStorage.removeItem("refresh_token"); // Clear token
-           router.replace("/(routes)/login"); // Redirect to login page
-         }
+        if (error.response?.status === 400) {
+          await AsyncStorage.removeItem("access_token");
+          await AsyncStorage.removeItem("refresh_token"); // Clear token
+          router.replace("/(routes)/login"); // Redirect to login page
+        }
         console.log("Error fetching host data:", error);
         setLoading(false);
         Alert.alert("Error", "Failed to fetch host data. Please try again.");
@@ -231,7 +249,7 @@ export default function HostProfileScreen() {
     };
 
     fetchHostData();
-  }, []);
+  }, [router]);
 
   const togglePanel = (panel: string) => {
     setExpandedPanel((prevPanel) => (prevPanel === panel ? null : panel));
@@ -245,12 +263,18 @@ export default function HostProfileScreen() {
     router.push("/(drawer)/(tabs)/hostprofile/hostprofilefour");
   };
 
+  const navigateToWallet = () => {
+    router.push("/(drawer)/(tabs)/wallet/wallet");
+  };
+
   const renderPanelContent = (panel: string) => {
     switch (panel) {
       case "services":
         return (
           <View style={styles.panelContent}>
-            <TouchableOpacity onPress={()=>router.push("/(drawer)/(tabs)/booknow")}>
+            <TouchableOpacity
+              onPress={() => router.push("/(drawer)/(tabs)/booknow")}
+            >
               <View style={styles.boardingIconContainer}>
                 <Image
                   style={styles.boardingIcon}
@@ -292,9 +316,14 @@ export default function HostProfileScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#00BFA6" />
           </TouchableOpacity>
-          <View style={styles.earningsContainer}>
-            <Text style={styles.earningsText}>Total Earned : Rs 20,000</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.earningsContainer}
+            onPress={navigateToWallet}
+          >
+            <Text style={styles.earningsText}>
+              Total Earned : ₹{wallet ? wallet.totalEarned.toFixed(2) : "0.00"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {loading ? (
@@ -330,6 +359,19 @@ export default function HostProfileScreen() {
         ) : (
           <Text style={styles.errorText}>Failed to load host data</Text>
         )}
+
+        <TouchableOpacity style={styles.walletCard} onPress={navigateToWallet}>
+          <View style={styles.walletIconContainer}>
+            <FontAwesome5 name="wallet" size={24} color="#fff" />
+          </View>
+          <View style={styles.walletInfo}>
+            <Text style={styles.walletTitle}>My Wallet</Text>
+            <Text style={styles.walletBalance}>
+              Balance: ₹{wallet ? wallet.balance.toFixed(2) : "0.00"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#00BFA6" />
+        </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>My Dashboard</Text>
 
@@ -446,14 +488,44 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: fontPixel(14),
   },
-
+  walletCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E6FFFC",
+    margin: pixelSizeHorizontal(16),
+    padding: pixelSizeHorizontal(16),
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#00BFA6",
+  },
+  walletIconContainer: {
+    width: widthPixel(48),
+    height: heightPixel(48),
+    borderRadius: 24,
+    backgroundColor: "#00BFA6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: pixelSizeHorizontal(16),
+  },
+  walletInfo: {
+    flex: 1,
+  },
+  walletTitle: {
+    fontSize: fontPixel(16),
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: pixelSizeVertical(4),
+  },
+  walletBalance: {
+    fontSize: fontPixel(14),
+    color: "#666",
+  },
   profilecardcontainer: {
     position: "relative",
     width: "100%",
     maxWidth: widthPixel(400),
     marginHorizontal: "auto",
   },
-
   profilecardbackground: {
     position: "absolute",
     top: heightPixel(20),
@@ -464,7 +536,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     transform: [{ translateX: 4 }, { translateY: 4 }],
   },
-
   profileCard: {
     position: "relative",
     margin: pixelSizeHorizontal(16),
@@ -549,13 +620,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   boardingIcon: {
     width: 36,
     height: 36,
     objectFit: "cover",
   },
-
   editBadge: {
     position: "absolute",
     bottom: -6,
@@ -611,14 +680,12 @@ const styles = StyleSheet.create({
     marginVertical: pixelSizeVertical(20),
     fontSize: fontPixel(14),
   },
-
   profilecardcontainermodel: {
     position: "relative",
     width: "100%",
     maxWidth: widthPixel(400),
     marginHorizontal: "auto",
   },
-
   profilecardbackgroundmodel: {
     position: "absolute",
     top: heightPixel(5),
@@ -629,7 +696,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     transform: [{ translateX: 4 }, { translateY: 4 }],
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

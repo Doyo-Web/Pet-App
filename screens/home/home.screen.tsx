@@ -54,6 +54,8 @@ const HomeScreen: React.FC = () => {
 
   const { user } = useUser();
 
+  console.log(process.env.NODE_ENV);
+
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList<Testimonial>>(null);
 

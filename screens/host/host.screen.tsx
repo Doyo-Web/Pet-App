@@ -50,6 +50,7 @@ export default function HostScreen() {
     React.useCallback(() => {
       const checkHostStatus = async () => {
         const accessToken = await AsyncStorage.getItem("access_token");
+
         try {
           const response = await axios.get(`${SERVER_URI}/host`, {
             headers: {
@@ -57,6 +58,8 @@ export default function HostScreen() {
               access_token: accessToken,
             },
           });
+
+          console.log("response", response.data.host);
           if (response.data.host) {
             router.push("/(drawer)/(tabs)/hostprofile");
           }

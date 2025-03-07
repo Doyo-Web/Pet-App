@@ -61,6 +61,8 @@ interface BookData {
 export default function BookingScreen(): JSX.Element {
   const dispatch = useDispatch();
 
+   console.log(SERVER_URI);
+
   const [bookData, setBookData] = useState<BookData>({
     pets: [],
     startDate: null,

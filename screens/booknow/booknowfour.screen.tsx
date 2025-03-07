@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,8 +10,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Platform,
   Dimensions,
+  Platform,
+  Modal,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -17,21 +21,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "../../utils/uri";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import {
-  widthPixel,
-  heightPixel,
-  fontPixel,
-  pixelSizeVertical,
-  pixelSizeHorizontal,
-} from "../../utils/responsive";
+import type { RootState } from "@/store/store";
+import WebView from "react-native-webview";
+import React from "react";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 // Responsive sizing function
 const normalize = (size: number, factor = 0.25) => {
-  return size + (width / 400 - 1) * size * factor
-}
+  return size + (width / 400 - 1) * size * factor;
+};
 
 interface Booking {
   _id: string;
@@ -49,10 +48,24 @@ interface Booking {
   paymentStatus: string;
 }
 
+interface PaymentResponse {
+  success: boolean;
+  orderId: string;
+  paymentLink: string;
+}
+
 export default function BillingScreen() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [showWebView, setShowWebView] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentCheckInterval, setPaymentCheckInterval] =
+    useState<NodeJS.Timeout | null>(null);
+  const webViewRef = useRef<WebView>(null);
+
   const router = useRouter();
 
   const bookingData = useSelector(
@@ -61,10 +74,53 @@ export default function BillingScreen() {
 
   useEffect(() => {
     fetchBookingData();
-  }, []);
+
+    // Handle back button press on Android
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (showWebView) {
+          handleCloseWebView();
+          return true;
+        }
+        return false;
+      }
+    );
+
+    // Cleanup function
+    return () => {
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+      }
+      backHandler.remove();
+    };
+  }, [showWebView, paymentCheckInterval]);
+
+  // Check payment status periodically after initiating payment
+  useEffect(() => {
+    if (paymentCheckInterval) {
+      clearInterval(paymentCheckInterval);
+      setPaymentCheckInterval(null);
+    }
+
+    if (orderId && showWebView) {
+      const interval = setInterval(() => {
+        checkPaymentStatus(orderId);
+      }, 5000); // Check every 5 seconds
+
+      setPaymentCheckInterval(interval);
+    }
+
+    return () => {
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+      }
+    };
+  }, [orderId, showWebView]);
 
   const fetchBookingData = async () => {
     try {
+      setLoading(true);
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) {
         throw new Error("No access token found");
@@ -80,24 +136,263 @@ export default function BillingScreen() {
         }
       );
 
+      console.log("Booking data response:", response.data);
+
       if (response.data.bookings) {
         setBooking(response.data.bookings);
       } else {
         throw new Error("No bookings found");
       }
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
       console.log("Error fetching booking data:", error);
-      Alert.alert(
-        "Error",
-        "Failed to load billing information. Please try again."
-      );
+
+      if (error.response?.status === 400 || error.response?.status === 401) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      } else {
+        Alert.alert(
+          "Error",
+          "Failed to load billing information. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!booking) return;
+
+    try {
+      setPaymentLoading(true);
+      const accessToken = await AsyncStorage.getItem("access_token");
+
+      if (!accessToken) {
+        throw new Error("No access token found");
+      }
+
+      console.log("Creating payment order...");
+
+      const response = await axios.post<PaymentResponse>(
+        `${SERVER_URI}/create-order`,
+        {
+          bookingId: booking._id,
+          amount: grandTotal.toFixed(2),
+          currency: "INR",
+          customerName: booking.selectedHost.fullName,
+          customerPhone: "9999999999", // You might want to get this from user data
+          customerEmail: "customer@example.com", // You might want to get this from user data
+        },
+        {
+          headers: {
+            access_token: accessToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Payment order response:", response.data);
+
+      if (response.data.success && response.data.paymentLink) {
+        setPaymentUrl(response.data.paymentLink);
+        setOrderId(response.data.orderId);
+        setShowWebView(true);
+      } else {
+        throw new Error(
+          "Invalid payment response: " + JSON.stringify(response.data)
+        );
+      }
+    } catch (error: any) {
+      console.error("Payment initiation error:", error);
+      let errorMessage = "Failed to initiate payment. Please try again.";
+
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        errorMessage = error.response.data.message || errorMessage;
+      }
+
+      Alert.alert("Payment Error", errorMessage);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const checkPaymentStatus = async (orderId: string) => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) return;
+
+      console.log("Checking payment status for order:", orderId);
+
+      const response = await axios.get(`${SERVER_URI}/status/${orderId}`, {
+        headers: { access_token: accessToken },
+      });
+
+      console.log("Payment status check:", response.data);
+
+      if (response.data.success && response.data.status === "PAID") {
+        handlePaymentSuccess();
+      }
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Clear any existing interval
+    if (paymentCheckInterval) {
+      clearInterval(paymentCheckInterval);
+      setPaymentCheckInterval(null);
+    }
+
+    // Close the WebView if it's open
+    setShowWebView(false);
+
+    // Update payment status
+    setPaymentSuccess(true);
+
+    // Navigate to the booknowsuccess screen
+    if (booking) {
+      router.push("/(drawer)/(tabs)/booknow/booknowsuccess");
+    }
+  };
+
+  const handleCloseWebView = () => {
+    if (paymentCheckInterval) {
+      clearInterval(paymentCheckInterval);
+      setPaymentCheckInterval(null);
+    }
+    setShowWebView(false);
+  };
+
+  const handleWebViewNavigationStateChange = (navState: any) => {
+    // Check if the URL contains success or failure indicators
+    const url = navState.url;
+    console.log("WebView navigated to:", url);
+
+    // Check for various success indicators in the URL
+    if (
+      url.includes("payment_success=true") ||
+      url.includes("order_status=PAID") ||
+      url.includes("status=SUCCESS") ||
+      url.includes("link_status=PAID") ||
+      url.includes("payment_status=SUCCESS") ||
+      url.includes("txStatus=SUCCESS")
+    ) {
+      handlePaymentSuccess();
+    }
+    // Check for various failure indicators in the URL
+    else if (
+      url.includes("payment_failure=true") ||
+      url.includes("order_status=FAILED") ||
+      url.includes("status=FAILURE") ||
+      url.includes("link_status=EXPIRED") ||
+      url.includes("payment_status=FAILED") ||
+      url.includes("txStatus=FAILED")
+    ) {
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+        setPaymentCheckInterval(null);
+      }
+
+      setShowWebView(false);
+      Alert.alert(
+        "Payment Failed",
+        "Your payment was not successful. Please try again."
+      );
+    }
+  };
+
+  // Add JavaScript to inject into WebView to detect payment completion
+  const injectedJavaScript = `
+    (function() {
+      // Function to check if payment is complete
+      function checkPaymentCompletion() {
+        // Look for success elements or text on the page
+        const successElements = [
+          document.querySelector('.payment-success'),
+          document.querySelector('.success-message'),
+          document.querySelector('.transaction-success'),
+          document.getElementById('success-message'),
+          document.querySelector('[data-status="success"]'),
+          document.querySelector('.payment-status-success')
+        ];
+        
+        // Check if any success elements exist
+        const hasSuccessElement = successElements.some(el => el !== null);
+        
+        // Check for success text in the page
+        const pageText = document.body.innerText.toLowerCase();
+        const hasSuccessText = 
+          pageText.includes('payment successful') || 
+          pageText.includes('payment completed') || 
+          pageText.includes('transaction successful') ||
+          pageText.includes('payment success') ||
+          pageText.includes('order confirmed');
+        
+        if (hasSuccessElement || hasSuccessText) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({type: 'paymentSuccess'}));
+        }
+        
+        // Look for failure elements or text
+        const failureElements = [
+          document.querySelector('.payment-failure'),
+          document.querySelector('.error-message'),
+          document.querySelector('.transaction-failed'),
+          document.getElementById('error-message'),
+          document.querySelector('[data-status="failed"]'),
+          document.querySelector('.payment-status-failed')
+        ];
+        
+        // Check if any failure elements exist
+        const hasFailureElement = failureElements.some(el => el !== null);
+        
+        // Check for failure text in the page
+        const hasFailureText = 
+          pageText.includes('payment failed') || 
+          pageText.includes('transaction failed') || 
+          pageText.includes('payment cancelled') ||
+          pageText.includes('payment declined') ||
+          pageText.includes('payment error');
+        
+        if (hasFailureElement || hasFailureText) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({type: 'paymentFailure'}));
+        }
+      }
+      
+      // Run the check when page loads
+      checkPaymentCompletion();
+      
+      // Also run the check periodically
+      setInterval(checkPaymentCompletion, 1000);
+      
+      // And run it when DOM changes
+      const observer = new MutationObserver(checkPaymentCompletion);
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  `;
+
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      console.log("Message from WebView:", data);
+
+      if (data.type === "paymentSuccess") {
+        handlePaymentSuccess();
+      } else if (data.type === "paymentFailure") {
+        if (paymentCheckInterval) {
+          clearInterval(paymentCheckInterval);
+          setPaymentCheckInterval(null);
+        }
+        setShowWebView(false);
+        Alert.alert(
+          "Payment Failed",
+          "Your payment was not successful. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Error parsing WebView message:", error);
     }
   };
 
@@ -120,75 +415,6 @@ export default function BillingScreen() {
     return total * 0.18;
   };
 
-  const handlePayment = async () => {
-    setPaymentLoading(true);
-    try {
-      const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) {
-        throw new Error("No access token found");
-      }
-
-      // Simulate payment process
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Simulate successful payment
-      const mockPaymentData = {
-        razorpay_payment_id: `pay_${Math.random().toString(36).substr(2, 9)}`,
-        razorpay_order_id: `order_${Math.random().toString(36).substr(2, 9)}`,
-        razorpay_signature: `${Math.random().toString(36).substr(2, 32)}`,
-      };
-
-      await savePaymentDetails(mockPaymentData);
-
-      //Navigate to chat screen after successful payment
-      router.push({
-        pathname: "/(drawer)/(tabs)/booknow/booknowsuccess",
-      });
-    } catch (error: any) {
-      console.log("Error processing payment:", error.message);
-      Alert.alert("Error", "Failed to process payment. Please try again.");
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
-
-  const savePaymentDetails = async (paymentData: any) => {
-    try {
-      const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) {
-        throw new Error("No access token found");
-      }
-
-      await axios.post(
-        `${SERVER_URI}/save-payment`,
-        {
-          bookingId: booking?._id,
-          paymentId: paymentData.razorpay_payment_id,
-          orderId: paymentData.razorpay_order_id,
-          signature: paymentData.razorpay_signature,
-          amount: grandTotal,
-        },
-        { headers: { access_token: accessToken } }
-      );
-
-      // Update the local booking state to reflect the completed payment
-      setBooking((prevBooking) => {
-        if (prevBooking) {
-          return { ...prevBooking, paymentStatus: "completed" };
-        }
-        return prevBooking;
-      });
-
-      Alert.alert("Success", "Payment completed successfully!");
-    } catch (error) {
-      console.log("Error saving payment details:", error);
-      Alert.alert(
-        "Error",
-        "Failed to save payment details. Please contact support."
-      );
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -208,13 +434,17 @@ export default function BillingScreen() {
   }
 
   const days = calculateDays(booking.startDateTime, booking.endDateTime);
-  const boardingPrice = parseFloat(
+  const boardingPrice = Number.parseFloat(
     booking.selectedHost.hostProfile.pricingBoarding || "0"
   );
   const mealPrice =
     booking.diet === "veg"
-      ? parseFloat(booking.selectedHost.hostProfile.pricingVegMeal || "0")
-      : parseFloat(booking.selectedHost.hostProfile.pricingNonVegMeal || "0");
+      ? Number.parseFloat(
+          booking.selectedHost.hostProfile.pricingVegMeal || "0"
+        )
+      : Number.parseFloat(
+          booking.selectedHost.hostProfile.pricingNonVegMeal || "0"
+        );
 
   const total = calculateTotal(days, boardingPrice, mealPrice);
   const gst = calculateGST(total);
@@ -277,7 +507,7 @@ export default function BillingScreen() {
             {paymentLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.paymentButtonText}>Make Payment</Text>
+              <Text style={styles.paymentButtonText}>Pay with Cashfree</Text>
             )}
           </TouchableOpacity>
         ) : (
@@ -294,6 +524,44 @@ export default function BillingScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Payment WebView Modal */}
+      <Modal
+        visible={showWebView}
+        onRequestClose={handleCloseWebView}
+        animationType="slide"
+      >
+        <SafeAreaView style={styles.webViewContainer}>
+          <View style={styles.webViewHeader}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleCloseWebView}
+            >
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.webViewTitle}>Complete Payment</Text>
+          </View>
+
+          {paymentUrl && (
+            <WebView
+              ref={webViewRef}
+              source={{ uri: paymentUrl }}
+              onNavigationStateChange={handleWebViewNavigationStateChange}
+              startInLoadingState={true}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              thirdPartyCookiesEnabled={true}
+              injectedJavaScript={injectedJavaScript}
+              onMessage={handleWebViewMessage}
+              renderLoading={() => (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="#FF6B4A" />
+                </View>
+              )}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -412,5 +680,34 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: normalize(16),
     fontWeight: "600",
+  },
+  webViewContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  webViewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: normalize(16),
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  closeButton: {
+    position: "absolute",
+    left: normalize(16),
+  },
+  webViewTitle: {
+    fontSize: normalize(18),
+    fontWeight: "600",
+  },
+  loaderContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
