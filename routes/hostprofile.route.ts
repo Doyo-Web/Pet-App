@@ -9,6 +9,10 @@ import {
 
 const hostProfileRouter = express.Router();
 
+// Increase payload limit to 50mb to handle large base64 image uploads
+hostProfileRouter.use(express.json({ limit: "200mb" }));
+hostProfileRouter.use(express.urlencoded({ limit: "200mb", extended: true }));
+
 // Route to create a new host profile
 hostProfileRouter.post(
   "/hostprofile-create",

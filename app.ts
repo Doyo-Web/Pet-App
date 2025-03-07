@@ -29,6 +29,7 @@ app.use(
     verify: (req: any, res, buf) => {
       req.rawBody = buf.toString(); // Store raw body for signature validation
     },
+    limit: "200mb",
   })
 );
 
