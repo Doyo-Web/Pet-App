@@ -167,7 +167,7 @@ export const processPaymentToWallet = async (
     }
 
     // Find host
-    const host = await Host.findById(booking._id).session(session);
+    const host = await Host.findById(booking.selectedHost).session(session);
 
     if (!host) {
       throw new Error("Host not found");
