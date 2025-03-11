@@ -1,9 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import Chat, { IChat } from "../models/chat.model";
-import userModel, { IUser } from "../models/user.model";
-import HostProfile from "../models/hostprofile.model";
-import Booking, { IBooking } from "../models/booking.model";
-// import { io } from "../app";
+import Chat, { IChat, IMessage } from "../models/chat.model";
 
 export const getChatList = async (req: Request, res: Response) => {
   try {
@@ -39,25 +35,41 @@ export const getChatMessages = async (req: Request, res: Response) => {
 export const sendMessage = async (req: Request, res: Response) => {
   try {
     const { chatId } = req.params;
-    const { content } = req.body;
+    const { content, contentType, mediaUrl } = req.body;
     const senderId = req.user?.id;
 
+    // Check if senderId exists (i.e., user is authenticated)
+    if (!senderId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: User not authenticated" });
+    }
+
+    // Find the chat by ID
     const chat = await Chat.findById(chatId);
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
     }
 
-    const newMessage = {
+    // Create the new message object
+    const newMessage: IMessage = {
       sender: senderId,
       content,
+      contentType: contentType || "text",
+      mediaUrl,
       timestamp: new Date(),
     };
 
+    // Add the message to the chat and update lastMessage
     chat.messages.push(newMessage);
     chat.lastMessage = newMessage;
     await chat.save();
 
-    res.json(newMessage);
+    // Retrieve the saved message with its _id (MongoDB generates this)
+    const savedMessage = chat.messages[chat.messages.length - 1];
+
+    // Respond with the saved message, including its _id
+    res.json(savedMessage);
   } catch (error) {
     res.status(500).json({ message: "Error sending message", error });
   }
@@ -68,50 +80,22 @@ export const createChat = async (req: Request, res: Response) => {
     const { participantId } = req.body;
     const userId = req.user?.id;
 
-
-    // Check if the user is already a participant in any chat with the given participant
     const existingChat = await Chat.findOne({
       participants: { $all: [userId, participantId] },
     });
 
-    // If the user is already part of an existing chat with the participant
     if (existingChat) {
-      return res.json(existingChat); // Return the existing chat
+      return res.json(existingChat);
     }
 
-    // Check if the user is part of any chat at all
-    const userChat = await Chat.findOne({
-      participants: userId,
-    });
-
-    // If the user has chats, return an existing one
-    if (userChat) {
-      return res.json(userChat); // Return the existing chat
-    }
-
-    // If no chat exists, create a new chat
     const newChat = new Chat({
       participants: [userId, participantId],
-      messages: [], // Initialize with an empty messages array
+      messages: [],
     });
 
-    await newChat.save(); // Save the new chat
-
-    res.status(201).json(newChat); // Return the new chat
+    await newChat.save();
+    res.status(201).json(newChat);
   } catch (error) {
     res.status(500).json({ message: "Error creating chat", error });
   }
-};
-
-
-
-
-export const joinChat = (socket: any, chatId: string) => {
-  socket.join(chatId);
-  console.log(`User joined chat: ${chatId}`);
-};
-
-export const leaveChat = (socket: any, chatId: string) => {
-  socket.leave(chatId);
-  console.log(`User left chat: ${chatId}`);
 };

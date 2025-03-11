@@ -14,21 +14,18 @@ import reviewRouter from "./routes/review.route";
 import paymentRouter from "./routes/payment.route";
 import walletRouter from "./routes/wallet.route";
 import { ErrorMiddleware } from "./middleware/error";
-import { joinChat, leaveChat } from "./controllers/chat.controller";
 import initializeSocket from "./utils/socket";
 
 const app: Application = express();
 const server = http.createServer(app);
 initializeSocket(server);
 
-// const io = new SocketIOServer(server, { cors: { origin: "*" } });
-
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(
   express.json({
     verify: (req: any, res, buf) => {
-      req.rawBody = buf.toString(); // Store raw body for signature validation
+      req.rawBody = buf.toString();
     },
     limit: "200mb",
   })
@@ -42,7 +39,6 @@ const upload = multer({
 });
 app.use(upload.fields([{ name: "petImages", maxCount: 10 }]));
 
-// API Routes
 app.use("/api/v1", userRouter);
 app.use("/api/v1", petProfileRouter);
 app.use("/api/v1", hostProfileRouter);
@@ -52,12 +48,10 @@ app.use("/api/v1", reviewRouter);
 app.use("/api/v1", paymentRouter);
 app.use("/api/v1", walletRouter);
 
-// Testing Route
 app.get("/testing", (_, res) => {
   res.status(200).json({ success: true, message: "API is Working" });
 });
 
-// Unknown Route Handler
 app.all("*", (req, res, next) => {
   const err = new Error(`Route ${req.originalUrl} not found`) as any;
   err.statusCode = 404;
@@ -65,16 +59,5 @@ app.all("*", (req, res, next) => {
 });
 
 app.use(ErrorMiddleware);
-
-// io.on("connection", (socket) => {
-//   console.log("New client connected");
-
-//   socket.on("joinChat", (chatId) => joinChat(socket, chatId));
-//   socket.on("leaveChat", (chatId) => leaveChat(socket, chatId));
-
-//   socket.on("disconnect", () => {
-//     console.log("Client disconnected");
-//   });
-// });
 
 export { app, server };

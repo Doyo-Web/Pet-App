@@ -837,3 +837,18 @@ export const UpdateLocation = async (
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const mydata = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await userModel.findById(req.params.id).select("-password"); // Exclude password
+
+    if (!user) {
+      return next(new ErrorHandler("User not found", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  }
+);

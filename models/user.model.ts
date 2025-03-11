@@ -153,7 +153,7 @@ userSchema.methods.SignAccessToken = function () {
       id: this._id,
     },
     process.env.ACCESS_TOKEN || "", {
-      expiresIn: "5d"
+      expiresIn: "10d"
     }
   );
 };

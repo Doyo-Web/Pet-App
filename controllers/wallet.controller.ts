@@ -246,7 +246,7 @@ export const requestWithdrawal = async (req: Request, res: Response) => {
   session.startTransaction();
 
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { amount } = req.body;
 
     if (!userId) {
@@ -272,6 +272,8 @@ export const requestWithdrawal = async (req: Request, res: Response) => {
         message: "Host profile not found",
       });
     }
+
+    console.log("host paymentDetails", host.paymentDetails);
 
     // Check if host has payment details
     if (
@@ -300,6 +302,8 @@ export const requestWithdrawal = async (req: Request, res: Response) => {
         message: "Wallet not found",
       });
     }
+
+    console.log("Wallet Available", wallet);
 
     // Check if wallet has sufficient balance
     if (wallet.balance < amount) {
@@ -379,7 +383,7 @@ export const requestWithdrawal = async (req: Request, res: Response) => {
 // Get withdrawal history
 export const getWithdrawals = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const page = Number.parseInt(req.query.page as string) || 1;
     const limit = Number.parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;

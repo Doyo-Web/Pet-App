@@ -13,6 +13,7 @@ import {
   UpdateUser,
   UpdateAadhar,
   UpdateLocation,
+  mydata,
 } from "../controllers/user.controller";
 import { authorizeRoles, isAuthenticated } from "../middleware/auth";
 
@@ -44,5 +45,6 @@ userRouter.put("/update-aadhar", isAuthenticated, UpdateAadhar);
 
 userRouter.put("/update-location", isAuthenticated, UpdateLocation);
 
+userRouter.get("/user/:id", isAuthenticated, mydata);
 
 export default userRouter;

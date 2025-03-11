@@ -26,7 +26,7 @@ export const ErrorMiddleware = (err: any, req: Request, res: Response, next: Nex
     //JWT Expire Error
     if (err.name === 'TokenExpiredError') {
         const message = `Json web token is Expired, try again`;
-        err = new ErrorHandler(message, 400);
+        err = new ErrorHandler(message, 413);
     }
 
     res.status(err.statusCode).json({
