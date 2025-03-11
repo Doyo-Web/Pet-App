@@ -146,7 +146,7 @@ export default function BillingScreen() {
     } catch (error: any) {
       console.log("Error fetching booking data:", error);
 
-      if (error.response?.status === 400 || error.response?.status === 401) {
+      if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
         await AsyncStorage.removeItem("refresh_token"); // Clear token
         router.replace("/(routes)/login"); // Redirect to login page

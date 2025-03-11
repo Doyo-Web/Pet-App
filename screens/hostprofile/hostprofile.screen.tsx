@@ -184,7 +184,7 @@ export default function HostProfileScreen() {
         router.push("/(tabs)/host");
       }
     } catch (error: any) {
-      if (error.response?.status === 400) {
+      if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
         await AsyncStorage.removeItem("refresh_token"); // Clear token
         router.replace("/(routes)/login"); // Redirect to login page
@@ -237,14 +237,13 @@ export default function HostProfileScreen() {
 
         setLoading(false);
       } catch (error: any) {
-        if (error.response?.status === 400) {
+        if (error.response?.status === 413) {
           await AsyncStorage.removeItem("access_token");
           await AsyncStorage.removeItem("refresh_token"); // Clear token
           router.replace("/(routes)/login"); // Redirect to login page
         }
         console.log("Error fetching host data:", error);
         setLoading(false);
-        Alert.alert("Error", "Failed to fetch host data. Please try again.");
       }
     };
 
@@ -321,7 +320,7 @@ export default function HostProfileScreen() {
             onPress={navigateToWallet}
           >
             <Text style={styles.earningsText}>
-              Total Earned : ₹{wallet ? wallet.totalEarned.toFixed(2) : "0.00"}
+              Total Earned : ₹{wallet ? wallet.balance.toFixed(2) : "0.00"}
             </Text>
           </TouchableOpacity>
         </View>

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,15 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Image,
-  Modal,
   Animated,
-  Dimensions,
+  Modal,
+  StatusBar,
+  SafeAreaView,
+  Keyboard,
+  KeyboardAvoidingView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import axios from "axios";
@@ -24,6 +26,7 @@ import { Toast } from "react-native-toast-notifications";
 import useUser from "@/hooks/auth/useUser";
 import { createSocketConnection } from "@/utils/socket";
 import { SERVER_URI } from "@/utils/uri";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Feather,
   Ionicons,
@@ -32,87 +35,192 @@ import {
 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
-import { Audio } from "expo-av";
-// Replacing react-native-vision-camera with expo-image-manipulator for image processing
+import { Audio, Video, ResizeMode } from "expo-av";
 import * as ImageManipulator from "expo-image-manipulator";
 
-type Message = {
+interface Message {
   _id: string;
   sender: {
     _id: string;
     fullName: string;
-    avatar?: {
-      url: string;
-    };
-  };
+    avatar?: { url: string };
+  } | null;
   content: string;
   contentType: "text" | "image" | "video" | "audio";
   mediaUrl?: string;
   timestamp: string;
-  fullname?: string;
-  text?: string;
-};
+}
 
-type User = {
+interface User {
   _id: string;
   fullName: string;
-  fullname?: string;
+  avatar?: { url: string };
+}
+
+interface ChatItemProps {
+  item: Message;
+  isUserMessage: boolean;
+  onPress: () => void;
+  playingAudioId: string | null;
+}
+
+type Participant = {
+  userId: string | number | (string | number)[] | null | undefined;
+  _id: string;
+  fullname: string;
+  email: string;
+  userType?: "host" | "petParent";
   avatar?: {
     url: string;
   };
-  lastMessageTime?: string;
-  petName?: string;
 };
 
-const { width, height } = Dimensions.get("window");
+interface Host {
+  hostProfile: {
+    profileImage?: string;
+  };
+  _id: string;
+  fullName: string;
+  avatar?: {
+    public_id: string;
+    url: string;
+  };
+  email: string;
+}
+
+interface LoggedInUser {
+  _id: string;
+  fullname: string;
+  avatar?: {
+    public_id: string;
+    url: string;
+  };
+  email: string;
+}
+
+interface ApiResponse {
+  hosts?: Host[];
+  loggedInUser: LoggedInUser;
+  message: string;
+  success: boolean;
+}
 
 const ChatScreen: React.FC = () => {
-  const { userId } = useLocalSearchParams<{
-    userId: string;
-  }>();
+  const { userId } = useLocalSearchParams<{ userId: string }>();
+
+  const getThemeColors = () => {
+    if (userType === "host") {
+      return {
+        primary: "#B5F1E3", // Light mint/teal for header
+        secondary: "#4CD4C0", // Darker mint/teal for buttons and user bubbles
+        text: "#333", // Dark text
+        bubbleText: "#fff", // White text in bubbles
+      };
+    } else {
+      return {
+        primary: "#FFD6D6", // Light pink for header
+        secondary: "#FF9E9E", // Darker pink for buttons and user bubbles
+        text: "#333", // Dark text
+        bubbleText: "#fff", // White text in bubbles
+      };
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
-  const [enddate, setEndDate] = useState("");
-  const [userType, setUserType] = useState<"host" | "petParent" | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isBookingExpired, setIsBookingExpired] = useState(false);
-  const [showMediaOptions, setShowMediaOptions] = useState(false);
-  const [cameraPermission, setCameraPermission] = useState<boolean | null>(
-    null
-  );
-  const [microphonePermission, setMicrophonePermission] = useState<
-    boolean | null
-  >(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [isBookingExpired, setIsBookingExpired] = useState<boolean>(false);
+  const [showMediaOptions, setShowMediaOptions] = useState<boolean>(false);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraType, setCameraType] = useState(ImagePicker.CameraType.back);
+  const [cameraType, setCameraType] = useState<ImagePicker.CameraType>(
+    ImagePicker.CameraType.back
+  );
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [fullScreenMedia, setFullScreenMedia] = useState<{
+    type: "image" | "video";
+    uri: string;
+  } | null>(null);
+  const [currentSound, setCurrentSound] = useState<Audio.Sound | null>(null);
+  const [chatPartner, setChatPartner] = useState<{
+    name: string;
+    avatar?: string;
+  }>({ name: "Loading..." });
+
+  const [shouldAutoScroll, setShouldAutoScroll] = useState<boolean>(true);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const socketRef = useRef<any>(null);
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<Message>>(null);
   const mediaOptionsAnim = useRef(new Animated.Value(0)).current;
   const { user } = useUser();
   const LoggedInuserId = user?._id;
 
-  // Request permissions
+  const [userType, setUserType] = useState<"host" | "petParent" | null>(null);
+  const [currentUser, setCurrentUser] = useState<Participant | null>(null);
+  const [relatedUsers, setRelatedUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+
+  const themeColors = getThemeColors();
+
+  // Add keyboard event listeners
   useEffect(() => {
-    (async () => {
-      const cameraPermissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
-      setCameraPermission(cameraPermissionResult.status === "granted");
+    const keyboardWillShowListener =
+      Platform.OS === "ios"
+        ? Keyboard.addListener("keyboardWillShow", (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+          })
+        : Keyboard.addListener("keyboardDidShow", (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+          });
 
-      const microphoneStatus = await Audio.requestPermissionsAsync();
-      setMicrophonePermission(microphoneStatus.status === "granted");
+    const keyboardWillHideListener =
+      Platform.OS === "ios"
+        ? Keyboard.addListener("keyboardWillHide", () => {
+            setKeyboardHeight(0);
+          })
+        : Keyboard.addListener("keyboardDidHide", () => {
+            setKeyboardHeight(0);
+          });
 
-      await MediaLibrary.requestPermissionsAsync();
-    })();
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
   }, []);
 
-  // Fetch user type (host or pet parent)
-  const fetchUserType = useCallback(async () => {
+  // Function to fetch user data by userId
+  const fetchUserData = useCallback(async () => {
+    try {
+      if (!userId) return;
+
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) throw new Error("No access token found");
+
+      const response = await axios.get(`${SERVER_URI}/user/${userId}`, {
+        headers: { access_token: accessToken },
+      });
+
+      // Set chat partner details from the hosts array if available
+      if (response.data.user) {
+        setChatPartner({
+          name: response.data.user.fullname,
+          avatar: response.data.user.avatar?.url,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching user data:", error);
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token");
+        router.replace("/(routes)/login");
+      }
+    }
+  }, [userId, router]);
+
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const accessToken = await AsyncStorage.getItem("access_token");
@@ -123,65 +231,64 @@ const ChatScreen: React.FC = () => {
         headers: { access_token: accessToken },
       });
 
-      // Determine if user is host or pet parent based on response
-      const isHost = !!response.data.petParents;
-      const isPetParent = !!response.data.hosts;
+      const data = response.data as ApiResponse;
 
-      setUserType(isHost ? "host" : isPetParent ? "petParent" : null);
+      // Determine if user is host or pet parent based on response
+      const isHost = !!data.hosts;
+      setUserType(isHost ? "host" : "petParent");
 
       // Set current user
       setCurrentUser({
         ...response.data.loggedInUser,
         userType: isHost ? "host" : "petParent",
       });
+
+      // Format the related users with mock data for UI display
+      const mockTimeData = ["11:27 Am", "9:02 Am", "Sunday", "12/01/25"];
+      const mockPetNames = ["Jack's", "Toddy's", "Bruno's", "Chokie's"];
+
+      const formattedUsers = (data.hosts || []).map((host, index) => ({
+        _id: host._id,
+        fullName: host.fullName,
+        avatar: host.avatar,
+        lastMessageTime: mockTimeData[index % mockTimeData.length],
+        petName: isHost
+          ? `${mockPetNames[index % mockPetNames.length]} Pet Parent`
+          : `Pet Boarding`,
+      }));
+
+      setRelatedUsers(formattedUsers);
+      setFilteredUsers(formattedUsers);
+
+      // After fetching general data, fetch specific user data
+      await fetchUserData();
     } catch (error: any) {
-      if (error.response?.status === 400) {
+      if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
         await AsyncStorage.removeItem("refresh_token");
         router.replace("/(routes)/login");
       }
-      console.error("Error fetching user type:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
+  }, [router, userId, fetchUserData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      await ImagePicker.requestCameraPermissionsAsync();
+      await Audio.requestPermissionsAsync();
+      await MediaLibrary.requestPermissionsAsync();
+    };
+    requestPermissions();
   }, []);
 
-  // Check if booking is expired
-  useEffect(() => {
-    const getEndDate = async () => {
-      try {
-        const accessToken = await AsyncStorage.getItem("access_token");
-        if (!accessToken) throw new Error("No access token found");
-
-        // Create or get existing chat
-        const bookingResponse = await axios.post(
-          `${SERVER_URI}/booking-enddate`,
-          { participantId: userId },
-          { headers: { access_token: accessToken } }
-        );
-
-        const endDateTime = bookingResponse.data.booking[0].endDateTime;
-        setEndDate(endDateTime);
-
-        // Check if booking is expired
-        const now = new Date();
-        const bookingEndDate = new Date(endDateTime);
-        setIsBookingExpired(now >= bookingEndDate);
-      } catch (error: any) {
-        if (error.response?.status === 400) {
-          await AsyncStorage.removeItem("access_token");
-          await AsyncStorage.removeItem("refresh_token");
-          router.replace("/(routes)/login");
-        }
-        setError("Booking Not Found");
-        setLoading(false);
-      }
-    };
-
-    getEndDate();
-  }, [userId]);
-
-  // Setup chat and fetch messages
   useEffect(() => {
     const setupChat = async () => {
       try {
@@ -189,231 +296,249 @@ const ChatScreen: React.FC = () => {
         const accessToken = await AsyncStorage.getItem("access_token");
         if (!accessToken) throw new Error("No access token found");
 
-        // Create or get existing chat
+        const bookingResponse = await axios.post(
+          `${SERVER_URI}/booking-enddate`,
+          { participantId: userId },
+          { headers: { access_token: accessToken } }
+        );
+
+        const endDateTime = bookingResponse.data.booking?.[0]?.endDateTime;
+        if (endDateTime) {
+          setIsBookingExpired(new Date() >= new Date(endDateTime));
+        }
+
         const chatResponse = await axios.post(
           `${SERVER_URI}/create`,
           { participantId: userId },
           { headers: { access_token: accessToken } }
         );
+        setChatId(chatResponse.data._id);
 
-        const chatId = chatResponse.data._id;
-        setChatId(chatId);
+        // Get chat partner info if not already set by fetchData
+        if (chatResponse.data.participants && !chatPartner.name) {
+          const partner = chatResponse.data.participants.find(
+            (p: any) => p._id !== LoggedInuserId
+          );
+          if (partner) {
+            setChatPartner({
+              name: partner.fullName || "Chat Partner",
+              avatar: partner.avatar?.url,
+            });
+          }
+        }
 
-        // Fetch messages
-        const chat = await axios.get(`${SERVER_URI}/${chatId}/messages`, {
-          headers: { access_token: accessToken },
-        });
+        const messagesResponse = await axios.get(
+          `${SERVER_URI}/${chatResponse.data._id}/messages`,
+          {
+            headers: { access_token: accessToken },
+          }
+        );
 
-        // Format messages for display
-        const formattedMessages =
-          chat?.data?.map((msg: any) => {
-            const { content, contentType = "text", mediaUrl } = msg;
-            return {
-              _id: msg._id || Math.random().toString(),
-              text: content,
-              fullname: user?.fullname || "User",
-              contentType,
-              mediaUrl,
-              content,
-              sender: {
-                _id: user?._id || "",
-                fullName: user?.fullname || "User",
-              },
-              timestamp: new Date().toISOString(),
-            };
-          }) || [];
-
+        const formattedMessages: Message[] = (messagesResponse.data || [])
+          .filter((msg: any) => msg && msg._id)
+          .map((msg: any) => ({
+            _id: msg._id,
+            sender: msg.sender
+              ? {
+                  _id: msg.sender._id || "",
+                  fullName: msg.sender.fullName || chatPartner.name,
+                }
+              : null,
+            content: msg.content || "",
+            contentType: msg.contentType || "text",
+            mediaUrl: msg.mediaUrl,
+            timestamp: msg.timestamp || new Date().toISOString(),
+          }));
         setMessages(formattedMessages);
-        setLoading(false);
       } catch (err: any) {
+        console.error("Setup chat error:", err);
         if (err.response?.status === 400) {
           await AsyncStorage.removeItem("access_token");
           await AsyncStorage.removeItem("refresh_token");
           router.replace("/(routes)/login");
         }
-        console.log("Error setting up chat:", err);
-        setError("Failed to load chat. Please try again.");
+        setError("Failed to load chat");
+      } finally {
         setLoading(false);
       }
     };
 
     setupChat();
-    fetchUserType();
-  }, [userId, fetchUserType, user?.fullname, user?._id]);
+  }, [userId, LoggedInuserId, chatPartner.name]);
 
-  // Socket connection for real-time messaging
   useEffect(() => {
-    if (!LoggedInuserId || !user?.fullname) {
-      return;
-    }
+    if (!LoggedInuserId || !user?.fullname) return;
 
     const socket = createSocketConnection();
-    // As soon as the page loaded, the socket connection is made and joinChat event is emitted
+    socketRef.current = socket;
+
     socket.emit("joinChat", {
-      fullname: user.fullname,
+      fullName: user.fullname,
       userId,
       LoggedInuserId,
     });
 
-    socket.on("messageReceived", (message: any) => {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          _id: message._id || Math.random().toString(),
-          text: message.text,
-          fullname: message.fullname,
-          contentType: message.contentType || "text",
-          mediaUrl: message.mediaUrl,
-          content: message.text,
-          sender: {
-            _id: message.userId || "",
-            fullName: message.fullname || "User",
-          },
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-      scrollToBottom();
+    socket.on("messageReceived", (message: Message) => {
+      if (message && message._id) {
+        setMessages((prev) => [...prev, message]);
+        scrollToBottom();
+      }
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [userId, LoggedInuserId, user?.fullname]);
+  }, [LoggedInuserId, user?.fullname, userId]);
 
-  const scrollToBottom = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
+  const handleScroll = useCallback((event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isCloseToBottom =
+      contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
+    setShouldAutoScroll(isCloseToBottom);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    if (shouldAutoScroll) {
+      flatListRef.current?.scrollToEnd({ animated: true });
     }
-  };
+  }, [shouldAutoScroll]);
 
-  const toggleMediaOptions = () => {
-    setShowMediaOptions(!showMediaOptions);
+  const sendMediaMessage = useCallback(
+    async (uri: string, contentType: "image" | "video" | "audio") => {
+      if (!chatId || !user?.fullname) return;
+
+      // Re-enable auto-scrolling when sending a new message
+      setShouldAutoScroll(true);
+
+      const messageData = {
+        fullName: user.fullname,
+        userId,
+        LoggedInuserId,
+        text: `Sent a ${contentType}`,
+        contentType,
+        mediaUrl: uri,
+      };
+
+      socketRef.current.emit("sendMessage", messageData);
+
+      try {
+        const accessToken = await AsyncStorage.getItem("access_token");
+        const response = await axios.post(
+          `${SERVER_URI}/${chatId}/messages`,
+          {
+            content: messageData.text,
+            contentType,
+            mediaUrl: uri,
+          },
+          { headers: { access_token: accessToken! } }
+        );
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            _id: response.data._id,
+            sender: { _id: LoggedInuserId!, fullName: user.fullname },
+            content: messageData.text,
+            contentType,
+            mediaUrl: uri,
+            timestamp: response.data.timestamp,
+          },
+        ]);
+        scrollToBottom();
+      } catch (error) {
+        Toast.show(`Failed to send ${contentType}`, { type: "error" });
+      }
+    },
+    [chatId, user, LoggedInuserId, scrollToBottom]
+  );
+
+  const toggleMediaOptions = useCallback(() => {
+    setShowMediaOptions((prev) => !prev);
     Animated.timing(mediaOptionsAnim, {
       toValue: showMediaOptions ? 0 : 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-  };
+  }, [showMediaOptions]);
 
-  // Send text message
-  const sendTextMessage = async () => {
-    if (isBookingExpired) {
-      Toast.show("Booking has ended. You cannot chat now", { type: "info" });
+  const sendTextMessage = useCallback(async () => {
+    if (isBookingExpired || !newMessage.trim() || !chatId || !user?.fullname) {
+      Toast.show("Cannot send message", { type: "info" });
       return;
     }
 
-    if (!newMessage.trim() || !chatId || !user?.fullname) return;
+    // Re-enable auto-scrolling when sending a new message
+    setShouldAutoScroll(true);
 
-    const socket = createSocketConnection();
-    socket.emit("sendMessage", {
-      fullname: user.fullname,
+    const messageData = {
+      fullName: user.fullname,
       userId,
       LoggedInuserId,
       text: newMessage,
-      contentType: "text",
-    });
+      contentType: "text" as const,
+    };
+
+    socketRef.current.emit("sendMessage", messageData);
 
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) throw new Error("No access token found");
-
-      await axios.post(
+      const response = await axios.post(
         `${SERVER_URI}/${chatId}/messages`,
-        {
-          content: newMessage,
-          contentType: "text",
-        },
-        { headers: { access_token: accessToken } }
+        { content: newMessage, contentType: "text" },
+        { headers: { access_token: accessToken! } }
       );
 
-      const newMsg: Message = {
-        _id: Math.random().toString(),
-        text: newMessage,
-        fullname: user.fullname,
-        contentType: "text",
-        content: newMessage,
-        sender: {
-          _id: user._id || "",
-          fullName: user.fullname,
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: response.data._id,
+          sender: { _id: LoggedInuserId!, fullName: user.fullname },
+          content: newMessage,
+          contentType: "text",
+          timestamp: response.data.timestamp,
         },
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages([...messages, newMsg]);
+      ]);
       setNewMessage("");
       scrollToBottom();
-    } catch (err: any) {
-      if (err.response?.status === 400) {
-        await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token");
-        router.replace("/(routes)/login");
+    } catch (err) {
+      setError("Failed to send message");
+    }
+  }, [
+    isBookingExpired,
+    newMessage,
+    chatId,
+    user,
+    LoggedInuserId,
+    scrollToBottom,
+  ]);
+
+  const pickMedia = useCallback(
+    async (type: "image" | "video") => {
+      if (isBookingExpired) {
+        Toast.show("Booking has ended", { type: "info" });
+        return;
       }
-      console.log("Error sending message:", err);
-      setError("Failed to send message. Please try again.");
-    }
-  };
 
-  // Pick image from gallery
-  const pickImage = async () => {
-    if (isBookingExpired) {
-      Toast.show("Booking has ended. You cannot chat now", { type: "info" });
-      return;
-    }
-
-    try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes:
+          type === "image"
+            ? ImagePicker.MediaTypeOptions.Images
+            : ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const imageUri = result.assets[0].uri;
-        await sendMediaMessage(imageUri, "image");
+      if (!result.canceled && result.assets?.[0]) {
+        await sendMediaMessage(result.assets[0].uri, type);
       }
-    } catch (error) {
-      console.error("Error picking image:", error);
-      Toast.show("Failed to pick image", { type: "error" });
-    }
+      setShowMediaOptions(false);
+    },
+    [isBookingExpired, sendMediaMessage]
+  );
 
-    setShowMediaOptions(false);
-  };
-
-  // Pick video from gallery
-  const pickVideo = async () => {
+  const startRecording = useCallback(async () => {
     if (isBookingExpired) {
-      Toast.show("Booking has ended. You cannot chat now", { type: "info" });
-      return;
-    }
-
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const videoUri = result.assets[0].uri;
-        await sendMediaMessage(videoUri, "video");
-      }
-    } catch (error) {
-      console.error("Error picking video:", error);
-      Toast.show("Failed to pick video", { type: "error" });
-    }
-
-    setShowMediaOptions(false);
-  };
-
-  // Start recording audio
-  const startRecording = async () => {
-    if (isBookingExpired) {
-      Toast.show("Booking has ended. You cannot chat now", { type: "info" });
-      return;
-    }
-
-    if (!microphonePermission) {
-      Toast.show("Microphone permission is required", { type: "error" });
+      Toast.show("Booking has ended", { type: "info" });
       return;
     }
 
@@ -426,142 +551,110 @@ const ChatScreen: React.FC = () => {
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-
       setRecording(recording);
       setIsRecording(true);
-      Toast.show("Recording started...", { type: "info" });
     } catch (error) {
-      console.error("Error starting recording:", error);
       Toast.show("Failed to start recording", { type: "error" });
     }
-  };
+  }, [isBookingExpired]);
 
-  // Stop recording audio and send
-  const stopRecording = async () => {
+  const stopRecording = useCallback(async () => {
     if (!recording) return;
 
     try {
-      setIsRecording(false);
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       setRecording(null);
-
-      if (uri) {
-        await sendMediaMessage(uri, "audio");
-      }
+      setIsRecording(false);
+      if (uri) await sendMediaMessage(uri, "audio");
     } catch (error) {
-      console.error("Error stopping recording:", error);
       Toast.show("Failed to stop recording", { type: "error" });
     }
-  };
+  }, [recording, sendMediaMessage]);
 
-  // Open camera using ImagePicker instead of react-native-vision-camera
-  const openCamera = async () => {
+  const takePhoto = useCallback(async () => {
     if (isBookingExpired) {
-      Toast.show("Booking has ended. You cannot chat now", { type: "info" });
+      Toast.show("Booking has ended", { type: "info" });
       return;
     }
 
-    if (!cameraPermission) {
-      Toast.show("Camera permission is required", { type: "error" });
-      return;
-    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      cameraType,
+    });
 
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.8,
-        cameraType: cameraType,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const imageUri = result.assets[0].uri;
-
-        // Use ImageManipulator to process the image if needed
-        const manipResult = await ImageManipulator.manipulateAsync(
-          imageUri,
-          [{ resize: { width: 1000 } }], // Resize to reasonable dimensions
-          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-        );
-
-        await sendMediaMessage(manipResult.uri, "image");
-      }
-    } catch (error) {
-      console.error("Error taking picture:", error);
-      Toast.show("Failed to take picture", { type: "error" });
-    }
-
-    setShowMediaOptions(false);
-  };
-
-  // Toggle camera type (front/back)
-  const toggleCameraType = () => {
-    setCameraType(
-      cameraType === ImagePicker.CameraType.back
-        ? ImagePicker.CameraType.front
-        : ImagePicker.CameraType.back
-    );
-  };
-
-  // Send media message (image, video, audio)
-  const sendMediaMessage = async (
-    uri: string,
-    contentType: "image" | "video" | "audio"
-  ) => {
-    if (!chatId || !user?.fullname) return;
-
-    try {
-      // In a real app, you would upload the file to a server and get a URL
-      // For this example, we'll just use the local URI
-      const mediaUrl = uri;
-      const messageText = `Sent a ${contentType}`;
-
-      const socket = createSocketConnection();
-      socket.emit("sendMessage", {
-        fullname: user.fullname,
-        userId,
-        LoggedInuserId,
-        text: messageText,
-        contentType,
-        mediaUrl,
-      });
-
-      const accessToken = await AsyncStorage.getItem("access_token");
-      if (!accessToken) throw new Error("No access token found");
-
-      await axios.post(
-        `${SERVER_URI}/${chatId}/messages`,
+    if (!result.canceled && result.assets?.[0]) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.assets[0].uri,
+        [{ resize: { width: 1000 } }],
         {
-          content: messageText,
-          contentType,
-          mediaUrl,
-        },
-        { headers: { access_token: accessToken } }
+          compress: 0.8,
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
       );
-
-      const newMsg: Message = {
-        _id: Math.random().toString(),
-        text: messageText,
-        fullname: user.fullname,
-        contentType,
-        mediaUrl,
-        content: messageText,
-        sender: {
-          _id: user._id || "",
-          fullName: user.fullname,
-        },
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages([...messages, newMsg]);
-      scrollToBottom();
-      Toast.show(`${contentType} sent successfully`, { type: "success" });
-    } catch (error) {
-      console.error(`Error sending ${contentType}:`, error);
-      Toast.show(`Failed to send ${contentType}`, { type: "error" });
+      await sendMediaMessage(manipResult.uri, "image");
     }
-  };
+    setShowMediaOptions(false);
+  }, [isBookingExpired, cameraType, sendMediaMessage]);
+
+  const playAudio = useCallback(
+    async (messageId: string, uri?: string) => {
+      if (!uri) return;
+
+      try {
+        if (playingAudioId === messageId && currentSound) {
+          await currentSound.stopAsync();
+          await currentSound.unloadAsync();
+          setPlayingAudioId(null);
+          setCurrentSound(null);
+          return;
+        }
+
+        if (currentSound) {
+          await currentSound.stopAsync();
+          await currentSound.unloadAsync();
+        }
+
+        const { sound } = await Audio.Sound.createAsync({ uri });
+        setCurrentSound(sound);
+        setPlayingAudioId(messageId);
+        await sound.playAsync();
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setPlayingAudioId(null);
+            setCurrentSound(null);
+            sound.unloadAsync();
+          }
+        });
+      } catch (error) {
+        Toast.show("Failed to play audio", { type: "error" });
+      }
+    },
+    [playingAudioId, currentSound]
+  );
+
+  const viewMediaFullScreen = useCallback(
+    (type: "image" | "video", uri: string) => {
+      setFullScreenMedia({ type, uri });
+    },
+    []
+  );
+
+  const handleItemPress = useCallback(
+    (item: Message) => {
+      if (item.contentType === "audio") {
+        playAudio(item._id, item.mediaUrl);
+      } else if (item.contentType === "image" || item.contentType === "video") {
+        item.mediaUrl && viewMediaFullScreen(item.contentType, item.mediaUrl);
+      }
+    },
+    [playAudio, viewMediaFullScreen]
+  );
+
+  const handleBackPress = useCallback(() => {
+    router.push("/(drawer)/(tabs)/chat");
+  }, [router]);
 
   if (loading) {
     return (
@@ -579,234 +672,311 @@ const ChatScreen: React.FC = () => {
     );
   }
 
-  // Render different chat UI based on user type and booking status
+  const ChatItem = memo(
+    ({ item, isUserMessage, onPress, playingAudioId }: ChatItemProps) => (
+      <View
+        style={[
+          styles.chatContainer,
+          isUserMessage ? styles.chatEnd : styles.chatStart,
+        ]}
+      >
+        {!isUserMessage && item?.sender?.fullName && (
+          <Text style={styles.chatHeader}>{item.sender.fullName}</Text>
+        )}
+        <TouchableOpacity onPress={onPress}>
+          <View
+            style={[
+              styles.chatBubble,
+              isUserMessage
+                ? [
+                    styles.chatBubbleUser,
+                    { backgroundColor: themeColors.secondary },
+                  ]
+                : styles.chatBubbleOther,
+            ]}
+          >
+            {item.contentType === "text" && (
+              <Text
+                style={[
+                  styles.chatText,
+                  { color: isUserMessage ? themeColors.bubbleText : "#333" },
+                ]}
+              >
+                {item.content}
+              </Text>
+            )}
+            {item.contentType === "image" && item.mediaUrl && (
+              <Image
+                source={{ uri: item.mediaUrl }}
+                style={styles.mediaImage}
+              />
+            )}
+            {item.contentType === "video" && item.mediaUrl && (
+              <View style={styles.videoPreview}>
+                <Image
+                  source={{ uri: item.mediaUrl }}
+                  style={styles.mediaImage}
+                />
+                <View style={styles.playButton}>
+                  <Ionicons name="play" size={24} color="white" />
+                </View>
+              </View>
+            )}
+            {item.contentType === "audio" && (
+              <View style={styles.audioContainer}>
+                <Ionicons
+                  name={playingAudioId === item._id ? "stop" : "play"}
+                  size={20}
+                  color={isUserMessage ? "white" : "#333"}
+                />
+                <Text
+                  style={[
+                    styles.chatText,
+                    { color: isUserMessage ? themeColors.bubbleText : "#333" },
+                  ]}
+                >
+                  Audio message
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+        {isUserMessage && <Text style={styles.chatFooter}>Seen</Text>}
+      </View>
+    ),
+    (prevProps, nextProps) =>
+      prevProps.item._id === nextProps.item._id &&
+      prevProps.isUserMessage === nextProps.isUserMessage &&
+      prevProps.playingAudioId === nextProps.playingAudioId
+  );
+
   return (
-    <KeyboardAvoidingView
-      style={[
-        styles.container,
-        userType === "petParent"
-          ? styles.petParentContainer
-          : userType === "host"
-          ? styles.hostContainer
-          : {},
-      ]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-    >
-      <FlatList
-        data={messages}
-        ref={flatListRef}
-        onContentSizeChange={scrollToBottom}
-        onLayout={scrollToBottom}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => {
-          const isUserMessage = user?.fullname === item.fullname;
+    <SafeAreaView style={styles.safeArea}>
+      {/* Hide status bar */}
+      <StatusBar hidden={true} />
 
-          return (
-            <View
-              style={[
-                styles.chatContainer,
-                isUserMessage ? styles.chatEnd : styles.chatStart,
-              ]}
-            >
-              {/* Chat Header (Only for Other Users) */}
-              {!isUserMessage && (
-                <Text style={styles.chatHeader}>{item.fullname}</Text>
-              )}
-
-              {/* Chat Bubble */}
+      {/* Chat Header - Made entire header clickable */}
+      <TouchableOpacity
+        style={[
+          styles.headerContainer,
+          { backgroundColor: themeColors.primary },
+        ]}
+        onPress={handleBackPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.headerContent}>
+          <View
+            style={[
+              styles.backButton,
+              { backgroundColor: themeColors.secondary },
+            ]}
+          >
+            <AntDesign name="arrowleft" size={24} color="#fff" />
+          </View>
+          <View style={styles.userInfoContainer}>
+            {chatPartner.avatar ? (
+              <Image
+                source={{ uri: chatPartner.avatar }}
+                style={styles.avatar}
+              />
+            ) : (
               <View
                 style={[
-                  styles.chatBubble,
-                  isUserMessage
-                    ? userType === "petParent"
-                      ? styles.chatBubblePetParent
-                      : styles.chatBubbleHost
-                    : styles.chatBubbleOther,
+                  styles.avatarPlaceholder,
+                  { backgroundColor: themeColors.secondary },
                 ]}
               >
-                {item.contentType === "text" ? (
-                  <Text
-                    style={[
-                      styles.chatText,
-                      isUserMessage && userType === "petParent"
-                        ? styles.chatTextPetParent
-                        : {},
-                    ]}
-                  >
-                    {item.text || item.content}
-                  </Text>
-                ) : item.contentType === "image" ? (
-                  <Image
-                    source={{ uri: item.mediaUrl }}
-                    style={styles.mediaImage}
-                    resizeMode="cover"
-                  />
-                ) : item.contentType === "video" ? (
-                  <View style={styles.videoContainer}>
-                    <Image
-                      source={{ uri: item.mediaUrl }}
-                      style={styles.mediaImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.playButton}>
-                      <Ionicons name="play" size={24} color="white" />
-                    </View>
-                  </View>
-                ) : item.contentType === "audio" ? (
-                  <View style={styles.audioContainer}>
-                    <Ionicons
-                      name="mic"
-                      size={20}
-                      color={userType === "petParent" ? "#333" : "white"}
-                    />
-                    <Text
-                      style={[
-                        styles.audioText,
-                        isUserMessage && userType === "petParent"
-                          ? styles.chatTextPetParent
-                          : {},
-                      ]}
-                    >
-                      Audio message
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
-                    style={[
-                      styles.chatText,
-                      isUserMessage && userType === "petParent"
-                        ? styles.chatTextPetParent
-                        : {},
-                    ]}
-                  >
-                    {item.text || item.content}
-                  </Text>
-                )}
+                <Text style={styles.avatarText}>
+                  {chatPartner.name.charAt(0).toUpperCase()}
+                </Text>
               </View>
-
-              {/* Chat Footer (Only for User's Messages) */}
-              {isUserMessage && <Text style={styles.chatFooter}>Seen</Text>}
-            </View>
-          );
-        }}
-      />
-
-      {/* Different bottom sections based on booking status */}
-      {isBookingExpired ? (
-        // Expired booking UI
-        <View style={styles.expiredContainer}>
-          <Text style={styles.expiredText}>
-            The session is no longer available.
-          </Text>
-        </View>
-      ) : (
-        <>
-          {/* Media options */}
-          {showMediaOptions && (
-            <Animated.View
-              style={[
-                styles.mediaOptionsContainer,
-                {
-                  transform: [
-                    {
-                      translateY: mediaOptionsAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, 0],
-                      }),
-                    },
-                  ],
-                  opacity: mediaOptionsAnim,
-                },
-              ]}
-            >
-              <TouchableOpacity style={styles.mediaOption} onPress={pickImage}>
-                <Ionicons name="images-outline" size={18} color="#FF6B6B" />
-                <Text style={styles.mediaOptionText}>Photos</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.mediaOption} onPress={pickVideo}>
-                <Ionicons name="videocam-outline" size={18} color="#FF6B6B" />
-                <Text style={styles.mediaOptionText}>Videos</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.mediaOption}
-                onPress={toggleCameraType}
-              >
-                <MaterialIcons
-                  name="flip-camera-ios"
-                  size={18}
-                  color="#FF6B6B"
-                />
-                <Text style={styles.mediaOptionText}>Flip Camera</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {/* Active chat input UI */}
-          <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={styles.plusButton}
-              onPress={toggleMediaOptions}
-            >
-              <AntDesign
-                name={showMediaOptions ? "close" : "plus"}
-                size={24}
-                color="#FF6B6B"
-              />
-            </TouchableOpacity>
-
-            <TextInput
-              style={styles.input}
-              value={newMessage}
-              onChangeText={setNewMessage}
-              placeholder="Type a message here"
-              placeholderTextColor="#999"
-            />
-
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={isRecording ? stopRecording : startRecording}
-            >
-              <Ionicons
-                name={isRecording ? "stop-circle" : "mic-outline"}
-                size={24}
-                color={isRecording ? "#FF3B30" : "#FF6B6B"}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.iconButton} onPress={openCamera}>
-              <Ionicons name="camera-outline" size={24} color="#FF6B6B" />
-            </TouchableOpacity>
-
-            {newMessage.trim() ? (
-              <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  userType === "petParent" ? styles.sendButtonPetParent : {},
-                ]}
-                onPress={sendTextMessage}
-              >
-                <Feather name="send" size={20} color="white" />
-              </TouchableOpacity>
-            ) : null}
+            )}
+            <Text style={[styles.userName, { color: themeColors.text }]}>
+              {chatPartner.name}
+            </Text>
           </View>
-        </>
-      )}
-    </KeyboardAvoidingView>
+        </View>
+      </TouchableOpacity>
+
+      {/* Main content area with KeyboardAvoidingView */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <View style={styles.container}>
+          <FlatList<Message>
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item, index) =>
+              item?._id ? item._id.toString() : `fallback-${index}`
+            }
+            onScroll={handleScroll}
+            onContentSizeChange={scrollToBottom}
+            onLayout={scrollToBottom}
+            initialNumToRender={20}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            renderItem={({ item }) => (
+              <ChatItem
+                item={item}
+                isUserMessage={item?.sender?._id === LoggedInuserId}
+                onPress={() => handleItemPress(item)}
+                playingAudioId={playingAudioId}
+              />
+            )}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: isBookingExpired ? 0 : 80 },
+            ]}
+          />
+
+          {isBookingExpired ? (
+            <View style={styles.expiredContainer}>
+              <Text style={styles.expiredText}>
+                The session is no longer available.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Media options container that adjusts with keyboard */}
+              {showMediaOptions && (
+                <Animated.View
+                  style={[
+                    styles.mediaOptionsContainer,
+                    {
+                      transform: [
+                        {
+                          translateY: mediaOptionsAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [50, 0],
+                          }),
+                        },
+                      ],
+                      opacity: mediaOptionsAnim,
+                    },
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.mediaOption}
+                    onPress={() => pickMedia("image")}
+                  >
+                    <Ionicons name="images-outline" size={18} color="#FF6B6B" />
+                    <Text style={styles.mediaOptionText}>Photos</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.mediaOption}
+                    onPress={() => pickMedia("video")}
+                  >
+                    <Ionicons
+                      name="videocam-outline"
+                      size={18}
+                      color="#FF6B6B"
+                    />
+                    <Text style={styles.mediaOptionText}>Videos</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
+
+              {/* Input container */}
+              <View style={styles.inputContainer}>
+                <TouchableOpacity
+                  style={styles.plusButton}
+                  onPress={toggleMediaOptions}
+                >
+                  <AntDesign
+                    name={showMediaOptions ? "close" : "plus"}
+                    size={24}
+                    color="#FF6B6B"
+                  />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  value={newMessage}
+                  onChangeText={setNewMessage}
+                  placeholder="Type a message here"
+                />
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={isRecording ? stopRecording : startRecording}
+                >
+                  <Ionicons
+                    name={isRecording ? "stop-circle" : "mic-outline"}
+                    size={24}
+                    color={isRecording ? "#FF3B30" : "#FF6B6B"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={takePhoto}>
+                  <Ionicons name="camera-outline" size={24} color="#FF6B6B" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    { backgroundColor: themeColors.secondary },
+                  ]}
+                  onPress={sendTextMessage}
+                >
+                  <Feather name="send" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+
+      <Modal
+        visible={!!fullScreenMedia}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setFullScreenMedia(null)}
+      >
+        <View style={styles.fullScreenContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setFullScreenMedia(null)}
+          >
+            <AntDesign name="close" size={30} color="white" />
+          </TouchableOpacity>
+          {fullScreenMedia?.type === "image" && (
+            <Image
+              source={{ uri: fullScreenMedia.uri }}
+              style={styles.fullScreenImage}
+              resizeMode={ResizeMode.CONTAIN}
+            />
+          )}
+          {fullScreenMedia?.type === "video" && (
+            <Video
+              source={{ uri: fullScreenMedia.uri }}
+              style={styles.fullScreenVideo}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay={true}
+            />
+          )}
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  scrollContent: {
+    paddingBottom: 10,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    paddingBottom: 200,
-  },
-  hostContainer: {
-    backgroundColor: "#e0f7f5", // Light mint color for host
-  },
-  petParentContainer: {
-    backgroundColor: "#fff0f0", // Light pink color for pet parent
+    position: "relative",
   },
   centerContainer: {
     flex: 1,
@@ -816,7 +986,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     fontSize: 16,
-    textAlign: "center",
   },
   chatContainer: {
     marginVertical: 8,
@@ -841,24 +1010,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     maxWidth: "75%",
   },
-  chatBubbleHost: {
-    backgroundColor: "#4CD4C0", // Mint green for host
-    alignSelf: "flex-end",
-  },
-  chatBubblePetParent: {
-    backgroundColor: "#FFB6C1", // Pink for pet parent
-    alignSelf: "flex-end",
+  chatBubbleUser: {
+    backgroundColor: "#4CD4C0",
   },
   chatBubbleOther: {
-    backgroundColor: "#E8E8E8", // Gray for other users
-    alignSelf: "flex-start",
+    backgroundColor: "#E8E8E8",
   },
   chatText: {
     color: "#fff",
     fontSize: 15,
-  },
-  chatTextPetParent: {
-    color: "#333", // Darker text for pet parent bubbles for better contrast
   },
   chatFooter: {
     fontSize: 10,
@@ -869,9 +1029,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 8,
     backgroundColor: "#fff",
+    alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    alignItems: "center",
   },
   plusButton: {
     width: 40,
@@ -889,21 +1049,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
-    fontSize: 15,
   },
   iconButton: {
     padding: 8,
   },
   sendButton: {
-    backgroundColor: "#4CD4C0", // Default color (host)
+    backgroundColor: "#4CD4C0",
     borderRadius: 50,
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-  },
-  sendButtonPetParent: {
-    backgroundColor: "#FF6B6B", // Pink for pet parent
   },
   expiredContainer: {
     padding: 16,
@@ -922,6 +1078,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 56, // Position right above the input container
+    zIndex: 2,
   },
   mediaOption: {
     flexDirection: "row",
@@ -942,7 +1103,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 8,
   },
-  videoContainer: {
+  videoPreview: {
     position: "relative",
   },
   playButton: {
@@ -960,11 +1121,79 @@ const styles = StyleSheet.create({
   audioContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 5,
+    gap: 8,
   },
-  audioText: {
-    marginLeft: 8,
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullScreenImage: {
+    width: "100%",
+    height: "100%",
+  },
+  fullScreenVideo: {
+    width: "100%",
+    height: "100%",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
+  // Header styles
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#B5F1E3", // Light mint/teal color as shown in the image
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    height: 70,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#4CD4C0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  userInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#4CD4C0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  avatarText: {
     color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
   },
 });
 

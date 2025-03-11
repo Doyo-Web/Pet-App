@@ -17,9 +17,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import {
-  fontPixel, s, vs 
-} from "../../utils/responsive";
+import { fontPixel, s, vs } from "../../utils/responsive";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -119,12 +117,11 @@ export default function BookingsScreen() {
         Alert.alert("Error", "Failed to fetch bookings. Please try again.");
       }
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error fetching bookings:", error);
       Alert.alert("Error", "Failed to fetch bookings. Please try again.");
     } finally {

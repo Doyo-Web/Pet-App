@@ -99,7 +99,7 @@ export default function BookingScreenTwo() {
         }
       }
     } catch (error: any) {
-       if (error.response?.status === 400) {
+       if (error.response?.status === 413) {
          await AsyncStorage.removeItem("access_token");
          await AsyncStorage.removeItem("refresh_token"); // Clear token
          router.replace("/(routes)/login"); // Redirect to login page

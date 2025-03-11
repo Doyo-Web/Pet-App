@@ -30,8 +30,6 @@ import {
 
 const screenWidth = Dimensions.get("window").width;
 
-
-
 interface Pet {
   image: string;
   _id: string;
@@ -127,11 +125,11 @@ export default function BookingsScreen() {
         Alert.alert("Error", "Failed to fetch bookings. Please try again.");
       }
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error fetching bookings:", error);
       Alert.alert("Error", "Failed to fetch bookings. Please try again.");
     } finally {

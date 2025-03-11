@@ -137,17 +137,15 @@ export default function BookingScreenThree() {
       if (response.data.success && response.data.booking) {
         setBooking(response.data.booking);
       } else {
-        Alert.alert("Error", "Failed to fetch booking. Please try again.");
+        console.log("Error", "Failed to fetch booking. Please try again.");
       }
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error fetching booking:", error);
-      Alert.alert("Error", "Failed to fetch booking. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -217,12 +215,11 @@ export default function BookingScreenThree() {
         );
       }
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error confirming booking:", error);
       Alert.alert("Error", "An error occurred. Please try again.");
     } finally {
@@ -426,4 +423,3 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
   },
 });
-

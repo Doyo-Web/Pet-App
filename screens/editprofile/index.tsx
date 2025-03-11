@@ -58,26 +58,22 @@ import {
 const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
 
 const EditProfileScreen = () => {
-
   const dispatch = useDispatch();
 
-  
-  
   const apiKey = "AIzaSyCjJZAxdNLakBt50NPO9rCXd4-plRiXLcA";
 
   const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
 
   type CurrentLocationType = Location.LocationObjectCoords | null;
 
-const [isPersonalInfo, setIsPersonalInfo] = useState(0);
-const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
+  const [isPersonalInfo, setIsPersonalInfo] = useState(0);
+  const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
   const [isNewPasswordVisible, setNewPasswordVisible] = useState(false);
-  
+
   const [UserPassword, setUserPassword] = useState({
     oldpassword: "",
     newpassword: "",
   });
-
 
   const handlePasswordChange = async () => {
     setLoader(true);
@@ -108,11 +104,11 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
     } catch (error: any) {
       // Error handling
 
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       const errorMessage =
         error.response && error.response.data && error.response.data.message
           ? error.response.data.message
@@ -126,55 +122,53 @@ const [isOldPasswordVisible, setOldPasswordVisible] = useState(false);
       setLoader(false);
     }
   };
-  
+
   const [currentLocation, setCurrentLocation] =
     useState<CurrentLocationType>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
 
-//  useEffect(() => {
-//    (async () => {
-//      // Request permission to access location
-//      let { status } = await Location.requestForegroundPermissionsAsync();
-//      if (status !== "granted") {
-//        console.log("Permission to access location was denied");
-//      } else {
-//        // Get current location
-//        let location = await Location.getCurrentPositionAsync({});
-//        setCurrentLocation(location.coords as Location.LocationObjectCoords);
-//      }
-//    })();
-//  }, []);
+  //  useEffect(() => {
+  //    (async () => {
+  //      // Request permission to access location
+  //      let { status } = await Location.requestForegroundPermissionsAsync();
+  //      if (status !== "granted") {
+  //        console.log("Permission to access location was denied");
+  //      } else {
+  //        // Get current location
+  //        let location = await Location.getCurrentPositionAsync({});
+  //        setCurrentLocation(location.coords as Location.LocationObjectCoords);
+  //      }
+  //    })();
+  //  }, []);
 
-const getLocation = async () => {
-  // Check for permissions
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status === "granted") {
-    const location = await Location.getCurrentPositionAsync({});
-    setCurrentLocation(location.coords as Location.LocationObjectCoords);
-  } else {
-    // Handle permission denial
-    Toast.show("Location permission denied", { type: "danger" });
-  }
-};
-
-useEffect(() => {
-  // Get location only when in Manage Address component
-  if (isPersonalInfo === 1) {
-    getLocation();
-  }
-}, [isPersonalInfo]);
-  
-  const handleLocationSelect = () => {
-  setIsMapVisible(true);
+  const getLocation = async () => {
+    // Check for permissions
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === "granted") {
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location.coords as Location.LocationObjectCoords);
+    } else {
+      // Handle permission denial
+      Toast.show("Location permission denied", { type: "danger" });
+    }
   };
-  
+
+  useEffect(() => {
+    // Get location only when in Manage Address component
+    if (isPersonalInfo === 1) {
+      getLocation();
+    }
+  }, [isPersonalInfo]);
+
+  const handleLocationSelect = () => {
+    setIsMapVisible(true);
+  };
+
   const handleMapLocationSelect = async (location: any) => {
-    
     // Reverse geocoding to get the city and pincode
     const { latitude, longitude } = location;
 
     setCurrentLocation(location);
-
 
     const response = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
@@ -184,12 +178,13 @@ useEffect(() => {
     if (response.data.results.length > 0) {
       const addressComponents = response.data.results[0].address_components;
       const cityComponent = addressComponents.find(
-        (component: { types: string | string[]; }) =>
+        (component: { types: string | string[] }) =>
           component.types.includes("locality") ||
           component.types.includes("administrative_area_level_1")
       );
-      const pincodeComponent = addressComponents.find((component: { types: string | string[]; }) =>
-        component.types.includes("postal_code")
+      const pincodeComponent = addressComponents.find(
+        (component: { types: string | string[] }) =>
+          component.types.includes("postal_code")
       );
 
       const formattedAddress = response.data.results[0].formatted_address;
@@ -212,16 +207,15 @@ useEffect(() => {
   const { user, loading, setRefetch } = useUser();
   const [isChangePassword, setIsChangePassword] = useState(false);
 
-   const [pickuplocation, setPickupLocation] = useState("");
-   const [line1, setLine1] = useState("");
-   const [line2, setLine2] = useState("");
-   const [city, setCity] = useState("");
+  const [pickuplocation, setPickupLocation] = useState("");
+  const [line1, setLine1] = useState("");
+  const [line2, setLine2] = useState("");
+  const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
-  
 
   // State for the profile image and input fields
   const [image, setImage] = useState<any>(null);
-   const [kycimage, setKycImage] = useState<any>(null);
+  const [kycimage, setKycImage] = useState<any>(null);
   const [loader, setLoader] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -293,7 +287,6 @@ useEffect(() => {
     UserPassword,
     kycimage,
   ]);
-
 
   const addresses = [
     {
@@ -438,7 +431,6 @@ useEffect(() => {
     );
   };
 
-
   const handleLocationUpdate = async () => {
     setLoader(true);
 
@@ -469,11 +461,11 @@ useEffect(() => {
         // router.push("/(tabs)/");
       }
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
     } finally {
       setLoader(false);
     }
@@ -510,11 +502,11 @@ useEffect(() => {
         router.push("/(tabs)/");
       }
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
     } finally {
       setLoader(false);
     }
@@ -546,12 +538,11 @@ useEffect(() => {
         // router.push("/(tabs)/");
       }
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       // Error handling
       const errorMessage =
         error.response && error.response.data && error.response.data.message
@@ -567,16 +558,15 @@ useEffect(() => {
     }
   };
 
- const handleComponent = () => {
-   setIsPersonalInfo((prev) => {
-     if (prev < 3) {
-       return prev + 1;
-     }
-     return prev; // Return the previous value if it's already 3 or greater
-   });
-   
+  const handleComponent = () => {
+    setIsPersonalInfo((prev) => {
+      if (prev < 3) {
+        return prev + 1;
+      }
+      return prev; // Return the previous value if it's already 3 or greater
+    });
   };
-  
+
   const handledecrementComponent = () => {
     setIsPersonalInfo((prev) => {
       if (prev > 0) {

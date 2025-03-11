@@ -56,7 +56,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         router.push("/(routes)/loader");
       }
     } catch (error: any) {
-      if (error.response?.status === 400) {
+      if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
         await AsyncStorage.removeItem("refresh_token"); // Clear token
         router.replace("/(routes)/login"); // Redirect to login page
@@ -383,6 +383,22 @@ const Layout: React.FC = () => {
           if (pathname === "/profilesuccess") {
             return null; // Don't render anything for the profile screen
           }
+
+          if (pathname === "/wallet/wallet") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/wallet/withdraw") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/wallet/withdrawals") {
+            return null; // Don't render anything for the profile screen
+          }
+
+          if (pathname === "/wallet/transactions") {
+            return null; // Don't render anything for the profile screen
+          }
           
           
           return (
@@ -468,6 +484,22 @@ const Layout: React.FC = () => {
           if (pathname === "/profilesuccess") {
             return null; // Don't render anything for the profile screen
           }
+
+          if (pathname === "/wallet/wallet") {
+            return null; // Don't render anything for the profile screen
+          }
+
+              if (pathname === "/wallet/withdraw") {
+                return null; // Don't render anything for the profile screen
+              }
+
+              if (pathname === "/wallet/withdrawals") {
+                return null; // Don't render anything for the profile screen
+              }
+
+              if (pathname === "/wallet/transactions") {
+                return null; // Don't render anything for the profile screen
+              }
           return (
             <Image
               source={require("@/assets/images/header-logo.png")}

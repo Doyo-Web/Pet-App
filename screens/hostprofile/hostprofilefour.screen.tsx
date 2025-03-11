@@ -104,11 +104,11 @@ const MyReviewsScreen: React.FC = () => {
 
       setReviews(response.data.reviews);
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error fetching reviews:", error);
       Alert.alert("Error", "Failed to fetch reviews. Please try again.");
     } finally {

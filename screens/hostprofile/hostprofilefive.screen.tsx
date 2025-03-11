@@ -24,16 +24,17 @@ import { router } from "expo-router";
 // Responsive utilities
 const { width, height } = Dimensions.get("window");
 
-const guidelineBaseWidth = 375
-const guidelineBaseHeight = 812
+const guidelineBaseWidth = 375;
+const guidelineBaseHeight = 812;
 
-const scale = (size: number) => (width / guidelineBaseWidth) * size
-const verticalScale = (size: number) => (height / guidelineBaseHeight) * size
-const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
 
-const s = scale
-const vs = verticalScale
-const ms = moderateScale
+const s = scale;
+const vs = verticalScale;
+const ms = moderateScale;
 
 interface Booking {
   city: any;
@@ -123,17 +124,15 @@ export default function RequestsScreen() {
             hostResponse.data.host.city.toLowerCase() &&
           booking.userId._id !== hostResponse.data.host.userId._id // Exclude host's own booking
       );
-      
 
       setBookings(filteredBookings);
       setLoading(false);
     } catch (error: any) {
-
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error fetching data:", error);
       setLoading(false);
     }
@@ -182,11 +181,11 @@ export default function RequestsScreen() {
       );
       setBookings(filteredBookings);
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error accepting booking:", error);
       Alert.alert("Error", "Failed to accept booking. Please try again.");
     }
@@ -210,7 +209,6 @@ export default function RequestsScreen() {
         }
       );
 
-
       const filteredBookings = bookingResponse.data.bookings.filter(
         (booking) =>
           booking.location &&
@@ -219,11 +217,11 @@ export default function RequestsScreen() {
       );
       setBookings(filteredBookings);
     } catch (error: any) {
-       if (error.response?.status === 400) {
-         await AsyncStorage.removeItem("access_token");
-         await AsyncStorage.removeItem("refresh_token"); // Clear token
-         router.replace("/(routes)/login"); // Redirect to login page
-       }
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token"); // Clear token
+        router.replace("/(routes)/login"); // Redirect to login page
+      }
       console.log("Error declining booking:", error);
       Alert.alert("Error", "Failed to decline booking. Please try again.");
     }

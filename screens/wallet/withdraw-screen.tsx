@@ -86,17 +86,19 @@ export default function WithdrawScreen() {
         },
       });
 
-      if (hostResponse.data && hostResponse.data.paymentDetails) {
+      console.log(hostResponse.data);
+
+      if (hostResponse.data && hostResponse.data.host.paymentDetails) {
         setBankDetails({
-          accountHolderName: hostResponse.data.paymentDetails.accountHolderName,
-          accountNumber: hostResponse.data.paymentDetails.accountNumber,
-          ifscCode: hostResponse.data.paymentDetails.ifscCode,
-          bankName: hostResponse.data.paymentDetails.bankName,
-          upiid: hostResponse.data.paymentDetails.upiid,
+          accountHolderName: hostResponse.data.host.paymentDetails.accountHolderName,
+          accountNumber: hostResponse.data.host.paymentDetails.accountNumber,
+          ifscCode: hostResponse.data.host.paymentDetails.ifscCode,
+          bankName: hostResponse.data.host.paymentDetails.bankName,
+          upiid: hostResponse.data.host.paymentDetails.upiid,
         });
       }
     } catch (error: any) {
-      if (error.response?.status === 400) {
+      if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
         await AsyncStorage.removeItem("refresh_token");
         router.replace("/(routes)/login");
@@ -135,7 +137,6 @@ export default function WithdrawScreen() {
         Toast.show("Please update your bank details first", {
           type: "error",
         });
-        router.push("/hostprofile/payment-details");
         return;
       }
 
@@ -175,6 +176,8 @@ export default function WithdrawScreen() {
                     },
                   }
                 );
+
+                console.log("withdraw Request", response.data.success);
 
                 if (response.data.success) {
                   Toast.show("Withdrawal request submitted successfully", {
@@ -294,7 +297,6 @@ export default function WithdrawScreen() {
                 </Text>
                 <TouchableOpacity
                   style={styles.updateButton}
-                  onPress={() => router.push("/hostprofile/payment-details")}
                 >
                   <Text style={styles.updateButtonText}>
                     Update Payment Details

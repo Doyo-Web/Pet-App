@@ -1,14 +1,19 @@
 import React from "react";
 import { TabBar } from "@/components/loader/TabBar";
 import useUser from "@/hooks/auth/useUser";
-import { Tabs } from "expo-router";
+import { Tabs, usePathname } from "expo-router";
 import { Image } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 
 export default function TabsLayout() {
+  const pathname = usePathname();
+
+  // Check if we're on the chat/chattwo screen
+  const hideTabBar = pathname === "/chat/chattwo";
+
   return (
     <Tabs
-      tabBar={(props: any) => <TabBar {...props} />}
+      tabBar={(props: any) => (hideTabBar ? null : <TabBar {...props} />)}
       screenOptions={({ route }: { route: RouteProp<any> }) => {
         return {
           tabBarIcon: ({ color }: { color: string }) => {
@@ -26,13 +31,15 @@ export default function TabsLayout() {
             }
             return (
               <Image
-                style={{ width: 5, height: 5, tintColor: color }}
+                style={{ width: 24, height: 24, tintColor: color }}
                 source={iconName}
               />
             );
           },
           headerShown: false,
           tabBarShowLabel: false,
+          // Hide the tab bar for specific screens
+          tabBarStyle: hideTabBar ? { display: "none" } : undefined,
         };
       }}
     >
@@ -40,10 +47,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="host/index" options={{ title: "Host" }} />
       <Tabs.Screen name="booknow/index" options={{ title: "BookNow" }} />
       <Tabs.Screen name="chat/index" options={{ title: "Chat" }} />
-      <Tabs.Screen
-        name="petparents/index"
-        options={{ title: "Pet Profile" }}
-      />
+      <Tabs.Screen name="petparents/index" options={{ title: "Pet Profile" }} />
     </Tabs>
   );
 }
