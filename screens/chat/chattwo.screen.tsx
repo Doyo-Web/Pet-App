@@ -24,15 +24,9 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Toast } from "react-native-toast-notifications";
 import useUser from "@/hooks/auth/useUser";
-import { createSocketConnection } from "@/utils/socket";
 import { SERVER_URI } from "@/utils/uri";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  Feather,
-  Ionicons,
-  AntDesign,
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { Feather, Ionicons, AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { Audio, Video, ResizeMode } from "expo-av";
@@ -51,12 +45,6 @@ interface Message {
   timestamp: string;
 }
 
-interface User {
-  _id: string;
-  fullName: string;
-  avatar?: { url: string };
-}
-
 interface ChatItemProps {
   item: Message;
   isUserMessage: boolean;
@@ -64,67 +52,8 @@ interface ChatItemProps {
   playingAudioId: string | null;
 }
 
-type Participant = {
-  userId: string | number | (string | number)[] | null | undefined;
-  _id: string;
-  fullname: string;
-  email: string;
-  userType?: "host" | "petParent";
-  avatar?: {
-    url: string;
-  };
-};
-
-interface Host {
-  hostProfile: {
-    profileImage?: string;
-  };
-  _id: string;
-  fullName: string;
-  avatar?: {
-    public_id: string;
-    url: string;
-  };
-  email: string;
-}
-
-interface LoggedInUser {
-  _id: string;
-  fullname: string;
-  avatar?: {
-    public_id: string;
-    url: string;
-  };
-  email: string;
-}
-
-interface ApiResponse {
-  hosts?: Host[];
-  loggedInUser: LoggedInUser;
-  message: string;
-  success: boolean;
-}
-
 const ChatScreen: React.FC = () => {
   const { userId } = useLocalSearchParams<{ userId: string }>();
-
-  const getThemeColors = () => {
-    if (userType === "host") {
-      return {
-        primary: "#B5F1E3", // Light mint/teal for header
-        secondary: "#4CD4C0", // Darker mint/teal for buttons and user bubbles
-        text: "#333", // Dark text
-        bubbleText: "#fff", // White text in bubbles
-      };
-    } else {
-      return {
-        primary: "#FFD6D6", // Light pink for header
-        secondary: "#FF9E9E", // Darker pink for buttons and user bubbles
-        text: "#333", // Dark text
-        bubbleText: "#fff", // White text in bubbles
-      };
-    }
-  };
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -135,9 +64,6 @@ const ChatScreen: React.FC = () => {
   const [showMediaOptions, setShowMediaOptions] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [cameraType, setCameraType] = useState<ImagePicker.CameraType>(
-    ImagePicker.CameraType.back
-  );
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [fullScreenMedia, setFullScreenMedia] = useState<{
     type: "image" | "video";
@@ -148,41 +74,59 @@ const ChatScreen: React.FC = () => {
     name: string;
     avatar?: string;
   }>({ name: "Loading..." });
-
   const [shouldAutoScroll, setShouldAutoScroll] = useState<boolean>(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [userType, setUserType] = useState<"host" | "petParent" | null>(null);
 
   const socketRef = useRef<any>(null);
   const flatListRef = useRef<FlatList<Message>>(null);
   const mediaOptionsAnim = useRef(new Animated.Value(0)).current;
   const { user } = useUser();
   const LoggedInuserId = user?._id;
+  const inputRef = useRef<TextInput>(null);
 
-  const [userType, setUserType] = useState<"host" | "petParent" | null>(null);
-  const [currentUser, setCurrentUser] = useState<Participant | null>(null);
-  const [relatedUsers, setRelatedUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const getThemeColors = () => {
+    if (userType === "host") {
+      return {
+        primary: "#B5F1E3",
+        secondary: "#4CD4C0",
+        text: "#333",
+        bubbleText: "#fff",
+      };
+    } else {
+      return {
+        primary: "#FFD6D6",
+        secondary: "#FF9E9E",
+        text: "#333",
+        bubbleText: "#fff",
+      };
+    }
+  };
 
   const themeColors = getThemeColors();
 
-  // Add keyboard event listeners
   useEffect(() => {
     const keyboardWillShowListener =
       Platform.OS === "ios"
         ? Keyboard.addListener("keyboardWillShow", (e) => {
             setKeyboardHeight(e.endCoordinates.height);
+            setKeyboardVisible(true);
           })
         : Keyboard.addListener("keyboardDidShow", (e) => {
             setKeyboardHeight(e.endCoordinates.height);
+            setKeyboardVisible(true);
           });
 
     const keyboardWillHideListener =
       Platform.OS === "ios"
         ? Keyboard.addListener("keyboardWillHide", () => {
             setKeyboardHeight(0);
+            setKeyboardVisible(false);
           })
         : Keyboard.addListener("keyboardDidHide", () => {
             setKeyboardHeight(0);
+            setKeyboardVisible(false);
           });
 
     return () => {
@@ -191,11 +135,9 @@ const ChatScreen: React.FC = () => {
     };
   }, []);
 
-  // Function to fetch user data by userId
   const fetchUserData = useCallback(async () => {
     try {
       if (!userId) return;
-
       const accessToken = await AsyncStorage.getItem("access_token");
       if (!accessToken) throw new Error("No access token found");
 
@@ -203,7 +145,6 @@ const ChatScreen: React.FC = () => {
         headers: { access_token: accessToken },
       });
 
-      // Set chat partner details from the hosts array if available
       if (response.data.user) {
         setChatPartner({
           name: response.data.user.fullname,
@@ -224,43 +165,14 @@ const ChatScreen: React.FC = () => {
     try {
       setLoading(true);
       const accessToken = await AsyncStorage.getItem("access_token");
-
       if (!accessToken) throw new Error("No access token found");
 
       const response = await axios.get(`${SERVER_URI}/user-related-bookings`, {
         headers: { access_token: accessToken },
       });
 
-      const data = response.data as ApiResponse;
-
-      // Determine if user is host or pet parent based on response
-      const isHost = !!data.hosts;
+      const isHost = !!response.data.hosts;
       setUserType(isHost ? "host" : "petParent");
-
-      // Set current user
-      setCurrentUser({
-        ...response.data.loggedInUser,
-        userType: isHost ? "host" : "petParent",
-      });
-
-      // Format the related users with mock data for UI display
-      const mockTimeData = ["11:27 Am", "9:02 Am", "Sunday", "12/01/25"];
-      const mockPetNames = ["Jack's", "Toddy's", "Bruno's", "Chokie's"];
-
-      const formattedUsers = (data.hosts || []).map((host, index) => ({
-        _id: host._id,
-        fullName: host.fullName,
-        avatar: host.avatar,
-        lastMessageTime: mockTimeData[index % mockTimeData.length],
-        petName: isHost
-          ? `${mockPetNames[index % mockPetNames.length]} Pet Parent`
-          : `Pet Boarding`,
-      }));
-
-      setRelatedUsers(formattedUsers);
-      setFilteredUsers(formattedUsers);
-
-      // After fetching general data, fetch specific user data
       await fetchUserData();
     } catch (error: any) {
       if (error.response?.status === 413) {
@@ -314,7 +226,6 @@ const ChatScreen: React.FC = () => {
         );
         setChatId(chatResponse.data._id);
 
-        // Get chat partner info if not already set by fetchData
         if (chatResponse.data.participants && !chatPartner.name) {
           const partner = chatResponse.data.participants.find(
             (p: any) => p._id !== LoggedInuserId
@@ -369,24 +280,40 @@ const ChatScreen: React.FC = () => {
   useEffect(() => {
     if (!LoggedInuserId || !user?.fullname) return;
 
-    const socket = createSocketConnection();
+    const socket = new WebSocket(`ws://${SERVER_URI.split("//")[1]}`);
     socketRef.current = socket;
 
-    socket.emit("joinChat", {
-      fullName: user.fullname,
-      userId,
-      LoggedInuserId,
-    });
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          event: "joinChat",
+          data: {
+            fullName: user.fullname,
+            userId,
+            LoggedInuserId,
+          },
+        })
+      );
+    };
 
-    socket.on("messageReceived", (message: Message) => {
-      if (message && message._id) {
-        setMessages((prev) => [...prev, message]);
-        scrollToBottom();
+    socket.onmessage = (event) => {
+      const { event: eventType, data } = JSON.parse(event.data);
+      if (eventType === "messageReceived") {
+        const message: Message = data;
+        if (message.sender?._id !== LoggedInuserId) {
+          setMessages((prev) => {
+            if (prev.some((msg) => msg._id === message._id)) {
+              return prev;
+            }
+            return [...prev, message];
+          });
+          scrollToBottom();
+        }
       }
-    });
+    };
 
     return () => {
-      socket.disconnect();
+      socket.close();
     };
   }, [LoggedInuserId, user?.fullname, userId]);
 
@@ -398,8 +325,10 @@ const ChatScreen: React.FC = () => {
   }, []);
 
   const scrollToBottom = useCallback(() => {
-    if (shouldAutoScroll) {
-      flatListRef.current?.scrollToEnd({ animated: true });
+    if (shouldAutoScroll && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     }
   }, [shouldAutoScroll]);
 
@@ -407,49 +336,61 @@ const ChatScreen: React.FC = () => {
     async (uri: string, contentType: "image" | "video" | "audio") => {
       if (!chatId || !user?.fullname) return;
 
-      // Re-enable auto-scrolling when sending a new message
       setShouldAutoScroll(true);
-
-      const messageData = {
-        fullName: user.fullname,
-        userId,
-        LoggedInuserId,
-        text: `Sent a ${contentType}`,
-        contentType,
-        mediaUrl: uri,
-      };
-
-      socketRef.current.emit("sendMessage", messageData);
 
       try {
         const accessToken = await AsyncStorage.getItem("access_token");
+        const messageText = `Sent a ${contentType}`;
+
         const response = await axios.post(
           `${SERVER_URI}/${chatId}/messages`,
           {
-            content: messageData.text,
+            content: messageText,
             contentType,
             mediaUrl: uri,
           },
           { headers: { access_token: accessToken! } }
         );
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            _id: response.data._id,
-            sender: { _id: LoggedInuserId!, fullName: user.fullname },
-            content: messageData.text,
-            contentType,
-            mediaUrl: uri,
-            timestamp: response.data.timestamp,
+        const newMsg: Message = {
+          _id: response.data._id,
+          sender: {
+            _id: LoggedInuserId!,
+            fullName: user.fullname,
           },
-        ]);
+          content: messageText,
+          contentType,
+          mediaUrl: uri,
+          timestamp: new Date().toISOString(),
+        };
+
+        setMessages((prev) => {
+          if (prev.some((msg) => msg._id === newMsg._id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
         scrollToBottom();
+
+        socketRef.current.send(
+          JSON.stringify({
+            event: "sendMessage",
+            data: {
+              fullName: user.fullname,
+              userId,
+              LoggedInuserId,
+              text: messageText,
+              contentType,
+              mediaUrl: uri,
+              messageId: response.data._id,
+            },
+          })
+        );
       } catch (error) {
         Toast.show(`Failed to send ${contentType}`, { type: "error" });
       }
     },
-    [chatId, user, LoggedInuserId, scrollToBottom]
+    [chatId, user, LoggedInuserId]
   );
 
   const toggleMediaOptions = useCallback(() => {
@@ -467,39 +408,60 @@ const ChatScreen: React.FC = () => {
       return;
     }
 
-    // Re-enable auto-scrolling when sending a new message
     setShouldAutoScroll(true);
-
-    const messageData = {
-      fullName: user.fullname,
-      userId,
-      LoggedInuserId,
-      text: newMessage,
-      contentType: "text" as const,
-    };
-
-    socketRef.current.emit("sendMessage", messageData);
 
     try {
       const accessToken = await AsyncStorage.getItem("access_token");
+      const messageToSend = newMessage.trim();
+
+      setNewMessage("");
+      if (Platform.OS === "ios") {
+        inputRef.current?.blur();
+      } else {
+        Keyboard.dismiss();
+      }
+
       const response = await axios.post(
         `${SERVER_URI}/${chatId}/messages`,
-        { content: newMessage, contentType: "text" },
+        { content: messageToSend, contentType: "text" },
         { headers: { access_token: accessToken! } }
       );
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: response.data._id,
-          sender: { _id: LoggedInuserId!, fullName: user.fullname },
-          content: newMessage,
-          contentType: "text",
-          timestamp: response.data.timestamp,
+      const newMsg: Message = {
+        _id: response.data._id,
+        sender: {
+          _id: LoggedInuserId!,
+          fullName: user.fullname,
         },
-      ]);
-      setNewMessage("");
-      scrollToBottom();
+        content: messageToSend,
+        contentType: "text",
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => {
+        if (prev.some((msg) => msg._id === newMsg._id)) {
+          return prev;
+        }
+        return [...prev, newMsg];
+      });
+
+      socketRef.current.send(
+        JSON.stringify({
+          event: "sendMessage",
+          data: {
+            fullName: user.fullname,
+            userId,
+            LoggedInuserId,
+            text: messageToSend,
+            contentType: "text",
+            messageId: response.data._id,
+          },
+        })
+      );
+
+      setTimeout(() => {
+        scrollToBottom();
+      }, 300);
     } catch (err) {
       setError("Failed to send message");
     }
@@ -581,7 +543,6 @@ const ChatScreen: React.FC = () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
-      cameraType,
     });
 
     if (!result.canceled && result.assets?.[0]) {
@@ -596,7 +557,7 @@ const ChatScreen: React.FC = () => {
       await sendMediaMessage(manipResult.uri, "image");
     }
     setShowMediaOptions(false);
-  }, [isBookingExpired, cameraType, sendMediaMessage]);
+  }, [isBookingExpired, sendMediaMessage]);
 
   const playAudio = useCallback(
     async (messageId: string, uri?: string) => {
@@ -681,7 +642,7 @@ const ChatScreen: React.FC = () => {
         ]}
       >
         {!isUserMessage && item?.sender?.fullName && (
-          <Text style={styles.chatHeader}>{item.sender.fullName}</Text>
+          <Text style={styles.chatHeader}>{chatPartner.name}</Text>
         )}
         <TouchableOpacity onPress={onPress}>
           <View
@@ -752,10 +713,7 @@ const ChatScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Hide status bar */}
       <StatusBar hidden={true} />
-
-      {/* Chat Header - Made entire header clickable */}
       <TouchableOpacity
         style={[
           styles.headerContainer,
@@ -798,7 +756,6 @@ const ChatScreen: React.FC = () => {
         </View>
       </TouchableOpacity>
 
-      {/* Main content area with KeyboardAvoidingView */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -808,9 +765,7 @@ const ChatScreen: React.FC = () => {
           <FlatList<Message>
             ref={flatListRef}
             data={messages}
-            keyExtractor={(item, index) =>
-              item?._id ? item._id.toString() : `fallback-${index}`
-            }
+            keyExtractor={(item) => item._id}
             onScroll={handleScroll}
             onContentSizeChange={scrollToBottom}
             onLayout={scrollToBottom}
@@ -828,7 +783,13 @@ const ChatScreen: React.FC = () => {
             showsVerticalScrollIndicator={true}
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: isBookingExpired ? 0 : 80 },
+              {
+                paddingBottom: isBookingExpired
+                  ? 0
+                  : keyboardVisible
+                  ? keyboardHeight + 80
+                  : 80,
+              },
             ]}
           />
 
@@ -840,7 +801,6 @@ const ChatScreen: React.FC = () => {
             </View>
           ) : (
             <>
-              {/* Media options container that adjusts with keyboard */}
               {showMediaOptions && (
                 <Animated.View
                   style={[
@@ -855,6 +815,7 @@ const ChatScreen: React.FC = () => {
                         },
                       ],
                       opacity: mediaOptionsAnim,
+                      bottom: keyboardVisible ? keyboardHeight + 56 : 56,
                     },
                   ]}
                 >
@@ -879,7 +840,6 @@ const ChatScreen: React.FC = () => {
                 </Animated.View>
               )}
 
-              {/* Input container */}
               <View style={styles.inputContainer}>
                 <TouchableOpacity
                   style={styles.plusButton}
@@ -892,6 +852,7 @@ const ChatScreen: React.FC = () => {
                   />
                 </TouchableOpacity>
                 <TextInput
+                  ref={inputRef}
                   style={styles.input}
                   value={newMessage}
                   onChangeText={setNewMessage}
@@ -1081,7 +1042,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 56, // Position right above the input container
+    bottom: 56,
     zIndex: 2,
   },
   mediaOption: {
@@ -1143,11 +1104,10 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
   },
-  // Header styles
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#B5F1E3", // Light mint/teal color as shown in the image
+    backgroundColor: "#B5F1E3",
     paddingVertical: 12,
     paddingHorizontal: 16,
     height: 70,
