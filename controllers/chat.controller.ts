@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import Chat, { IChat, IMessage } from "../models/chat.model";
 
 export const getChatList = async (req: Request, res: Response) => {
@@ -38,20 +38,17 @@ export const sendMessage = async (req: Request, res: Response) => {
     const { content, contentType, mediaUrl } = req.body;
     const senderId = req.user?.id;
 
-    // Check if senderId exists (i.e., user is authenticated)
     if (!senderId) {
       return res
         .status(401)
         .json({ message: "Unauthorized: User not authenticated" });
     }
 
-    // Find the chat by ID
     const chat = await Chat.findById(chatId);
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
     }
 
-    // Create the new message object
     const newMessage: IMessage = {
       sender: senderId,
       content,
@@ -60,15 +57,11 @@ export const sendMessage = async (req: Request, res: Response) => {
       timestamp: new Date(),
     };
 
-    // Add the message to the chat and update lastMessage
     chat.messages.push(newMessage);
     chat.lastMessage = newMessage;
     await chat.save();
 
-    // Retrieve the saved message with its _id (MongoDB generates this)
     const savedMessage = chat.messages[chat.messages.length - 1];
-
-    // Respond with the saved message, including its _id
     res.json(savedMessage);
   } catch (error) {
     res.status(500).json({ message: "Error sending message", error });

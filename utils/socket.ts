@@ -1,20 +1,20 @@
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import crypto from "crypto";
-import Chat from "../models/chat.model";
 
 interface JoinChatPayload {
-  fullname: string;
+  fullName: string;
   userId: string;
   LoggedInuserId: string;
 }
 
 interface SendMessagePayload {
-  fullname: string;
+  fullName: string;
   userId: string;
   LoggedInuserId: string;
   text: string;
   contentType: "text" | "image" | "video" | "audio";
   mediaUrl?: string;
+  messageId: string;
 }
 
 const getSecretRoomId = (userId: string, LoggedInuserId: string): string => {
@@ -32,62 +32,45 @@ const initializeSocket = (server: any): void => {
     },
   });
 
-  io.on("connection", (socket: Socket) => {
+  io.on("connection", (socket) => {
     console.log("New client connected");
 
     socket.on(
       "joinChat",
-      ({ fullname, userId, LoggedInuserId }: JoinChatPayload) => {
+      ({ fullName, userId, LoggedInuserId }: JoinChatPayload) => {
         const roomId = getSecretRoomId(userId, LoggedInuserId);
-        console.log(`${fullname} joined Room: ${roomId}`);
+        console.log(`${fullName} joined Room: ${roomId}`);
         socket.join(roomId);
       }
     );
 
     socket.on(
       "sendMessage",
-      async ({
-        fullname,
+      ({
+        fullName,
         userId,
         LoggedInuserId,
         text,
         contentType,
         mediaUrl,
+        messageId,
       }: SendMessagePayload) => {
         try {
           const roomId = getSecretRoomId(userId, LoggedInuserId);
 
-          const chat = await Chat.findOne({
-            participants: { $all: [userId, LoggedInuserId] },
-          });
-
-          if (!chat) throw new Error("Chat not found");
-
-          const newMessage = {
-            sender: LoggedInuserId,
-            content: text,
-            contentType,
-            mediaUrl,
-            timestamp: new Date(),
-          };
-
-          chat.messages.push(newMessage);
-          chat.lastMessage = newMessage;
-          await chat.save();
-
-          io.to(roomId).emit("messageReceived", {
-            _id: newMessage.timestamp.toISOString(),
+          socket.to(roomId).emit("messageReceived", {
+            _id: messageId,
             sender: {
               _id: LoggedInuserId,
-              fullName: fullname,
+              fullName: fullName,
             },
             content: text,
             contentType,
             mediaUrl,
-            timestamp: newMessage.timestamp.toISOString(),
+            timestamp: new Date().toISOString(),
           });
 
-          console.log(`${fullname} sent ${contentType}: ${text}`);
+          console.log(`${fullName} sent ${contentType}: ${text}`);
         } catch (err) {
           console.error("Error handling message:", err);
         }
