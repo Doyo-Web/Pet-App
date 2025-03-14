@@ -1,4 +1,6 @@
-import React, { Key, useCallback, useState } from "react";
+"use client";
+
+import { type Key, useCallback, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -23,7 +25,6 @@ import {
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
 import useUser from "@/hooks/auth/useUser";
 import {
   widthPixel,
@@ -31,41 +32,38 @@ import {
   fontPixel,
   pixelSizeVertical,
   pixelSizeHorizontal,
-} from "../../utils/responsive";
+} from "@/utils/responsive";
 import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
+import React from "react";
 
 const { width, height } = Dimensions.get("window");
 
 interface Pet {
   petName: string;
-  petImages: any;
+  petImages: Array<{
+    url: string;
+    public_id: string;
+  }>;
   _id: Key | null | undefined;
-  id: string;
-  name: string;
-  image: string | null;
 }
 
 export default function PetParentProfile() {
   const [expanded, setExpanded] = useState(false);
   const [animation] = useState(new Animated.Value(0));
 
-  // const { petProfiles, isLoading, error } = useSelector(
-  //   (state: RootState) => state.petProfile
-  // );
-
   const [petProfiles, setPetProfiles] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-   const handlelogout = async () => {
-     await AsyncStorage.removeItem("access_token");
-     await AsyncStorage.removeItem("refresh_token");
-     router.push("/(routes)/login");
-   };
-  
+
+  const handlelogout = async () => {
+    await AsyncStorage.removeItem("access_token");
+    await AsyncStorage.removeItem("refresh_token");
+    router.push("/(routes)/login");
+  };
+
   useFocusEffect(
     useCallback(() => {
       const fetchPetProfiles = async () => {
@@ -76,19 +74,17 @@ export default function PetParentProfile() {
             headers: { access_token: accessToken },
           });
 
-          console.log("Pet Profile Data", response.data);
           if (response.data.success) {
             setPetProfiles(response.data.data);
           } else {
             setError("Failed to fetch pet profiles");
           }
         } catch (error: any) {
-
-           if (error.response?.status === 413) {
-             await AsyncStorage.removeItem("access_token");
-             await AsyncStorage.removeItem("refresh_token"); // Clear token
-             router.replace("/(routes)/login"); // Redirect to login page
-           }
+          if (error.response?.status === 413) {
+            await AsyncStorage.removeItem("access_token");
+            await AsyncStorage.removeItem("refresh_token");
+            router.replace("/(routes)/login");
+          }
           setError("An error occurred while fetching pet profiles");
         } finally {
           setIsLoading(false);
@@ -99,7 +95,7 @@ export default function PetParentProfile() {
     }, [])
   );
 
-  const { user, setRefetch, loading } = useUser();
+  const { user } = useUser();
   const ruser = useSelector((state: any) => state.user.user);
 
   const navigateToGallery = () => {
@@ -122,9 +118,16 @@ export default function PetParentProfile() {
     router.push("/(drawer)/(tabs)/profile");
   };
 
+  const editPetProfile = (petId: string) => {
+    router.push({
+      pathname: "/(drawer)/(tabs)/profile",
+      params: { id: petId },
+    });
+  };
+
   // Flatten all pet images into a single array
   const allPetImages = petProfiles.flatMap((pet) =>
-    pet.petImages.map((img: { url: any; }) => ({ url: img.url, petName: pet.petName }))
+    pet.petImages.map((img) => ({ url: img.url, petName: pet.petName }))
   );
 
   return (
@@ -200,22 +203,26 @@ export default function PetParentProfile() {
           {expanded && (
             <View style={styles.petProfilesContent}>
               <View style={styles.petList}>
-                {petProfiles && petProfiles.map((pet) => (
-                  <View key={pet._id} style={styles.petItem}>
-                    <Image
-                      source={{
-                        uri:
-                          pet.petImages[0]?.url ||
-                          "https://placekitten.com/200/200",
-                      }}
-                      style={styles.petImage}
-                    />
-                    <Text style={styles.petName}>{pet.petName}</Text>
-                    <TouchableOpacity style={styles.editButton}>
-                      <Pencil color="#666" size={16} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                {petProfiles &&
+                  petProfiles.map((pet) => (
+                    <View key={pet._id} style={styles.petItem}>
+                      <Image
+                        source={{
+                          uri:
+                            pet.petImages[0]?.url ||
+                            "https://placekitten.com/200/200",
+                        }}
+                        style={styles.petImage}
+                      />
+                      <Text style={styles.petName}>{pet.petName}</Text>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => editPetProfile(pet._id as string)}
+                      >
+                        <Pencil color="#666" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
                 <TouchableOpacity style={styles.addButton} onPress={addNewPet}>
                   <View style={styles.plusCircle}>
                     <Plus color="#000" size={24} />
@@ -284,9 +291,9 @@ export default function PetParentProfile() {
           <TouchableOpacity>
             <Text style={styles.reportText}>Report a problem?</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handlelogout}>
             <LogOut color="#ff4444" size={20} />
-            <Text style={styles.logoutText} onPress={handlelogout}>Log Out</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

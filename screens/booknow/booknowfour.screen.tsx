@@ -1,3 +1,4 @@
+// BillingScreen.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -18,11 +19,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SERVER_URI } from "../../utils/uri";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
 import WebView from "react-native-webview";
+import { SERVER_URI } from "@/utils/uri";
 import React from "react";
 
 const { width } = Dimensions.get("window");
@@ -41,7 +41,7 @@ interface Booking {
       pricingVegMeal: string;
       pricingNonVegMeal: string;
     };
-  };
+  } | null;
   startDateTime: string;
   endDateTime: string;
   diet: string;
@@ -52,6 +52,14 @@ interface PaymentResponse {
   success: boolean;
   orderId: string;
   paymentLink: string;
+}
+
+interface RootState {
+  booking: {
+    bookingData: {
+      _id: string;
+    } | null;
+  };
 }
 
 export default function BillingScreen() {
@@ -67,7 +75,6 @@ export default function BillingScreen() {
   const webViewRef = useRef<WebView>(null);
 
   const router = useRouter();
-
   const bookingData = useSelector(
     (state: RootState) => state.booking.bookingData
   );
@@ -75,7 +82,6 @@ export default function BillingScreen() {
   useEffect(() => {
     fetchBookingData();
 
-    // Handle back button press on Android
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
@@ -87,7 +93,6 @@ export default function BillingScreen() {
       }
     );
 
-    // Cleanup function
     return () => {
       if (paymentCheckInterval) {
         clearInterval(paymentCheckInterval);
@@ -96,7 +101,6 @@ export default function BillingScreen() {
     };
   }, [showWebView, paymentCheckInterval]);
 
-  // Check payment status periodically after initiating payment
   useEffect(() => {
     if (paymentCheckInterval) {
       clearInterval(paymentCheckInterval);
@@ -106,7 +110,7 @@ export default function BillingScreen() {
     if (orderId && showWebView) {
       const interval = setInterval(() => {
         checkPaymentStatus(orderId);
-      }, 5000); // Check every 5 seconds
+      }, 5000);
 
       setPaymentCheckInterval(interval);
     }
@@ -138,8 +142,8 @@ export default function BillingScreen() {
 
       console.log("Booking data response:", response.data);
 
-      if (response.data.bookings) {
-        setBooking(response.data.bookings);
+      if (response.data.bookings && response.data.bookings.length > 0) {
+        setBooking(response.data.bookings[0]);
       } else {
         throw new Error("No bookings found");
       }
@@ -148,8 +152,8 @@ export default function BillingScreen() {
 
       if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
+        await AsyncStorage.removeItem("refresh_token");
+        router.replace("/(routes)/login");
       } else {
         Alert.alert(
           "Error",
@@ -180,9 +184,9 @@ export default function BillingScreen() {
           bookingId: booking._id,
           amount: grandTotal.toFixed(2),
           currency: "INR",
-          customerName: booking.selectedHost.fullName,
-          customerPhone: "9999999999", // You might want to get this from user data
-          customerEmail: "customer@example.com", // You might want to get this from user data
+          customerName: booking.selectedHost?.fullName || "Unknown",
+          customerPhone: "9999999999",
+          customerEmail: "customer@example.com",
         },
         {
           headers: {
@@ -199,20 +203,14 @@ export default function BillingScreen() {
         setOrderId(response.data.orderId);
         setShowWebView(true);
       } else {
-        throw new Error(
-          "Invalid payment response: " + JSON.stringify(response.data)
-        );
+        throw new Error("Invalid payment response");
       }
     } catch (error: any) {
       console.error("Payment initiation error:", error);
-      let errorMessage = "Failed to initiate payment. Please try again.";
-
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        errorMessage = error.response.data.message || errorMessage;
-      }
-
-      Alert.alert("Payment Error", errorMessage);
+      Alert.alert(
+        "Payment Error",
+        "Failed to initiate payment. Please try again."
+      );
     } finally {
       setPaymentLoading(false);
     }
@@ -240,19 +238,14 @@ export default function BillingScreen() {
   };
 
   const handlePaymentSuccess = () => {
-    // Clear any existing interval
     if (paymentCheckInterval) {
       clearInterval(paymentCheckInterval);
       setPaymentCheckInterval(null);
     }
 
-    // Close the WebView if it's open
     setShowWebView(false);
-
-    // Update payment status
     setPaymentSuccess(true);
 
-    // Navigate to the booknowsuccess screen
     if (booking) {
       router.push("/(drawer)/(tabs)/booknow/booknowsuccess");
     }
@@ -267,35 +260,24 @@ export default function BillingScreen() {
   };
 
   const handleWebViewNavigationStateChange = (navState: any) => {
-    // Check if the URL contains success or failure indicators
     const url = navState.url;
     console.log("WebView navigated to:", url);
 
-    // Check for various success indicators in the URL
     if (
       url.includes("payment_success=true") ||
       url.includes("order_status=PAID") ||
-      url.includes("status=SUCCESS") ||
-      url.includes("link_status=PAID") ||
-      url.includes("payment_status=SUCCESS") ||
-      url.includes("txStatus=SUCCESS")
+      url.includes("status=SUCCESS")
     ) {
       handlePaymentSuccess();
-    }
-    // Check for various failure indicators in the URL
-    else if (
+    } else if (
       url.includes("payment_failure=true") ||
       url.includes("order_status=FAILED") ||
-      url.includes("status=FAILURE") ||
-      url.includes("link_status=EXPIRED") ||
-      url.includes("payment_status=FAILED") ||
-      url.includes("txStatus=FAILED")
+      url.includes("status=FAILURE")
     ) {
       if (paymentCheckInterval) {
         clearInterval(paymentCheckInterval);
         setPaymentCheckInterval(null);
       }
-
       setShowWebView(false);
       Alert.alert(
         "Payment Failed",
@@ -304,70 +286,26 @@ export default function BillingScreen() {
     }
   };
 
-  // Add JavaScript to inject into WebView to detect payment completion
   const injectedJavaScript = `
     (function() {
-      // Function to check if payment is complete
       function checkPaymentCompletion() {
-        // Look for success elements or text on the page
-        const successElements = [
-          document.querySelector('.payment-success'),
-          document.querySelector('.success-message'),
-          document.querySelector('.transaction-success'),
-          document.getElementById('success-message'),
-          document.querySelector('[data-status="success"]'),
-          document.querySelector('.payment-status-success')
-        ];
-        
-        // Check if any success elements exist
-        const hasSuccessElement = successElements.some(el => el !== null);
-        
-        // Check for success text in the page
         const pageText = document.body.innerText.toLowerCase();
-        const hasSuccessText = 
+        if (
           pageText.includes('payment successful') || 
-          pageText.includes('payment completed') || 
-          pageText.includes('transaction successful') ||
-          pageText.includes('payment success') ||
-          pageText.includes('order confirmed');
-        
-        if (hasSuccessElement || hasSuccessText) {
+          pageText.includes('transaction successful')
+        ) {
           window.ReactNativeWebView.postMessage(JSON.stringify({type: 'paymentSuccess'}));
         }
-        
-        // Look for failure elements or text
-        const failureElements = [
-          document.querySelector('.payment-failure'),
-          document.querySelector('.error-message'),
-          document.querySelector('.transaction-failed'),
-          document.getElementById('error-message'),
-          document.querySelector('[data-status="failed"]'),
-          document.querySelector('.payment-status-failed')
-        ];
-        
-        // Check if any failure elements exist
-        const hasFailureElement = failureElements.some(el => el !== null);
-        
-        // Check for failure text in the page
-        const hasFailureText = 
+        if (
           pageText.includes('payment failed') || 
-          pageText.includes('transaction failed') || 
-          pageText.includes('payment cancelled') ||
-          pageText.includes('payment declined') ||
-          pageText.includes('payment error');
-        
-        if (hasFailureElement || hasFailureText) {
+          pageText.includes('transaction failed')
+        ) {
           window.ReactNativeWebView.postMessage(JSON.stringify({type: 'paymentFailure'}));
         }
       }
       
-      // Run the check when page loads
       checkPaymentCompletion();
-      
-      // Also run the check periodically
       setInterval(checkPaymentCompletion, 1000);
-      
-      // And run it when DOM changes
       const observer = new MutationObserver(checkPaymentCompletion);
       observer.observe(document.body, { childList: true, subtree: true });
     })();
@@ -429,6 +367,14 @@ export default function BillingScreen() {
         <Text style={styles.errorText}>
           Failed to load billing information.
         </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!booking.selectedHost) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorText}>No host selected for this booking.</Text>
       </SafeAreaView>
     );
   }
@@ -525,7 +471,6 @@ export default function BillingScreen() {
         )}
       </ScrollView>
 
-      {/* Payment WebView Modal */}
       <Modal
         visible={showWebView}
         onRequestClose={handleCloseWebView}
@@ -570,10 +515,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: normalize(20),
   },
   header: {
     backgroundColor: "#F96247",

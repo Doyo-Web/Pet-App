@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { AntDesign, FontAwesome } from "@expo/vector-icons"; // Ensure correct import for FontAwesome
 import { useFonts } from "expo-font"; // Correct import
 import {
   View,
   Text,
+  Alert,
   StyleSheet,
   Image,
   TouchableOpacity,
@@ -34,6 +35,46 @@ import {
   responsiveWidth,
 } from "react-native-responsive-dimensions";
 import { router } from "expo-router";
+import * as Notifications from "expo-notifications";
+import { SERVER_URI } from "@/utils/uri";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+
+// Function to register for push notifications and send token to server
+async function registerForPushNotificationsAsync() {
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      console.log("Failed to get push token: Permission not granted");
+      return;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log("Push token:", token);
+
+    // Send token to server
+    const accessToken = await AsyncStorage.getItem("access_token");
+    await axios.put(
+      `${SERVER_URI}/update-user-push-token`, // Add this endpoint
+      { pushToken: token },
+      { headers: { access_token: accessToken } }
+    );
+
+    return token;
+  } catch (error) {
+    console.error("Error getting push token:", error);
+  }
+}
+
+
 
 const { width } = Dimensions.get("window");
 
@@ -51,10 +92,13 @@ interface Testimonial {
 }
 
 const HomeScreen: React.FC = () => {
+  
+  // Call this function when the app starts or user logs in
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
 
   const { user } = useUser();
-
-  console.log(process.env.NODE_ENV);
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList<Testimonial>>(null);
@@ -85,7 +129,7 @@ const HomeScreen: React.FC = () => {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
     setCurrentIndex(index);
   };
- 
+
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
     Nunito_500Medium,
@@ -95,7 +139,6 @@ const HomeScreen: React.FC = () => {
     SpaceMono: require("../../assets/fonts/SpaceMono-Regular.ttf"), // Ensure correct font path
   });
 
-  
   if (!fontsLoaded) {
     return (
       <View style={styles.loader}>
@@ -148,7 +191,7 @@ const HomeScreen: React.FC = () => {
 
   const handlehost = () => {
     router.push("/(drawer)/(tabs)/host");
-  }
+  };
 
   const renderCarouselItem = (item: CarouselItem) => {
     return (
@@ -170,7 +213,6 @@ const HomeScreen: React.FC = () => {
         return "rgba(249, 98, 71, 0.8)"; // Fallback color
     }
   };
-  
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -232,10 +274,7 @@ const HomeScreen: React.FC = () => {
                 Earn extra income and unlock new opportunities by sharing your
                 space with love for pets.
               </Text>
-              <TouchableOpacity
-                style={styles.ctaButton}
-                onPress={handlehost}
-              >
+              <TouchableOpacity style={styles.ctaButton} onPress={handlehost}>
                 <Text style={styles.ctaText}>Join our Community</Text>
               </TouchableOpacity>
             </View>
