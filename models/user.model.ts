@@ -10,6 +10,7 @@ export interface IUser extends Document {
   fullname: string;
   phonenumber: string;
   email: string;
+  pushToken?: string;
   password: string;
   hearaboutus: string;
   avatar: {
@@ -132,6 +133,10 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    pushToken: {
+     type: String,
+     required: false,
+  }
   },
   { timestamps: true }
 ); 

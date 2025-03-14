@@ -5,6 +5,7 @@ import {
   deleteHostProfile,
   getHost,
   getHostBookings,
+  updatehostpushtoken,
 } from "../controllers/hostprofile.controller";
 
 const hostProfileRouter = express.Router();
@@ -37,4 +38,10 @@ hostProfileRouter.get(
 // Route to delete a host profile
 hostProfileRouter.delete("/hostprofile-delete", isAuthenticated, deleteHostProfile);
 
+
+hostProfileRouter.put(
+  "/update-host-push-token",
+  isAuthenticated,
+  updatehostpushtoken
+);
 export default hostProfileRouter;

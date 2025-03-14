@@ -20,6 +20,8 @@ const app: Application = express();
 const server = http.createServer(app);
 initializeSocket(server);
 
+
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(
@@ -38,6 +40,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 app.use(upload.fields([{ name: "petImages", maxCount: 10 }]));
+
 
 app.use("/api/v1", userRouter);
 app.use("/api/v1", petProfileRouter);

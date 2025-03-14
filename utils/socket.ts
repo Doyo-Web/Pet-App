@@ -1,5 +1,6 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import crypto from "crypto";
+import { notifyNewMessage } from "./pushNotification";
 
 interface JoinChatPayload {
   fullName: string;
@@ -32,7 +33,7 @@ const initializeSocket = (server: any): void => {
     },
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", (socket: Socket) => {
     console.log("New client connected");
 
     socket.on(
@@ -46,7 +47,7 @@ const initializeSocket = (server: any): void => {
 
     socket.on(
       "sendMessage",
-      ({
+      async ({
         fullName,
         userId,
         LoggedInuserId,
@@ -58,19 +59,25 @@ const initializeSocket = (server: any): void => {
         try {
           const roomId = getSecretRoomId(userId, LoggedInuserId);
 
-          socket.to(roomId).emit("messageReceived", {
+          const message = {
             _id: messageId,
             sender: {
               _id: LoggedInuserId,
-              fullName: fullName,
+              fullName,
             },
             content: text,
             contentType,
             mediaUrl,
             timestamp: new Date().toISOString(),
-          });
+          };
+
+          // Emit the message to the room
+          socket.to(roomId).emit("messageReceived", message);
 
           console.log(`${fullName} sent ${contentType}: ${text}`);
+
+          // Send push notification to the recipient (userId)
+          await notifyNewMessage(userId, fullName, text);
         } catch (err) {
           console.error("Error handling message:", err);
         }

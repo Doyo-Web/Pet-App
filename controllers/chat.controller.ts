@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import Chat, { IChat, IMessage } from "../models/chat.model";
+import { notifyNewMessage } from "../utils/pushNotification";
+import userModel from "../models/user.model";
 
 export const getChatList = async (req: Request, res: Response) => {
   try {
@@ -62,6 +64,18 @@ export const sendMessage = async (req: Request, res: Response) => {
     await chat.save();
 
     const savedMessage = chat.messages[chat.messages.length - 1];
+
+    // Find the recipient (the other participant)
+    const recipientId = chat.participants
+      .find((p) => p.toString() !== senderId)
+      ?.toString();
+    if (recipientId) {
+      const sender = await userModel.findById(senderId);
+      if (sender) {
+        await notifyNewMessage(recipientId, sender.fullname, content);
+      }
+    }
+
     res.json(savedMessage);
   } catch (error) {
     res.status(500).json({ message: "Error sending message", error });

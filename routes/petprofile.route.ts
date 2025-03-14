@@ -1,17 +1,32 @@
 import express from "express";
 import { isAuthenticated } from "../middleware/auth";
-import { CreatePetProfile, GetPetProfile } from "../controllers/petprofile.controller";
-import { uploadPetImages } from "../middleware/uploadMiddleware";
+import {
+  CreatePetProfile,
+  GetPetProfile,
+  GetSinglePetProfile,
+  UpdatePetProfile,
+} from "../controllers/petprofile.controller";
 
 const petprofileRouter = express.Router();
 
-// Make sure this is correct
-petprofileRouter.post(
-  "/petprofile-create",
+// Create a new pet profile
+petprofileRouter.post("/petprofile-create", isAuthenticated, CreatePetProfile);
+
+// Get all pet profiles for the logged-in user
+petprofileRouter.get("/petprofile-get", isAuthenticated, GetPetProfile);
+
+// Get a single pet profile by ID
+petprofileRouter.get(
+  "/petprofile-get/:id",
   isAuthenticated,
-  CreatePetProfile
+  GetSinglePetProfile
 );
 
-petprofileRouter.get("/petprofile-get", isAuthenticated, GetPetProfile);
+// Update a pet profile by ID
+petprofileRouter.post(
+  "/petprofile-update/:id",
+  isAuthenticated,
+  UpdatePetProfile
+);
 
 export default petprofileRouter;
