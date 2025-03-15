@@ -40,7 +40,6 @@ import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 // Function to register for push notifications and send token to server
 async function registerForPushNotificationsAsync() {
   try {

@@ -1,4 +1,6 @@
-import React, { useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +9,19 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useRouter } from "expo-router";
+import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
+import React from "react";
 
-
+// Configure how notifications are handled when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -26,49 +31,135 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync() {
-  let token: string | undefined;
+  let token;
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  // Check if device is physical (not simulator/emulator)
+  if (Device.isDevice) {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    // If permission not granted, request it
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      Alert.alert("Failed to get push token for push notification!");
+      return;
+    }
+
+    try {
+      // For production builds
+      if (!__DEV__) {
+        try {
+          // Try to get device push token first (for standalone apps)
+          token = (await Notifications.getDevicePushTokenAsync()).data;
+          console.log("Device push token obtained:", token);
+        } catch (error) {
+          console.log(
+            "Error getting device push token, falling back to Expo token:",
+            error
+          );
+        }
+      }
+
+      // Fallback to Expo push token if device token fails or in development
+      if (!token) {
+        token = (
+          await Notifications.getExpoPushTokenAsync({
+            projectId: "f839693f-10e9-4880-aabd-d57006db94a3",
+          })
+        ).data;
+        console.log("Expo push token obtained:", token);
+      }
+    } catch (error) {
+      console.error("Error getting push token:", error);
+    }
+  } else {
+    console.log("Must use physical device for Push Notifications");
   }
 
-  if (finalStatus !== "granted") {
-    Alert.alert("Failed to get push token for push notification!");
-    return;
+  // For Android, set notification channel
+  if (Platform.OS === "android") {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#20B2AA",
+      sound: "notification.mp3", // Make sure this matches your sound file name
+    });
   }
 
-  token = (await Notifications.getExpoPushTokenAsync()).data;
   return token;
 }
 
 const HostSuccessScreen = () => {
-    useEffect(() => {
-       const setupPushNotifications = async () => {
-         try {
-           const token = await registerForPushNotificationsAsync();
-           if (token) {
-             const accessToken = await AsyncStorage.getItem("access_token");
-             await axios.put(
-               `${SERVER_URI}/update-host-push-token`,
-               { pushToken: token },
-               { headers: { access_token: accessToken || "" } }
-             );
-             console.log("Push token registered:", token);
-           }
-         } catch (error) {
-           console.log("Error registering push token:", error);
-         }
-       };
-  
-       setupPushNotifications();
-     }, []);
+  const [isTokenRegistered, setIsTokenRegistered] = useState(false);
 
-  const router = useRouter();
-  
+  useEffect(() => {
+    const setupPushNotifications = async () => {
+      try {
+        // Register for push notifications
+        const token = await registerForPushNotificationsAsync();
+
+        if (token) {
+          console.log("Attempting to register token with server:", token);
+          const accessToken = await AsyncStorage.getItem("access_token");
+
+          if (!accessToken) {
+            console.error("No access token found");
+            return;
+          }
+
+          // Register token with server
+          const response = await axios.put(
+            `${SERVER_URI}/update-host-push-token`,
+            { pushToken: token },
+            { headers: { access_token: accessToken } }
+          );
+
+          if (response.data.success) {
+            console.log("Push token registered successfully:", token);
+            setIsTokenRegistered(true);
+
+            // Save token locally for reference
+            await AsyncStorage.setItem("push_token", token);
+          } else {
+            console.error(
+              "Server rejected push token registration:",
+              response.data
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error registering push token:", error);
+
+        // Retry once after a delay if failed
+        setTimeout(() => {
+          if (!isTokenRegistered) {
+            setupPushNotifications();
+          }
+        }, 5000);
+      }
+    };
+
+    // Set up notification listener
+    const subscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Notification received:", notification);
+      }
+    );
+
+    setupPushNotifications();
+
+    // Clean up
+    return () => {
+      subscription.remove();
+    };
+  }, [isTokenRegistered]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
@@ -157,14 +248,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   checkmarkContainer: {
-    width: 200, // Adjusted size
+    width: 200,
     height: 200,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
   },
   checkmark: {
-    width: 200, // Adjusted size to match the UI
+    width: 200,
     height: 200,
     objectFit: "cover",
   },
@@ -178,39 +269,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingVertical: 4,
     marginBottom: 20,
-    borderColor: "#000", // Slight border color to make it pop
+    borderColor: "#000",
     borderWidth: 2,
-    shadowColor: "#F96247", // Shadow color like in the UI (reddish-orange)
-    shadowOffset: { width: 4, height: 4 }, // Light shadow
+    shadowColor: "#F96247",
+    shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 0.5,
-    shadowRadius: 8, // Blurring the shadow to make it smooth
-    elevation: 6, // Slight elevation for Android
+    shadowRadius: 8,
+    elevation: 6,
   },
   awesomeText: {
-    color: "#000", // Black text like the UI
+    color: "#000",
     fontSize: 18,
     fontFamily: "OtomanopeeOne",
   },
   descriptionText: {
-    color: "#000", // Text is in black, matching UI
+    color: "#000",
     fontSize: 18,
     textAlign: "center",
-    lineHeight: 25, // To better handle the text spacing
+    lineHeight: 25,
     marginTop: 20,
     fontFamily: "Nunito_600SemiBold",
   },
   buttonContainer: {
-    marginTop: 68, // Adjusted to move buttons upward as per UI
+    marginTop: 68,
     width: "100%",
   },
   viewProfileButton: {
-    backgroundColor: "#00D1C1", // Matches button background color
+    backgroundColor: "#00D1C1",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,
     width: "100%",
     alignItems: "center",
-    marginBottom: 10, // Adjusted for spacing
+    marginBottom: 10,
   },
   viewProfileText: {
     color: "#000",
@@ -219,7 +310,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   homePageButton: {
-    borderColor: "#00D1C1", // Matches border color
+    borderColor: "#00D1C1",
     borderWidth: 2,
     borderRadius: 10,
     paddingVertical: 12,
@@ -228,7 +319,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   homePageText: {
-    color: "#00D1C1", // Text color matches UI button
+    color: "#00D1C1",
     fontSize: 18,
     fontWeight: "bold",
   },
