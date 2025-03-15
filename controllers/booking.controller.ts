@@ -1,13 +1,13 @@
-import { NextFunction, Request, Response } from "express";
-import Booking, { IBooking } from "../models/booking.model";
+import type { NextFunction, Request, Response } from "express";
+import Booking from "../models/booking.model";
 import HostProfile from "../models/hostprofile.model";
-import mongoose, { Types } from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import Razorpay from "razorpay";
 import userModel from "../models/user.model";
 import HostProfileModel, {
-  IHostProfileModel,
+  type IHostProfileModel,
 } from "../models/hostprofile.model";
-import User, { IUser } from "../models/user.model";
+import User, { type IUser } from "../models/user.model";
 import { Expo } from "expo-server-sdk";
 import ErrorHandler from "../utils/ErrorHandler";
 import { catchAsyncError } from "../middleware/catchAsyncErrors";
@@ -19,17 +19,22 @@ interface IHostWithPushToken extends IHostProfileModel {
   pushToken?: string; // Add pushToken to host profile
 }
 
-// Function to send push notification
+// Function to send push notification with improved error handling
 async function sendPushNotification(
   pushToken: string,
   title: string,
   body: string,
   data: object = {}
-): Promise<void> {
+): Promise<any> {
   try {
-    if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`Push token ${pushToken} is not a valid Expo push token`);
-      return;
+    // Validate the push token - accept both Expo and FCM tokens
+    if (
+      !Expo.isExpoPushToken(pushToken) &&
+      !pushToken.includes("ExponentPushToken") &&
+      !pushToken.startsWith("fcm:")
+    ) {
+      console.error(`Push token ${pushToken} is not a valid token`);
+      return { success: false, error: "Invalid push token" };
     }
 
     const message = {
@@ -38,14 +43,100 @@ async function sendPushNotification(
       title,
       body,
       data,
+      priority: "high",
     };
 
-    const [ticket] = await expo.sendPushNotificationsAsync([message]);
-    console.log(`Push notification sent successfully to host. Ticket:`, ticket);
+    try {
+      const [ticket] = await expo.sendPushNotificationsAsync([message]);
+      console.log(`Push notification sent successfully. Ticket:`, ticket);
+
+      if (ticket.status === "error") {
+        console.error(`Error sending notification: ${ticket.message}`);
+        return {
+          success: false,
+          error: ticket.message,
+          details: ticket.details,
+        };
+      }
+
+      return { success: true, ticket };
+    } catch (error) {
+      console.error(`Error sending push notification:`, error);
+      return { success: false, error };
+    }
   } catch (error) {
-    console.error(`Error sending push notification:`, error);
-    throw error;
+    console.error(`Error in sendPushNotification:`, error);
+    return { success: false, error };
   }
+}
+
+// Function to send push notifications to multiple recipients
+async function sendPushNotifications(
+  pushTokens: string[],
+  title: string,
+  body: string,
+  data: object = {}
+) {
+  // Filter out invalid tokens
+  const validTokens = pushTokens.filter(
+    (token) =>
+      Expo.isExpoPushToken(token) ||
+      token.includes("ExponentPushToken") ||
+      token.startsWith("fcm:")
+  );
+
+  if (validTokens.length === 0) {
+    console.log("No valid push tokens found");
+    return { success: false, message: "No valid tokens" };
+  }
+
+  // Create messages for each token
+  const messages = validTokens.map((token) => ({
+    to: token,
+    sound: "default" as const,
+    title,
+    body,
+    data: { ...data, type: "new_booking" },
+    priority: "high",
+  }));
+
+  // Split messages into chunks to avoid rate limiting
+  const chunks = expo.chunkPushNotifications(messages);
+  const tickets = [];
+
+  // Send each chunk
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+      console.log("Push notifications sent successfully:", ticketChunk);
+    } catch (error) {
+      console.error("Error sending push notifications:", error);
+    }
+  }
+
+  // Check for errors in tickets
+  const receiptIds = [];
+  const errors = [];
+
+  for (const ticket of tickets) {
+    if (ticket.id) {
+      receiptIds.push(ticket.id);
+    }
+    if (ticket.status === "error") {
+      errors.push({
+        message: ticket.message,
+        details: ticket.details,
+      });
+    }
+  }
+
+  return {
+    success: tickets.length > 0,
+    tickets,
+    receiptIds,
+    errors: errors.length > 0 ? errors : null,
+  };
 }
 
 const razorpay = new Razorpay({
@@ -100,97 +191,6 @@ export const savePaymentDetails = async (req: Request, res: Response) => {
   }
 };
 
-// Controller to create a new booking
-// export const createBooking = async (req: Request, res: Response) => {
-//   try {
-//     const { pets, startDate, startTime, endDate, endTime, city, location, diet } =
-//       req.body;
-//     const userId = (req as any).user.id; // Extract the logged-in user's ID
-
-//     // Create start and end date times from the provided date and time
-//     const startDateTime = new Date(startDate);
-//     startDateTime.setHours(
-//       new Date(startTime).getHours(),
-//       new Date(startTime).getMinutes()
-//     );
-//     const endDateTime = new Date(endDate);
-//     endDateTime.setHours(
-//       new Date(endTime).getHours(),
-//       new Date(endTime).getMinutes()
-//     );
-
-//     // Ensure pets have the correct structure for storing
-//     const formattedPets = pets.map((pet: any) => ({
-//       id: pet.id,
-//       name: pet.name,
-//       image: pet.image,
-//     }));
-
-//     // Create a new booking instance
-//     const newBooking: IBooking = new Booking({
-//       userId,
-//       pets: formattedPets,
-//       startDateTime,
-//       endDateTime,
-//       city,
-//       location: {
-//         type: location.type,
-//         address: location.address,
-//       },
-//       diet,
-//       acceptedHosts: [], // Initialize with an empty array, to be populated later
-//     });
-
-//     // Save the new booking to the database
-//     await newBooking.save();
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Booking created successfully",
-//       booking: newBooking,
-//     });
-//   } catch (error) {
-//     console.log("Error creating booking:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Error creating booking",
-//       error: (error as Error).message,
-//     });
-//   }
-// };
-
-// Function to send push notifications
-async function sendPushNotifications(
-  pushTokens: string[],
-  title: string,
-  body: string
-) {
-  const messages = pushTokens
-    .filter((token) => Expo.isExpoPushToken(token))
-    .map((token) => ({
-      to: token,
-      sound: "default" as const,
-      title,
-      body,
-      data: { type: "new_booking" },
-    }));
-
-  const chunks = expo.chunkPushNotifications(messages);
-  const tickets = [];
-
-  for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-      console.log("Push notifications sent successfully to hosts:", ticketChunk);
-    } catch (error) {
-      console.error("Error sending push notifications:", error);
-    }
-  }
-
-  return tickets;
-}
-
 // Controller to create a new booking and notify hosts
 export const createBooking = async (req: Request, res: Response) => {
   try {
@@ -233,7 +233,7 @@ export const createBooking = async (req: Request, res: Response) => {
     }));
 
     // Create new booking
-    const newBooking: IBooking = new Booking({
+    const newBooking = new Booking({
       userId: new mongoose.Types.ObjectId(userId),
       pets: formattedPets,
       startDateTime,
@@ -251,26 +251,35 @@ export const createBooking = async (req: Request, res: Response) => {
     const savedBooking = await newBooking.save();
 
     // Find all hosts in the same city
-    const hostsInCity: IHostWithPushToken[] = await HostProfileModel.find({
+    const hostsInCity = await HostProfileModel.find({
       city: city,
     });
 
-    console.log("hostsInCity", hostsInCity);
+    console.log(`Found ${hostsInCity.length} hosts in ${city}`);
 
     // Filter hosts with valid push tokens
     const pushTokens = hostsInCity
       .filter((host) => host.pushToken)
       .map((host) => host.pushToken as string);
 
+    let notificationResult = { success: false };
+
     if (pushTokens.length > 0) {
       // Send push notifications to all hosts in the city
-      await sendPushNotifications(
+      notificationResult = await sendPushNotifications(
         pushTokens,
         "New Booking Available",
-        `A new booking has arrived in ${city}! Check it out now.`
+        `A new booking has arrived in ${city}! Check it out now.`,
+        {
+          bookingId: savedBooking._id.toString(),
+          city: city,
+          timestamp: new Date().toISOString(),
+        }
       );
+
       console.log(
-        `Push notifications sent successfully to ${pushTokens.length} hosts in ${city}`
+        `Push notifications sent to ${pushTokens.length} hosts in ${city}. Result:`,
+        notificationResult
       );
     } else {
       console.log(`No hosts with push tokens found in ${city}`);
@@ -279,8 +288,10 @@ export const createBooking = async (req: Request, res: Response) => {
     // Respond with success
     res.status(201).json({
       success: true,
-      message: "Booking created successfully and hosts notified",
+      message: "Booking created successfully",
       booking: savedBooking,
+      notificationsStatus:
+        pushTokens.length > 0 ? notificationResult : "No recipients available",
     });
   } catch (error) {
     console.error("Error creating booking or sending notifications:", error);
@@ -378,95 +389,9 @@ export const getBookings = async (req: Request, res: Response) => {
   }
 };
 
-// Controller to add a host to an accepted hosts list in a booking
-
-// export const addAcceptedHost = async (req: Request, res: Response) => {
-//   try {
-//     const { bookingId } = req.body;
-//     const userId = (req as any).user.id; // Get the logged-in user's ID
-
-//     // First find the host profile for the logged-in user
-//     const hostProfile = await HostProfile.findOne({ userId });
-
-//     if (!hostProfile) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Host profile not found for this user",
-//       });
-//     }
-
-//     // Find the specific booking by ID and ensure host isn't already accepted
-//     const booking = await Booking.findOne({
-//       _id: bookingId,
-//       acceptedHosts: { $ne: userId },
-//     });
-
-//     if (!booking) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Booking not found or host already accepted",
-//       });
-//     }
-
-//     // Add the host profile ID to the acceptedHosts array
-//     booking.acceptedHosts.push(userId);
-
-//     // Save the updated booking
-//     await booking.save();
-
-//     // Populate the acceptedHosts field before sending response
-//     const populatedBooking = await Booking.findById(booking._id).populate(
-//       "acceptedHosts"
-//     );
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Host profile added as an accepted host",
-//       booking: populatedBooking,
-//     });
-//   } catch (error) {
-//     console.log("Error adding accepted host:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Error adding accepted host",
-//       error: error instanceof Error ? error.message : "Unknown error",
-//     });
-//   }
-// };
-
-
 // Interface for User with push token
 interface IUserWithPushToken extends IUser {
   pushToken?: string; // Optional push token field
-}
-
-// Function to send push notification
-async function sendPushNotificationforaccptance(
-  pushToken: string,
-  title: string,
-  body: string,
-  data: object = {}
-): Promise<void> {
-  try {
-    if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`Push token ${pushToken} is not a valid Expo push token`);
-      return;
-    }
-
-    const message = {
-      to: pushToken,
-      sound: "default" as const,
-      title,
-      body,
-      data,
-    };
-
-    const [ticket] = await expo.sendPushNotificationsAsync([message]);
-    console.log(`Push notification sent successfully. Ticket:`, ticket);
-  } catch (error) {
-    console.error(`Error sending push notification:`, error);
-    throw error;
-  }
 }
 
 // Controller to add a host to an accepted hosts list in a booking and notify pet parent
@@ -486,14 +411,19 @@ export const addAcceptedHost = catchAsyncError(
       }>("userId", "fullname");
 
       if (!hostProfile) {
-        return next(new ErrorHandler("Host profile not found for this user", 404));
+        return next(
+          new ErrorHandler("Host profile not found for this user", 404)
+        );
       }
 
       // Find the specific booking by ID and ensure host isn't already accepted
       const booking = await Booking.findOne({
         _id: bookingId,
         acceptedHosts: { $ne: userId },
-      }).populate<{ userId: IUserWithPushToken }>("userId", "fullname pushToken");
+      }).populate<{ userId: IUserWithPushToken }>(
+        "userId",
+        "fullname pushToken"
+      );
 
       if (!booking) {
         return next(
@@ -516,7 +446,7 @@ export const addAcceptedHost = catchAsyncError(
 
       // Send push notification to pet parent if they have a push token
       if (petParent.pushToken) {
-        await sendPushNotificationforaccptance(
+        await sendPushNotification(
           petParent.pushToken,
           "Booking Request Accepted!",
           `Your booking has been accepted by host ${hostFullName}.`,
@@ -545,12 +475,7 @@ export const addAcceptedHost = catchAsyncError(
       });
     } catch (error) {
       console.error("Error adding accepted host:", error);
-      return next(
-        new ErrorHandler(
-          "Error adding accepted host",
-          500
-        )
-      );
+      return next(new ErrorHandler("Error adding accepted host", 500));
     }
   }
 );
@@ -586,51 +511,6 @@ export const declineHost = async (req: Request, res: Response) => {
       success: false,
       message: "An error occurred while declining the host",
       error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-};
-
-// Additional controller for updating the accepted hosts (if necessary)
-export const updateAcceptedHosts = async (req: Request, res: Response) => {
-  try {
-    const { bookingId, acceptedHosts } = req.body; // New hosts to add
-    const userId = (req as any).user.id; // The user making the request
-
-    // Find the booking by its ID
-    const booking = await Booking.findById(bookingId);
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
-    }
-
-    // Check if the logged-in user is authorized to update this booking's accepted hosts
-    if (booking.userId.toString() !== userId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to modify this booking",
-      });
-    }
-
-    // Update the acceptedHosts array with the new hosts
-    booking.acceptedHosts = acceptedHosts;
-
-    // Save the updated booking
-    await booking.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Accepted hosts updated successfully",
-      booking,
-    });
-  } catch (error) {
-    console.log("Error updating accepted hosts:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating accepted hosts",
-      error: (error as Error).message,
     });
   }
 };
@@ -766,7 +646,6 @@ export const updateBookingWithSelectedHost = catchAsyncError(
   }
 );
 
-
 export const getBilling = async (req: Request, res: Response) => {
   try {
     const { bookingId } = req.body;
@@ -855,28 +734,6 @@ export const getRequestBooking = async (req: Request, res: Response) => {
         select: "city fullName email", // Populate required host fields
       });
 
-    // if (!bookings || bookings.length === 0) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "No unaccepted bookings found.",
-    //   });
-    // }
-
-    // // Filter bookings where the user's city matches any host's city
-    // const filteredBookings = bookings.filter((booking) => {
-    //   const userCity = booking.userId?.city;
-    //   if (!userCity) return false; // Skip if the user has no city
-    //   const hostCities = booking.acceptedHosts.map((host) => host.city);
-    //   return hostCities.includes(userCity);
-    // });
-
-    // if (filteredBookings.length === 0) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "No unaccepted bookings with matching cities found.",
-    //   });
-    // }
-
     // Send the filtered bookings in the response
     return res.status(200).json({
       success: true,
@@ -893,155 +750,6 @@ export const getRequestBooking = async (req: Request, res: Response) => {
     });
   }
 };
-
-// export const getUserRelatedBookings = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const userId = req.user?.id;
-
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "User not authenticated",
-//       });
-//     }
-
-//     // Fetch the logged-in user's details
-//     const loggedInUser = await userModel.findById(userId);
-
-//     if (!loggedInUser) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Logged-in user details not found",
-//       });
-//     }
-
-//     const hostProfile = await HostProfile.findOne({ userId });
-//     let data;
-//     let message;
-
-//     if (hostProfile) {
-
-//       const bookings = await Booking.find({
-//         selectedHost: hostProfile.userId,
-//         paymentStatus: "completed",
-//       })
-//         .populate("userId", "name email phone")
-//         .select("userId");
-
-//       data = bookings.map((booking) => booking.userId);
-//       message = "Pet parent details for bookings where you are the host";
-
-//       return res.status(200).json({
-//         success: true,
-//         message,
-//         loggedInUser,
-//         petParents: data,
-//       });
-//     } else {
-//       const bookings = await Booking.find({
-//         userId,
-//         paymentStatus: "completed",
-//       });
-
-//       const hosts = await Promise.all(
-//         bookings.map((booking) => HostProfile.findById({userId: booking.selectedHost}))
-//       );
-
-//       data = bookings.map((booking) => booking.selectedHost);
-//       message = "Host details for bookings created by you";
-
-//       return res.status(200).json({
-//         success: true,
-//         message,
-//         loggedInUser,
-//         hosts: data,
-//       });
-//     }
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getUserRelatedBookings = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const userId = req.user?.id;
-
-//     // Check if userId exists
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "User not authenticated",
-//       });
-//     }
-
-//     // Fetch the logged-in user's details
-//     const loggedInUser = await userModel.findById(userId);
-//     if (!loggedInUser) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Logged-in user details not found",
-//       });
-//     }
-
-//     // Check if the user is a host
-//     const hostProfile = await HostProfile.findOne({ userId });
-//     if (hostProfile) {
-//       // Fetch bookings where the user is the selected host
-//       const bookings = await Booking.find({
-//         selectedHost: userId,
-//         paymentStatus: "completed",
-//       })
-//         .populate("userId", "name email phone") // Populate pet parent details
-//         .select("userId"); // Only return userId and populated data
-
-//       const petParents = bookings.map((booking) => booking.userId); // Extract populated user details
-//       const transformedPetParents = petParents.map((parent) => ({
-//         userId: parent._id,
-//         email: parent.email,
-//       }));
-
-//       return res.status(200).json({
-//         success: true,
-//         message: "Pet parent details for bookings where you are the host",
-//         loggedInUser,
-//         petParents: transformedPetParents,
-//       });
-//     }
-
-//     // If the user is not a host, fetch bookings they created
-//     const bookings = await Booking.find({
-//       userId,
-//       paymentStatus: "completed",
-//     });
-
-//     // Fetch HostProfile details for each booking's selectedHost
-//     const hosts = await Promise.all(
-//       bookings.map(async (booking) => {
-//         const host = await HostProfile.findOne({
-//           userId: booking.selectedHost,
-//         });
-//         return host ? host.toObject() : null; // Return host details if found
-//       })
-//     );
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Host details for bookings created by you",
-//       loggedInUser,
-//       hosts: hosts.filter((host) => host !== null), // Exclude null values if any
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 export const getUserRelatedBookings = async (
   req: Request,
@@ -1136,7 +844,11 @@ export const getUserRelatedBookings = async (
   }
 };
 
-export const getBookingEndDate = async (req: Request, res: Response, next: NextFunction) => {
+export const getBookingEndDate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id;
     const otherUser = req.body.participantId;
@@ -1152,7 +864,7 @@ export const getBookingEndDate = async (req: Request, res: Response, next: NextF
       })
         .sort({ createdAt: -1 })
         .limit(1);
-      
+
       return res.status(200).json({
         success: true,
         message: "Host user booking",
@@ -1177,5 +889,3 @@ export const getBookingEndDate = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
-
-

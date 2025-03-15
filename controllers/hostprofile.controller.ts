@@ -1,12 +1,16 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 import { catchAsyncError } from "../middleware/catchAsyncErrors";
 import ErrorHandler from "../utils/ErrorHandler";
 import HostProfileModel from "../models/hostprofile.model";
 import cloudinary from "../config/cloudinaryConfig";
 import dotenv from "dotenv";
-import Booking, { IBooking } from "../models/booking.model";
+import Booking from "../models/booking.model";
+import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 
 dotenv.config();
+
+// Initialize Expo SDK
+const expo = new Expo();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -32,161 +36,74 @@ const uploadImage = async (base64Image: string, folder: string) => {
   }
 };
 
-// export const createHostProfile = catchAsyncError(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const {
-//         fullName,
-//         phoneNumber,
-//         email,
-//         age,
-//         gender,
-//         dateOfBirth,
-//         profession,
-//         location,
-//         line1,
-//         line2,
-//         city,
-//         pincode,
-//         residenceType,
-//         builtUpArea,
-//         petSize,
-//         petGender,
-//         petCount,
-//         willingToWalk,
-//         hasAreaRestrictions,
-//         areaRestrictions,
-//         walkFrequency,
-//         walkDuration,
-//         willingToCook,
-//         cookingOptions,
-//         groomPet,
-//         hasPet,
-//         pets,
-//         hasVetNearby,
-//         vetInfo,
-//         HostProfile: {
-//           profileImage,
-//           bio,
-//           idProof,
-//           facilityPictures,
-//           petPictures,
-//           pricingDaycare,
-//           pricingBoarding,
-//           pricingVegMeal,
-//           pricingNonVegMeal,
-//         },
-//         paymentDetails: {
-//           accountHolderName,
-//           accountNumber,
-//           ifscCode,
-//           bankName,
-//           upiid,
-//         },
-//       } = req.body;
+// Helper function to send push notification
+export async function sendPushNotification(
+  pushToken: string,
+  title: string,
+  body: string,
+  data: object = {}
+) {
+  try {
+    // Validate the push token - accept both Expo and FCM tokens
+    if (
+      !Expo.isExpoPushToken(pushToken) &&
+      !pushToken.includes("ExponentPushToken") &&
+      !pushToken.startsWith("fcm:")
+    ) {
+      console.error(`Push token ${pushToken} is not a valid token`);
+      return { success: false, error: "Invalid push token" };
+    }
 
-//       // Upload images to Cloudinary if they are provided as base64
-//       const uploadedProfileImage = profileImage
-//         ? await uploadImage(profileImage, "host_profiles/profile_Image")
-//         : null;
+    // Create the message
+    const message: ExpoPushMessage = {
+      to: pushToken,
+      sound: "default",
+      title,
+      body,
+      data,
+      priority: "high",
+    };
 
-//       const uploadedIdProof = idProof
-//         ? await uploadImage(idProof, "host_profiles/host_idproof")
-//         : null;
+    // Send the notification
+    const chunks = expo.chunkPushNotifications([message]);
+    const tickets = [];
 
-//       const uploadedFacilityPictures = await Promise.all(
-//         facilityPictures.map(async (base64Image: string) => {
-//           if (base64Image && base64Image.trim() !== "") {
-//             return await uploadImage(
-//               base64Image,
-//               "host_profiles/facility_pictures"
-//             );
-//           }
-//           return null;
-//         })
-//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        tickets.push(...ticketChunk);
+        console.log("Push notification sent successfully:", ticketChunk);
+      } catch (error) {
+        console.error("Error sending push notification chunk:", error);
+        return { success: false, error };
+      }
+    }
 
-//       const uploadedPetPictures = await Promise.all(
-//         petPictures.map(async (base64Image: string) => {
-//           if (base64Image && base64Image.trim() !== "") {
-//             return await uploadImage(base64Image, "host_profiles/pet_pictures");
-//           }
-//           return null;
-//         })
-//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+    // Check for errors
+    const receiptIds = [];
+    for (const ticket of tickets) {
+      if (ticket.id) {
+        receiptIds.push(ticket.id);
+      }
+      if (ticket.status === "error") {
+        console.error(`Error sending notification: ${ticket.message}`);
+        return {
+          success: false,
+          error: ticket.message,
+          details: ticket.details,
+        };
+      }
+    }
 
-//       // Create the host profile with the uploaded image URLs
-//       const newHostProfile = new HostProfileModel({
-//         userId: req.user?.id,
-//         fullName,
-//         phoneNumber,
-//         email,
-//         age,
-//         gender,
-//         dateOfBirth,
-//         profession,
-//         location,
-//         line1,
-//         line2,
-//         city,
-//         pincode,
-//         residenceType,
-//         builtUpArea,
-//         petSize,
-//         petGender,
-//         petCount,
-//         willingToWalk,
-//         hasAreaRestrictions,
-//         areaRestrictions,
-//         walkFrequency,
-//         walkDuration,
-//         willingToCook,
-//         cookingOptions,
-//         groomPet,
-//         hasPet,
-//         pets,
-//         hasVetNearby,
-//         vetInfo,
-
-//         hostProfile: {
-//           profileImage: uploadedProfileImage?.url || "",
-//           bio,
-//           idProof: uploadedIdProof?.url || "",
-//           facilityPictures: uploadedFacilityPictures.map(
-//             (pic) => pic?.url || ""
-//           ),
-//           petPictures: uploadedPetPictures.map((pic) => pic?.url || ""),
-//           pricingDaycare,
-//           pricingBoarding,
-//           pricingVegMeal,
-//           pricingNonVegMeal,
-//         },
-
-//         paymentDetails: {
-//           accountHolderName,
-//           accountNumber,
-//           ifscCode,
-//           bankName,
-//           upiid,
-//         },
-//       });
-
-//       const savedHostProfile = await newHostProfile.save();
-
-//       res.status(201).json({
-//         success: true,
-//         message: "Host Profile Created Successfully",
-//         hostProfile: savedHostProfile,
-//       });
-//     } catch (error: any) {
-//       console.log("Host Profile Creation Error:", error);
-//       return next(new ErrorHandler(error.message, 400));
-//     }
-//   }
-// );
+    return { success: true, tickets, receiptIds };
+  } catch (error) {
+    console.error("Error in sendPushNotification:", error);
+    return { success: false, error };
+  }
+}
 
 export const createHostProfile = catchAsyncError(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: any) => {
     try {
       // Check if the user already has a host profile
       const existingHostProfile = await HostProfileModel.findOne({
@@ -351,9 +268,68 @@ export const createHostProfile = catchAsyncError(
   }
 );
 
+export const updatehostpushtoken = async (req: Request, res: Response) => {
+  try {
+    const { pushToken } = req.body;
+    const userId = (req as any).user.id;
+
+    if (!pushToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Push token is required",
+      });
+    }
+
+    console.log(`Updating push token for host ${userId}: ${pushToken}`);
+
+    // Find and update the host profile
+    const hostProfile = await HostProfileModel.findOneAndUpdate(
+      { userId },
+      { pushToken },
+      { new: true }
+    );
+
+    if (!hostProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Host profile not found",
+      });
+    }
+
+    // Send a test notification to verify token works
+    try {
+      const notificationResult = await sendPushNotification(
+        pushToken,
+        "Push Notifications Enabled",
+        "You will now receive booking notifications!",
+        { type: "token_registered" }
+      );
+
+      console.log("Test notification result:", notificationResult);
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      // Continue even if test notification fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Push token updated successfully",
+      hostProfile,
+    });
+  } catch (error) {
+    console.error("Error updating push token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating push token",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+// Other controller methods remain the same...
 export const getHostBookings = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming userId is in the request user object via isAuthenticated middleware
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -364,9 +340,9 @@ export const getHostBookings = async (req: Request, res: Response) => {
 
     // Find bookings where the user is the selected host
     const bookings = await Booking.find({ selectedHost: userId })
-      .populate("userId", "name email") // Populating user information
-      .populate("pets", "name image") // Populating pet details
-      .populate("selectedHost", "name email"); // Populating host details;
+      .populate("userId", "name email")
+      .populate("pets", "name image")
+      .populate("selectedHost", "name email");
 
     if (!bookings || bookings.length === 0) {
       return res.status(404).json({
@@ -381,10 +357,7 @@ export const getHostBookings = async (req: Request, res: Response) => {
       bookings,
     });
   } catch (error) {
-    // Debugging: Log the error
     console.log("Error fetching host bookings:", error);
-
-    // Respond with an error
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching the bookings.",
@@ -394,7 +367,7 @@ export const getHostBookings = async (req: Request, res: Response) => {
 
 export const getHost = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming userId is in the request user object via isAuthenticated middleware
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -419,10 +392,7 @@ export const getHost = async (req: Request, res: Response) => {
       host,
     });
   } catch (error) {
-    // Debugging: Log the error
     console.log("Error fetching host:", error);
-
-    // Respond with an error
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching the host.",
@@ -432,7 +402,7 @@ export const getHost = async (req: Request, res: Response) => {
 
 export const deleteHostProfile = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming `isAuthenticated` middleware attaches `user` to the request object
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -467,46 +437,10 @@ export const deleteHostProfile = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.log("Error deleting host profile:", error);
-
     res.status(500).json({
       success: false,
       message: "An error occurred while deleting the host profile.",
-      error: error.message, // Optional: include error details for debugging
-    });
-  }
-};
-
-
-export const updatehostpushtoken = async (req: Request, res: Response) => {
-  try {
-    const { pushToken } = req.body;
-    const userId = (req as any).user.id;
-
-    
-
-    const hostProfile = await HostProfileModel.findOneAndUpdate(
-      { userId },
-      { pushToken },
-      { new: true }
-    );
-
-    if (!hostProfile) {
-      return res.status(400).json({
-        success: false,
-        message: "Host profile not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Push token updated successfully",
-      hostProfile,
-    });
-  } catch (error) {
-    console.error("Error updating push token:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating push token",
+      error: error.message,
     });
   }
 };

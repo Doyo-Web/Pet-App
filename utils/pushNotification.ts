@@ -23,6 +23,7 @@ export const sendPushNotification = async (
       title,
       body,
       data: data || {},
+      priority: "high",
     };
 
     const receipts = await expo.sendPushNotificationsAsync([message]);
