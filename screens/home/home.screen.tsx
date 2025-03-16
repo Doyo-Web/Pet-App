@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { AntDesign, FontAwesome } from "@expo/vector-icons"; // Ensure correct import for FontAwesome
 import { useFonts } from "expo-font"; // Correct import
 import {
   View,
   Text,
+  Alert,
   StyleSheet,
   Image,
   TouchableOpacity,
@@ -35,6 +36,7 @@ import {
 } from "react-native-responsive-dimensions";
 import { router } from "expo-router";
 
+
 const { width } = Dimensions.get("window");
 
 interface CarouselItem {
@@ -52,9 +54,8 @@ interface Testimonial {
 
 const HomeScreen: React.FC = () => {
 
-  const { user } = useUser();
 
-  console.log(process.env.NODE_ENV);
+  const { user } = useUser();
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList<Testimonial>>(null);

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -16,7 +18,7 @@ import {
 import * as FileSystem from "expo-file-system";
 import Icon from "react-native-vector-icons/Ionicons";
 import DateTimePicker, {
-  DateTimePickerEvent,
+  type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
@@ -25,75 +27,97 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SERVER_URI } from "@/utils/uri";
 import axios from "axios";
 import { Toast } from "react-native-toast-notifications";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
-import { addPetProfile, setIsLoading, setError } from "@/store/petProfileSlice";
-import { RootState } from "@/store/store";
+import {
+  addPetProfile,
+  updatePetProfile,
+  setIsLoading,
+  setError,
+} from "@/store/petProfileSlice";
+import type { RootState } from "@/store/store";
+
+// Define the ImageFile interface to represent the structure of pet images
+interface ImageFile {
+  uri: string;
+  type: string;
+  name: string;
+}
+
+// Define the structure for the diet schedule entries
+interface DietScheduleEntry {
+  time: string;
+  portion: string;
+}
+
+// Define the structure for medication details
+interface MedicationDetails {
+  nameFrequency: string;
+  reason: string;
+  administration: string;
+}
+
+// Define the structure for aggressive tendencies
+interface AggressiveTendencies {
+  maleDog: boolean;
+  femaleDog: boolean;
+  human: boolean;
+  otherAnimals: boolean;
+}
+
+// Define the FormState interface
+interface FormState {
+  petType: string;
+  petName: string;
+  petBreed: string;
+  petAgeYears: string;
+  petAgeMonths: string;
+  petGender: string;
+  lastHeatCycle: string;
+  isNeutered: boolean;
+  neuteredDate: string;
+  pottyTraining: string;
+  toiletBreaks: string;
+  walkPerDay: string;
+  bathingFrequency: string;
+  dailyCombing: boolean;
+  dietSchedule: DietScheduleEntry[];
+  foodAllergy: string;
+  vaccinationDate: Date | null;
+  dewormingDate: Date | null;
+  tickTreatmentDate: Date | null;
+  medicationDetails: MedicationDetails;
+  aggressiveTendencies: AggressiveTendencies;
+  resourceGuarding: boolean;
+  groomingAggression: boolean;
+  collarAggression: boolean;
+  foodAggression: boolean;
+  petImages: any[]; // Store either base64 strings or image objects
+}
+
+interface CheckboxProps {
+  label: string;
+  checked: boolean;
+  onCheck: () => void;
+}
+
+interface RadioButtonProps {
+  label: string;
+  checked: boolean;
+  onCheck: () => void;
+}
 
 export default function ProfileScreen() {
   const [isNextButtonDisabled, setIsNextButtonDisabled] = useState(true);
-
   const [currentStep, setCurrentStep] = useState(1);
-
+  const [isEditMode, setIsEditMode] = useState(false);
   const dispatch = useDispatch();
+  const params = useLocalSearchParams();
+  const petId = params.id as string;
 
-  // Define the ImageFile interface to represent the structure of pet images
-  interface ImageFile {
-    uri: string; // You can include other properties as necessary
-  }
+   const [medicalHistory, setMedicalHistory] = useState(false);
 
-  // Define the structure for the diet schedule entries
-  interface DietScheduleEntry {
-    time: string;
-    portion: string;
-  }
-
-  // Define the structure for medication details
-  interface MedicationDetails {
-    nameFrequency: string;
-    reason: string;
-    administration: string;
-  }
-
-  // Define the structure for aggressive tendencies
-  interface AggressiveTendencies {
-    maleDog: boolean;
-    femaleDog: boolean;
-    human: boolean;
-    otherAnimals: boolean;
-  }
-
-  // Define the FormState interface
-  interface FormState {
-    petType: string;
-    petName: string;
-    petBreed: string;
-    petAgeYears: string;
-    petAgeMonths: string;
-    petGender: string;
-    lastHeatCycle: string;
-    isNeutered: boolean;
-    neuteredDate: string;
-    pottyTraining: string;
-    toiletBreaks: string;
-    walkPerDay: string;
-    bathingFrequency: string;
-    dailyCombing: boolean;
-    dietSchedule: DietScheduleEntry[];
-    foodAllergy: string;
-    vaccinationDate: Date | null;
-    dewormingDate: Date | null;
-    tickTreatmentDate: Date | null;
-    medicationDetails: MedicationDetails;
-    aggressiveTendencies: AggressiveTendencies;
-    resourceGuarding: boolean;
-    groomingAggression: boolean;
-    collarAggression: boolean;
-    foodAggression: boolean;
-    petImages: ImageFile[]; // Ensure this is an array of ImageFile
-  }
-
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState<FormState>({
     petType: "",
     petName: "",
     petBreed: "",
@@ -130,6 +154,135 @@ export default function ProfileScreen() {
     foodAggression: false,
     petImages: ["", "", "", ""],
   });
+
+  const { isLoading, error } = useSelector(
+    (state: RootState) => state.petProfile
+  );
+
+  // Fetch pet profile data if in edit mode
+  useEffect(() => {
+    if (petId) {
+      setIsEditMode(true);
+      const fetchPetProfile = async () => {
+        try {
+          dispatch(setIsLoading(true));
+          const accessToken = await AsyncStorage.getItem("access_token");
+          const response = await axios.get(
+            `${SERVER_URI}/petprofile-get/${petId}`,
+            {
+              headers: { access_token: accessToken },
+            }
+          );
+
+          if (response.data.success) {
+            const petData = response.data.data;
+
+            // Format dates for display
+            const formatDateForDisplay = (dateString: string) => {
+              const date = new Date(dateString);
+              return `${date.getDate().toString().padStart(2, "0")}/${(
+                date.getMonth() + 1
+              )
+                .toString()
+                .padStart(2, "0")}/${date.getFullYear()}`;
+            };
+
+            // Map the API response to our form state
+            setFormState({
+              petType: petData.petType || "",
+              petName: petData.petName || "",
+              petBreed: petData.petBreed || "",
+              petAgeYears: petData.petAgeYears || "",
+              petAgeMonths: petData.petAgeMonths || "",
+              petGender: petData.petGender || "",
+              lastHeatCycle: petData.lastHeatCycle
+                ? formatDateForDisplay(petData.lastHeatCycle)
+                : "",
+              isNeutered: petData.isNeutered || false,
+              neuteredDate: petData.neuteredDate
+                ? formatDateForDisplay(petData.neuteredDate)
+                : "",
+              pottyTraining: petData.pottyTraining || "",
+              toiletBreaks: petData.toiletBreaks || "",
+              walkPerDay: petData.walkPerDay || "",
+              bathingFrequency: petData.bathingFrequency || "",
+              dailyCombing: petData.dailyCombing || false,
+              dietSchedule:
+                petData.dietSchedule && petData.dietSchedule.length > 0
+                  ? petData.dietSchedule
+                  : [{ time: "", portion: "" }],
+              foodAllergy: petData.foodAllergy || "",
+              vaccinationDate: petData.vaccinationDate
+                ? new Date(petData.vaccinationDate)
+                : null,
+              dewormingDate: petData.dewormingDate
+                ? new Date(petData.dewormingDate)
+                : null,
+              tickTreatmentDate: petData.tickTreatmentDate
+                ? new Date(petData.tickTreatmentDate)
+                : null,
+              medicationDetails: {
+                nameFrequency: petData.medicationDetails?.nameFrequency || "",
+                reason: petData.medicationDetails?.reason || "",
+                administration: petData.medicationDetails?.administration || "",
+              },
+              aggressiveTendencies: {
+                maleDog: petData.aggressiveTendencies?.maleDog || false,
+                femaleDog: petData.aggressiveTendencies?.femaleDog || false,
+                human: petData.aggressiveTendencies?.human || false,
+                otherAnimals:
+                  petData.aggressiveTendencies?.otherAnimals || false,
+              },
+              resourceGuarding: petData.resourceGuarding || false,
+              groomingAggression: petData.groomingAggression || false,
+              collarAggression: petData.collarAggression || false,
+              foodAggression: petData.foodAggression || false,
+              petImages: petData.petImages.map((img: any) => img.url) || [
+                "",
+                "",
+                "",
+                "",
+              ],
+            });
+
+            // Set bathing mandatory if bathingFrequency is set
+            if (petData.bathingFrequency) {
+              setIsBathingMandatory(true);
+            }
+
+            // Set medical history if medicationDetails are present
+            if (
+              petData.medicationDetails?.nameFrequency ||
+              petData.medicationDetails?.reason ||
+              petData.medicationDetails?.administration
+            ) {
+              setMedicalHistory(true);
+            }
+
+            // Initialize time picker states based on diet schedule entries
+            setShowTimePickers(petData.dietSchedule.map(() => false));
+          } else {
+            dispatch(setError("Failed to fetch pet profile"));
+            Toast.show("Failed to fetch pet profile", { type: "danger" });
+          }
+        } catch (error: any) {
+          console.error("Error fetching pet profile:", error);
+          dispatch(setError(error.message || "An error occurred"));
+          Toast.show(error.message || "An error occurred", { type: "danger" });
+
+          if (error.response?.status === 413) {
+            await AsyncStorage.removeItem("access_token");
+            await AsyncStorage.removeItem("refresh_token");
+            router.replace("/(routes)/login");
+          }
+        } finally {
+          dispatch(setIsLoading(false));
+        }
+      };
+
+      fetchPetProfile();
+    }
+  }, [petId, dispatch]);
 
   // Validation functions for each step
   const validateStep1 = (): boolean => {
@@ -189,7 +342,7 @@ export default function ProfileScreen() {
         isValid = false;
     }
     setIsNextButtonDisabled(!isValid);
-  }, [currentStep, formState]);
+  }, [currentStep, formState, medicalHistory]);
 
   const [showHeatCycleDatePicker, setShowHeatCycleDatePicker] = useState(false);
   const [showNeuteredDatePicker, setShowNeuteredDatePicker] = useState(false);
@@ -201,23 +354,18 @@ export default function ProfileScreen() {
   );
 
   const [selectedTime, setSelectedTime] = useState(new Date());
-
-  // Define your ImageFile interface
-  interface ImageFile {
-    uri: string;
-    type: string;
-    name: string;
-  }
+  const [isBathingMandatory, setIsBathingMandatory] = useState(false);
+  const [vaccinationDate, setVaccinationDate] = useState(new Date());
+  const [dewormingDate, setDewormingDate] = useState(new Date());
+  const [tickTreatmentDate, setTickTreatmentDate] = useState(new Date());
+  const [showVaccinationPicker, setShowVaccinationPicker] = useState(false);
+  const [showDewormingPicker, setShowDewormingPicker] = useState(false);
+  const [showTickTreatmentPicker, setShowTickTreatmentPicker] = useState(false);
+ 
 
   const isImageFile = (obj: any): obj is ImageFile => {
     return obj && typeof obj.uri === "string" && typeof obj.name === "string";
   };
-
-  // Define the structure for the diet schedule
-  interface DietScheduleEntry {
-    time: string;
-    portion: string;
-  }
 
   const handleDietChange = (index: number, field: string, value: string) => {
     const updatedDietEntries = formState.dietSchedule.map((entry, i) => {
@@ -274,6 +422,8 @@ export default function ProfileScreen() {
       setShowVaccinationPicker(false);
     } else if (key === "dewormingDate") {
       setShowDewormingPicker(false);
+    } else if (key === "tickTreatmentDate") {
+      setShowTickTreatmentPicker(false);
     }
   };
 
@@ -311,20 +461,6 @@ export default function ProfileScreen() {
     }
   };
 
-  interface CheckboxProps {
-    label: string;
-    checked: boolean;
-    onCheck: () => void;
-  }
-
-  interface RadioButtonProps {
-    label: string;
-    checked: boolean;
-    onCheck: () => void;
-  }
-
-  const [isBathingMandatory, setIsBathingMandatory] = useState(false);
-
   const Checkbox: React.FC<CheckboxProps> = ({ label, checked, onCheck }) => (
     <TouchableOpacity
       style={styles.checkboxContainerscreentwo}
@@ -352,16 +488,14 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
-  interface DietEntry {
-    time: string;
-    portion: string;
-  }
-
   const updateFormState = (key: string, value: string | boolean | Date) => {
     setFormState((prevState) => ({ ...prevState, [key]: value }));
   };
 
-  const handleAggressiveTendenciesChange = (type: any, value: any) => {
+  const handleAggressiveTendenciesChange = (
+    type: keyof AggressiveTendencies,
+    value: boolean
+  ) => {
     setFormState((prevState) => ({
       ...prevState,
       aggressiveTendencies: {
@@ -372,7 +506,10 @@ export default function ProfileScreen() {
   };
 
   // For Medication Details:
-  const handleMedicationChange = (field: any, value: any) => {
+  const handleMedicationChange = (
+    field: keyof MedicationDetails,
+    value: string
+  ) => {
     setFormState((prevState) => ({
       ...prevState,
       medicationDetails: {
@@ -390,54 +527,33 @@ export default function ProfileScreen() {
     setShowTimePickers((prevState) => [...prevState, false]); // Add a new time picker state
   };
 
-  const [vaccinationDate, setVaccinationDate] = useState(new Date());
-  const [dewormingDate, setDewormingDate] = useState(new Date());
-  const [tickTreatmentDate, setTickTreatmentDate] = useState(new Date());
-  const [showVaccinationPicker, setShowVaccinationPicker] = useState(false);
-  const [showDewormingPicker, setShowDewormingPicker] = useState(false);
-  const [showTickTreatmentPicker, setShowTickTreatmentPicker] = useState(false);
-  const [medicalHistory, setMedicalHistory] = useState(false);
-  const [aggressiveTendencies, setAggressiveTendencies] = useState({
-    maleDog: false,
-    femaleDog: false,
-    human: false,
-    otherAnimals: false,
-  });
-  const [resourceGuarding, setResourceGuarding] = useState(false);
-  const [groomingAggression, setGroomingAggression] = useState(false);
-  const [collarAggression, setCollarAggression] = useState(false);
-  const [foodAggression, setFoodAggression] = useState(false);
-
-  // const [isLoadings, setIsLoadings] = useState(false);
-
-  const { petProfiles, isLoading, error } = useSelector(
-    (state: RootState) => state.petProfile
-  );
-
   const handlePetProfile = async () => {
     dispatch(setIsLoading(true));
 
     const accessToken = await AsyncStorage.getItem("access_token");
+    const endpoint = isEditMode
+      ? `${SERVER_URI}/petprofile-update/${petId}`
+      : `${SERVER_URI}/petprofile-create`;
 
     try {
-      const response = await axios.post(
-        `${SERVER_URI}/petprofile-create`,
-        formState,
-        {
-          headers: {
-            access_token: accessToken,
-          },
-        }
-      );
+      const response = await axios.post(endpoint, formState, {
+        headers: {
+          access_token: accessToken,
+        },
+      });
 
       if (response.data) {
         Toast.show(response.data.message, {
           type: "success",
         });
 
-
-        // Add the new pet profile to Redux state
-        dispatch(addPetProfile(response.data.petProfile));
+        if (isEditMode) {
+          // Update the pet profile in Redux state
+          dispatch(updatePetProfile(response.data.petProfile));
+        } else {
+          // Add the new pet profile to Redux state
+          dispatch(addPetProfile(response.data.petProfile));
+        }
 
         // Reset the form state to initial values
         setFormState({
@@ -483,7 +599,6 @@ export default function ProfileScreen() {
       }
     } catch (error: any) {
       if (error.response) {
-
         if (error.response?.status === 413) {
           await AsyncStorage.removeItem("access_token");
           await AsyncStorage.removeItem("refresh_token"); // Clear token
@@ -915,6 +1030,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={styles.allergyinput}
                 placeholder="Does your pet have any food allergy?"
+                value={formState.foodAllergy}
                 onChangeText={(text) => updateFormState("foodAllergy", text)}
               />
             </View>
@@ -945,7 +1061,9 @@ export default function ProfileScreen() {
                 onPress={() => setShowDewormingPicker(true)}
               >
                 <Text>
-                  {formState.dewormingDate ? formatDate(formState.dewormingDate) : "dd/mm/yyyy"}
+                  {formState.dewormingDate
+                    ? formatDate(formState.dewormingDate)
+                    : "dd/mm/yyyy"}
                 </Text>
                 <Ionicons name="calendar-outline" size={24} color="black" />
               </TouchableOpacity>
@@ -957,7 +1075,11 @@ export default function ProfileScreen() {
                 style={styles.stepthreedateInput}
                 onPress={() => setShowTickTreatmentPicker(true)}
               >
-                <Text>{formState.tickTreatmentDate ? formatDate(formState.tickTreatmentDate) : "dd/mm/yyyy"}</Text>
+                <Text>
+                  {formState.tickTreatmentDate
+                    ? formatDate(formState.tickTreatmentDate)
+                    : "dd/mm/yyyy"}
+                </Text>
                 <Ionicons name="calendar-outline" size={24} color="black" />
               </TouchableOpacity>
 
@@ -1338,7 +1460,9 @@ export default function ProfileScreen() {
               {isLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Almost done</Text>
+                <Text style={styles.buttonText}>
+                  {isEditMode ? "Update Profile" : "Almost done"}
+                </Text>
               )}
             </TouchableOpacity>
           )}
@@ -1961,7 +2085,3 @@ const styles = StyleSheet.create({
     color: "#FFD700",
   },
 });
-
-function setPetImages(updatedImages: any[]) {
-  throw new Error("Function not implemented.");
-}
