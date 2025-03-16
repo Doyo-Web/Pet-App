@@ -45,6 +45,7 @@ export interface IHostProfileModel extends Document {
   fullName: string;
   phoneNumber: string;
   email: string;
+  pushToken?: string; // Add pushToken field
   age: number;
   gender: string;
   dateOfBirth: Date;
@@ -120,6 +121,7 @@ const ProfileSchema = new Schema<IHostProfileModel>({
   fullName: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   email: { type: String, required: true },
+  pushToken: { type: String },
   age: { type: Number, required: false },
   gender: { type: String, required: false },
   dateOfBirth: { type: Date, required: false },

@@ -5,6 +5,17 @@ import mongoose, { Types } from "mongoose";
 import Razorpay from "razorpay";
 import User from "../models/user.model";
 import userModel from "../models/user.model";
+import HostProfileModel, {
+  IHostProfileModel,
+} from "../models/hostprofile.model";
+import { Expo } from "expo-server-sdk";
+
+const expo = new Expo();
+
+// Interface for Push Token (assuming hosts have a push token field)
+interface IHostWithPushToken extends IHostProfileModel {
+  pushToken?: string; // Add pushToken to host profile
+}
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_47UXyR0Uds1kIX",
@@ -59,13 +70,119 @@ export const savePaymentDetails = async (req: Request, res: Response) => {
 };
 
 // Controller to create a new booking
+// export const createBooking = async (req: Request, res: Response) => {
+//   try {
+//     const { pets, startDate, startTime, endDate, endTime, city, location, diet } =
+//       req.body;
+//     const userId = (req as any).user.id; // Extract the logged-in user's ID
+
+//     // Create start and end date times from the provided date and time
+//     const startDateTime = new Date(startDate);
+//     startDateTime.setHours(
+//       new Date(startTime).getHours(),
+//       new Date(startTime).getMinutes()
+//     );
+//     const endDateTime = new Date(endDate);
+//     endDateTime.setHours(
+//       new Date(endTime).getHours(),
+//       new Date(endTime).getMinutes()
+//     );
+
+//     // Ensure pets have the correct structure for storing
+//     const formattedPets = pets.map((pet: any) => ({
+//       id: pet.id,
+//       name: pet.name,
+//       image: pet.image,
+//     }));
+
+//     // Create a new booking instance
+//     const newBooking: IBooking = new Booking({
+//       userId,
+//       pets: formattedPets,
+//       startDateTime,
+//       endDateTime,
+//       city,
+//       location: {
+//         type: location.type,
+//         address: location.address,
+//       },
+//       diet,
+//       acceptedHosts: [], // Initialize with an empty array, to be populated later
+//     });
+
+//     // Save the new booking to the database
+//     await newBooking.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Booking created successfully",
+//       booking: newBooking,
+//     });
+//   } catch (error) {
+//     console.log("Error creating booking:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error creating booking",
+//       error: (error as Error).message,
+//     });
+//   }
+// };
+
+// Function to send push notifications
+async function sendPushNotifications(
+  pushTokens: string[],
+  title: string,
+  body: string
+) {
+  const messages = pushTokens
+    .filter((token) => Expo.isExpoPushToken(token))
+    .map((token) => ({
+      to: token,
+      sound: "default" as const,
+      title,
+      body,
+      data: { type: "new_booking" },
+    }));
+
+  const chunks = expo.chunkPushNotifications(messages);
+  const tickets = [];
+
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+      console.log("Push notifications sent successfully to hosts:", ticketChunk);
+    } catch (error) {
+      console.error("Error sending push notifications:", error);
+    }
+  }
+
+  return tickets;
+}
+
+// Controller to create a new booking and notify hosts
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { pets, startDate, startTime, endDate, endTime, city, location, diet } =
-      req.body;
-    const userId = (req as any).user.id; // Extract the logged-in user's ID
+    const {
+      pets,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      city,
+      location,
+      diet,
+    } = req.body;
+    const userId = (req as any).user?.id; // Assuming user ID is added by authentication middleware
 
-    // Create start and end date times from the provided date and time
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User not authenticated",
+      });
+    }
+
+    // Create start and end date times
     const startDateTime = new Date(startDate);
     startDateTime.setHours(
       new Date(startTime).getHours(),
@@ -77,41 +194,68 @@ export const createBooking = async (req: Request, res: Response) => {
       new Date(endTime).getMinutes()
     );
 
-    // Ensure pets have the correct structure for storing
+    // Format pets for storage
     const formattedPets = pets.map((pet: any) => ({
-      id: pet.id,
+      id: new mongoose.Types.ObjectId(pet.id),
       name: pet.name,
       image: pet.image,
     }));
 
-    // Create a new booking instance
+    // Create new booking
     const newBooking: IBooking = new Booking({
-      userId,
+      userId: new mongoose.Types.ObjectId(userId),
       pets: formattedPets,
       startDateTime,
       endDateTime,
-      city,
+      city: city,
       location: {
         type: location.type,
         address: location.address,
       },
       diet,
-      acceptedHosts: [], // Initialize with an empty array, to be populated later
+      acceptedHosts: [],
     });
 
-    // Save the new booking to the database
-    await newBooking.save();
+    // Save the booking
+    const savedBooking = await newBooking.save();
 
+    // Find all hosts in the same city
+    const hostsInCity: IHostWithPushToken[] = await HostProfileModel.find({
+      city: city,
+    });
+
+    console.log("hostsInCity", hostsInCity);
+
+    // Filter hosts with valid push tokens
+    const pushTokens = hostsInCity
+      .filter((host) => host.pushToken)
+      .map((host) => host.pushToken as string);
+
+    if (pushTokens.length > 0) {
+      // Send push notifications to all hosts in the city
+      await sendPushNotifications(
+        pushTokens,
+        "New Booking Available",
+        `A new booking has arrived in ${city}! Check it out now.`
+      );
+      console.log(
+        `Push notifications sent successfully to ${pushTokens.length} hosts in ${city}`
+      );
+    } else {
+      console.log(`No hosts with push tokens found in ${city}`);
+    }
+
+    // Respond with success
     res.status(201).json({
       success: true,
-      message: "Booking created successfully",
-      booking: newBooking,
+      message: "Booking created successfully and hosts notified",
+      booking: savedBooking,
     });
   } catch (error) {
-    console.log("Error creating booking:", error);
+    console.error("Error creating booking or sending notifications:", error);
     res.status(500).json({
       success: false,
-      message: "Error creating booking",
+      message: "Error creating booking or notifying hosts",
       error: (error as Error).message,
     });
   }

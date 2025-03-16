@@ -475,3 +475,38 @@ export const deleteHostProfile = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const updatehostpushtoken = async (req: Request, res: Response) => {
+  try {
+    const { pushToken } = req.body;
+    const userId = (req as any).user.id;
+
+    
+
+    const hostProfile = await HostProfileModel.findOneAndUpdate(
+      { userId },
+      { pushToken },
+      { new: true }
+    );
+
+    if (!hostProfile) {
+      return res.status(400).json({
+        success: false,
+        message: "Host profile not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Push token updated successfully",
+      hostProfile,
+    });
+  } catch (error) {
+    console.error("Error updating push token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating push token",
+    });
+  }
+};
