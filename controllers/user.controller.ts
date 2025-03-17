@@ -852,3 +852,39 @@ export const mydata = catchAsyncError(
     });
   }
 );
+
+// In user.controller.ts
+export const updateUserPushToken = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      const { pushToken } = req.body;
+
+      if (!userId) {
+        return next(new ErrorHandler("User not authenticated", 401));
+      }
+
+      if (!pushToken) {
+        return next(new ErrorHandler("Push token is required", 400));
+      }
+
+      const updatedUser = await userModel.findByIdAndUpdate(
+        userId,
+        { pushToken },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Push token updated successfully",
+        user: updatedUser,
+      });
+    } catch (error) {
+      return next(new ErrorHandler("Error updating push token", 500));
+    }
+  }
+);

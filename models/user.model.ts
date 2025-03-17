@@ -11,6 +11,7 @@ export interface IUser extends Document {
   phonenumber: string;
   email: string;
   password: string;
+  pushToken?: string;
   hearaboutus: string;
   avatar: {
     public_id: string;
@@ -131,6 +132,11 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+
+    pushToken: {
+      type: String,
+      required: false, // Optional field
     },
   },
   { timestamps: true }

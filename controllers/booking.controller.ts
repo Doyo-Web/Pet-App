@@ -9,12 +9,51 @@ import HostProfileModel, {
   IHostProfileModel,
 } from "../models/hostprofile.model";
 import { Expo } from "expo-server-sdk";
+import { catchAsyncError } from "../middleware/catchAsyncErrors";
+import ErrorHandler from "../utils/ErrorHandler";
 
 const expo = new Expo();
 
 // Interface for Push Token (assuming hosts have a push token field)
 interface IHostWithPushToken extends IHostProfileModel {
   pushToken?: string; // Add pushToken to host profile
+}
+
+// Interface for User with push token (assuming User model has a pushToken field)
+interface IUserWithPushToken extends Document {
+  _id: string;
+  fullname: string;
+  email: string;
+  pushToken?: string; // Optional push token field
+}
+
+// Function to send push notification
+async function sendPushNotificationaccept(
+  pushToken: string,
+  title: string,
+  body: string,
+  data: object = {}
+): Promise<void> {
+  try {
+    if (!Expo.isExpoPushToken(pushToken)) {
+      console.error(`Push token ${pushToken} is not a valid Expo push token`);
+      return;
+    }
+
+    const message = {
+      to: pushToken,
+      sound: "default" as const,
+      title,
+      body,
+      data,
+    };
+
+    const [ticket] = await expo.sendPushNotificationsAsync([message]);
+    console.log(`Push notification sent successfully. Ticket:`, ticket);
+  } catch (error) {
+    console.error(`Error sending push notification:`, error);
+    throw error;
+  }
 }
 
 const razorpay = new Razorpay({
@@ -158,6 +197,35 @@ async function sendPushNotifications(
   }
 
   return tickets;
+}
+
+// Function to send push notification
+async function sendPushNotification(
+  pushToken: string,
+  title: string,
+  body: string,
+  data: object = {}
+): Promise<void> {
+  try {
+    if (!Expo.isExpoPushToken(pushToken)) {
+      console.error(`Push token ${pushToken} is not a valid Expo push token`);
+      return;
+    }
+
+    const message = {
+      to: pushToken,
+      sound: "default" as const,
+      title,
+      body,
+      data,
+    };
+
+    const [ticket] = await expo.sendPushNotificationsAsync([message]);
+    console.log(`Push notification sent successfully to host. Ticket:`, ticket);
+  } catch (error) {
+    console.error(`Error sending push notification:`, error);
+    throw error;
+  }
 }
 
 // Controller to create a new booking and notify hosts
@@ -347,61 +415,91 @@ export const getBookings = async (req: Request, res: Response) => {
   }
 };
 
-// Controller to add a host to an accepted hosts list in a booking
+// Controller to add a host to an accepted hosts list in a booking and notify pet parent
+export const addAcceptedHost = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { bookingId } = req.body;
+      const userId = req.user?.id; // Get the logged-in user's ID (host)
 
-export const addAcceptedHost = async (req: Request, res: Response) => {
-  try {
-    const { bookingId } = req.body;
-    const userId = (req as any).user.id; // Get the logged-in user's ID
+      if (!userId) {
+        return next(new ErrorHandler("User not authenticated", 401));
+      }
 
-    // First find the host profile for the logged-in user
-    const hostProfile = await HostProfile.findOne({ userId });
+      // Find the host profile for the logged-in user and populate user details
+      const hostProfile = await HostProfile.findOne({ userId }).populate<{
+        userId: IUserWithPushToken;
+      }>("userId", "fullname");
 
-    if (!hostProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "Host profile not found for this user",
+      if (!hostProfile) {
+        return next(new ErrorHandler("Host profile not found for this user", 404));
+      }
+
+      // Find the specific booking by ID and ensure host isn't already accepted
+      const booking = await Booking.findOne({
+        _id: bookingId,
+        acceptedHosts: { $ne: userId },
+      }).populate<{ userId: IUserWithPushToken }>("userId", "fullname pushToken");
+
+      if (!booking) {
+        return next(
+          new ErrorHandler("Booking not found or host already accepted", 404)
+        );
+      }
+
+      // Add the host user ID to the acceptedHosts array
+      booking.acceptedHosts.push(userId);
+      await booking.save();
+
+      // Get the pet parent's details
+      const petParent = booking.userId as IUserWithPushToken;
+      const hostFullName = hostProfile.userId.fullname;
+
+      // Log the acceptance
+      console.log(
+        `Host ${hostFullName} accepted booking request ${bookingId} from ${petParent.fullname}`
+      );
+
+      // Send push notification to pet parent if they have a push token
+      if (petParent.pushToken) {
+        await sendPushNotificationaccept(
+          petParent.pushToken,
+          "Booking Request Accepted!",
+          `Your booking has been accepted by host ${hostFullName}.`,
+          {
+            bookingId: booking._id,
+            hostId: hostProfile._id,
+            hostName: hostFullName,
+            timestamp: new Date().toISOString(),
+          }
+        );
+      } else {
+        console.log(
+          `No push token available for pet parent ${petParent.fullname}`
+        );
+      }
+
+      // Populate the acceptedHosts field before sending response
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate("acceptedHosts", "fullName city email")
+        .populate("userId", "fullname email");
+
+      res.status(200).json({
+        success: true,
+        message: "Host profile added as an accepted host",
+        booking: populatedBooking,
       });
+    } catch (error) {
+      console.error("Error adding accepted host:", error);
+      return next(
+        new ErrorHandler(
+          "Error adding accepted host",
+          500
+        )
+      );
     }
-
-    // Find the specific booking by ID and ensure host isn't already accepted
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      acceptedHosts: { $ne: userId },
-    });
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found or host already accepted",
-      });
-    }
-
-    // Add the host profile ID to the acceptedHosts array
-    booking.acceptedHosts.push(userId);
-
-    // Save the updated booking
-    await booking.save();
-
-    // Populate the acceptedHosts field before sending response
-    const populatedBooking = await Booking.findById(booking._id).populate(
-      "acceptedHosts"
-    );
-
-    res.status(200).json({
-      success: true,
-      message: "Host profile added as an accepted host",
-      booking: populatedBooking,
-    });
-  } catch (error) {
-    console.log("Error adding accepted host:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error adding accepted host",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
   }
-};
+);
 
 export const declineHost = async (req: Request, res: Response) => {
   try {
@@ -483,89 +581,189 @@ export const updateAcceptedHosts = async (req: Request, res: Response) => {
   }
 };
 
-export const updateBookingWithSelectedHost = async (
-  req: Request,
-  res: Response
-) => {
-  const { selectedHostIds } = req.body;
-  console.log("backend selected", selectedHostIds);
-  const userId = req.user?.id; // Assuming req.user._id contains the authenticated user's ID
+// Modified confirm booking controller
+export const updateBookingWithSelectedHost = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { selectedHostIds, bookingId } = req.body;
+    const userId = req.user?.id;
 
-  try {
-    if (!selectedHostIds || selectedHostIds.length === 0) {
-      return res.status(400).json({ message: "No hosts selected." });
+    console.log("Received request body:", req.body);
+    console.log("Authenticated user ID:", userId);
+
+    try {
+      // Validate inputs
+      console.log("Validating input data...");
+      if (!selectedHostIds || selectedHostIds.length === 0) {
+        console.error("Error: No hosts selected.");
+        return next(new ErrorHandler("No hosts selected.", 400));
+      }
+      if (!bookingId) {
+        console.error("Error: Booking ID is required.");
+        return next(new ErrorHandler("Booking ID is required.", 400));
+      }
+      if (!userId) {
+        console.error("Error: User not authenticated.");
+        return next(new ErrorHandler("User not authenticated.", 401));
+      }
+
+      // Verify booking exists and belongs to user
+      console.log(
+        `Fetching booking with ID ${bookingId} for user ${userId}...`
+      );
+      const booking = await Booking.findOne({ _id: bookingId, userId });
+      console.log("Booking found:", booking);
+
+      if (!booking) {
+        console.error("Error: Booking not found or unauthorized.");
+        return next(
+          new ErrorHandler("Booking not found or unauthorized.", 404)
+        );
+      }
+
+      // Since acceptedHosts contains user IDs directly, convert them to strings
+      const acceptedHostUserIds = booking.acceptedHosts.map((id) =>
+        id.toString()
+      );
+      console.log("Accepted host user IDs:", acceptedHostUserIds);
+
+      // Validate that all selectedHostIds are in acceptedHostUserIds
+      console.log("Validating selected hosts:", selectedHostIds);
+      const allHostsValid = selectedHostIds.every((hostId: string) =>
+        acceptedHostUserIds.includes(hostId)
+      );
+
+      if (!allHostsValid) {
+        console.error("Error: Invalid or unauthorized host selection.");
+        return next(
+          new ErrorHandler("Invalid or unauthorized host selection.", 400)
+        );
+      }
+
+      // Fetch the host profile for the selected host user ID
+      const selectedHostUserId = selectedHostIds[0];
+      const selectedHostProfile = await HostProfileModel.findOne({
+        userId: selectedHostUserId,
+      });
+
+      if (!selectedHostProfile) {
+        console.error("Error: Host profile not found for selected user ID.");
+        return next(new ErrorHandler("Host profile not found.", 404));
+      }
+
+      // Update booking with selected host (using host profile ID)
+      console.log(
+        `Updating booking ${bookingId} with selected host profile ${selectedHostProfile._id}...`
+      );
+      booking.selectedHost = selectedHostProfile._id;
+      await booking.save();
+      console.log("Booking updated successfully.");
+
+      // Get pet parent's details
+      console.log(`Fetching pet parent details for user ${userId}...`);
+      const petParent = await userModel
+        .findById(userId)
+        .select("fullname email");
+      console.log("Pet parent details:", petParent);
+
+      if (!petParent) {
+        console.error("Error: Pet parent not found.");
+        return next(new ErrorHandler("Pet parent not found.", 404));
+      }
+
+      // Send push notification to selected host
+      const selectedHost = selectedHostProfile as IHostWithPushToken;
+      console.log(`Selected host for notification: ${selectedHost.userId}`);
+
+      if (selectedHost.pushToken) {
+        console.log(`Sending push notification to ${selectedHost.userId}...`);
+        await sendPushNotification(
+          selectedHost.pushToken,
+          "Booking Confirmed!",
+          `You have been selected as a host by ${petParent.fullname}.`,
+          {
+            bookingId: bookingId,
+            petParentId: userId,
+            timestamp: new Date().toISOString(),
+          }
+        );
+        console.log("Push notification sent successfully.");
+      } else {
+        console.warn(`No push token available for host ${selectedHost.userId}`);
+      }
+
+      // Send success response
+      console.log("Returning success response...");
+      res.status(200).json({
+        success: true,
+        message: "Booking confirmed successfully",
+        booking: {
+          ...booking.toObject(),
+          selectedHost: selectedHost,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Unexpected error in updateBookingWithSelectedHost:",
+        error
+      );
+      return next(
+        new ErrorHandler("Server error, please try again later", 500)
+      );
     }
-
-    // Check that each host ID is valid and exists
-    const validHosts = await HostProfile.find({
-      userId: { $in: selectedHostIds },
-    });
-
-    if (validHosts.length !== selectedHostIds.length) {
-      return res.status(400).json({ message: "Invalid selected host ID" });
-    }
-
-    // Update booking with the selected hosts
-    await Booking.updateMany(
-      { userId },
-      { $set: { selectedHost: selectedHostIds[0] } } // Or store multiple IDs if necessary
-    );
-
-    res.json({ success: true, message: "Booking confirmed successfully" });
-  } catch (error) {
-    console.log("Error in confirmBooking:", error);
-    res.status(500).json({ message: "Server error, please try again later" });
   }
-};
+);
 
 export const getBilling = async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.body; // Assuming `req.user` contains the authenticated user
+    const { bookingId } = req.body;
 
-    // Step 1: Retrieve bookings for the authenticated user
-    const booking = await Booking.find({ _id: bookingId }).lean(); // Use `lean()` for better performance
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required.",
+      });
+    }
 
-    // if (!bookings || bookings.length === 0) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "No bookings found for this user.",
-    //   });
-    // }
+    // Step 1: Retrieve the booking
+    const bookings = await Booking.find({ _id: bookingId }).lean();
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No bookings found for this ID.",
+      });
+    }
 
-    // // Step 2: Extract unique `selectedHost` IDs from the bookings
-    // const selectedHostIds = [
-    //   ...new Set(bookings.map((booking) => booking.selectedHost).filter(Boolean)),
-    // ];
+    const booking = bookings[0];
 
-    // if (selectedHostIds.length === 0) {
-    //   return res.status(404).json({
-    //     success: true,
-    //     message: "No hosts found for the user's bookings.",
-    //     bookings: bookings.map((booking) => ({ ...booking, hostDetails: null })),
-    //   });
-    // }
+    // Step 2: Fetch host profile if selectedHost exists
+    let selectedHostDetails = null;
+    if (booking.selectedHost) {
+      const host = await HostProfileModel.findOne({
+        _id: booking.selectedHost,
+      }).lean();
 
-    // Step 3: Fetch host profiles where userId matches `selectedHost`
-    const host = await HostProfile.find({
-      userId: booking[0].selectedHost,
-    }); // Exclude _id and __v for cleaner response
+      if (host) {
+        selectedHostDetails = {
+          fullName: host.fullName,
+          hostProfile: {
+            pricingBoarding: host.hostProfile.pricingBoarding,
+            pricingVegMeal: host.hostProfile.pricingVegMeal,
+            pricingNonVegMeal: host.hostProfile.pricingNonVegMeal,
+          },
+        };
+      }
+    }
 
-    // // Step 4: Map host details to corresponding bookings
-    // const bookingsWithHostDetails = bookings.map((booking) => {
-    //   const hostDetails = hosts.find(
-    //     (host) => String(host.userId) === String(booking.selectedHost)
-    //   );
-    //   return {
-    //     ...booking,
-    //     hostDetails: hostDetails || null, // Add host details or null if not found
-    //   };
-    // });
+    // Step 3: Format the response
+    const bookingWithDetails = {
+      ...booking,
+      selectedHost: selectedHostDetails,
+    };
 
-    // Step 5: Send the response with the enriched bookings
     return res.status(200).json({
       success: true,
       message: "Billing details retrieved successfully.",
-      bookings: { ...booking[0], selectedHost: host[0] },
+      bookings: [bookingWithDetails], // Return as an array
     });
   } catch (error) {
     console.log("Error fetching billing details:", error);
