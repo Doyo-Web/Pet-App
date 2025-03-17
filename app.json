@@ -22,6 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.porwalsachin2510.doyomobile",
+      "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",

@@ -201,8 +201,6 @@ export default function BookingScreenThree() {
         }
       );
 
-      console.log(response.data);
-
       if (response.data.success) {
         Alert.alert("Success", "Booking confirmed successfully!", [
           { text: "OK", onPress: () => router.push("./booknowfour") },

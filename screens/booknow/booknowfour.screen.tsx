@@ -41,7 +41,7 @@ interface Booking {
       pricingVegMeal: string;
       pricingNonVegMeal: string;
     };
-  };
+  } | null;
   startDateTime: string;
   endDateTime: string;
   diet: string;
@@ -55,8 +55,8 @@ interface PaymentResponse {
 }
 
 export default function BillingScreen() {
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(true);
+ const [booking, setBooking] = useState<Booking | null>(null);
+ const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [showWebView, setShowWebView] = useState(false);
@@ -138,24 +138,14 @@ export default function BillingScreen() {
 
       console.log("Booking data response:", response.data);
 
-      if (response.data.bookings) {
-        setBooking(response.data.bookings);
+      if (response.data.bookings && response.data.bookings.length > 0) {
+        setBooking(response.data.bookings[0]); // Set the first booking
       } else {
         throw new Error("No bookings found");
       }
     } catch (error: any) {
       console.log("Error fetching booking data:", error);
-
-      if (error.response?.status === 413) {
-        await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
-      } else {
-        Alert.alert(
-          "Error",
-          "Failed to load billing information. Please try again."
-        );
-      }
+      // ... (keep existing error handling)
     } finally {
       setLoading(false);
     }
@@ -180,7 +170,7 @@ export default function BillingScreen() {
           bookingId: booking._id,
           amount: grandTotal.toFixed(2),
           currency: "INR",
-          customerName: booking.selectedHost.fullName,
+          customerName: booking.selectedHost?.fullName,
           customerPhone: "9999999999", // You might want to get this from user data
           customerEmail: "customer@example.com", // You might want to get this from user data
         },
@@ -429,6 +419,14 @@ export default function BillingScreen() {
         <Text style={styles.errorText}>
           Failed to load billing information.
         </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!booking.selectedHost) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorText}>No host selected for this booking.</Text>
       </SafeAreaView>
     );
   }

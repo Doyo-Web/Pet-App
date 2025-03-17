@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "92953202941",
+    "project_id": "doyo-60cba",
+    "storage_bucket": "doyo-60cba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92953202941:android:9aa63e0431cb675757ee94",
+        "android_client_info": {
+          "package_name": "com.porwalsachin2510.doyomobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX2H-dzVepQGS3PG1meWa1pcEfinff4sw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
