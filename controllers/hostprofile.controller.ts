@@ -185,171 +185,333 @@ const uploadImage = async (base64Image: string, folder: string) => {
 //   }
 // );
 
-export const createHostProfile = catchAsyncError(
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Check if the user already has a host profile
-      const existingHostProfile = await HostProfileModel.findOne({
-        userId: req.user?.id,
+// export const createHostProfile = catchAsyncError(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       // Check if the user already has a host profile
+//       const existingHostProfile = await HostProfileModel.findOne({
+//         userId: req.user?.id,
+//       });
+
+//       if (existingHostProfile) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "User already has a host profile",
+//         });
+//       }
+
+//       // Destructure request body
+//       const {
+//         fullName,
+//         phoneNumber,
+//         email,
+//         age,
+//         gender,
+//         dateOfBirth,
+//         profession,
+//         location,
+//         line1,
+//         line2,
+//         city,
+//         pincode,
+//         residenceType,
+//         builtUpArea,
+//         petSize,
+//         petGender,
+//         petCount,
+//         willingToWalk,
+//         hasAreaRestrictions,
+//         areaRestrictions,
+//         walkFrequency,
+//         walkDuration,
+//         willingToCook,
+//         cookingOptions,
+//         groomPet,
+//         hasPet,
+//         pets,
+//         hasVetNearby,
+//         vetInfo,
+//         HostProfile: {
+//           profileImage,
+//           bio,
+//           idProof,
+//           facilityPictures,
+//           petPictures,
+//           pricingDaycare,
+//           pricingBoarding,
+//           pricingVegMeal,
+//           pricingNonVegMeal,
+//         },
+//         paymentDetails: {
+//           accountHolderName,
+//           accountNumber,
+//           ifscCode,
+//           bankName,
+//           upiid,
+//         },
+//       } = req.body;
+
+//       // Upload images to Cloudinary
+//       const uploadedProfileImage = profileImage
+//         ? await uploadImage(profileImage, "host_profiles/profile_Image")
+//         : null;
+
+//       const uploadedIdProof = idProof
+//         ? await uploadImage(idProof, "host_profiles/host_idproof")
+//         : null;
+
+//       const uploadedFacilityPictures = await Promise.all(
+//         facilityPictures.map(async (base64Image: string) => {
+//           if (base64Image && base64Image.trim() !== "") {
+//             return await uploadImage(
+//               base64Image,
+//               "host_profiles/facility_pictures"
+//             );
+//           }
+//           return null;
+//         })
+//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+//       const uploadedPetPictures = await Promise.all(
+//         petPictures.map(async (base64Image: string) => {
+//           if (base64Image && base64Image.trim() !== "") {
+//             return await uploadImage(base64Image, "host_profiles/pet_pictures");
+//           }
+//           return null;
+//         })
+//       ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+//       // Create the host profile
+//       const newHostProfile = new HostProfileModel({
+//         userId: req.user?.id,
+//         fullName,
+//         phoneNumber,
+//         email,
+//         age,
+//         gender,
+//         dateOfBirth,
+//         profession,
+//         location,
+//         line1,
+//         line2,
+//         city,
+//         pincode,
+//         residenceType,
+//         builtUpArea,
+//         petSize,
+//         petGender,
+//         petCount,
+//         willingToWalk,
+//         hasAreaRestrictions,
+//         areaRestrictions,
+//         walkFrequency,
+//         walkDuration,
+//         willingToCook,
+//         cookingOptions,
+//         groomPet,
+//         hasPet,
+//         pets,
+//         hasVetNearby,
+//         vetInfo,
+
+//         hostProfile: {
+//           profileImage: uploadedProfileImage?.url || "",
+//           bio,
+//           idProof: uploadedIdProof?.url || "",
+//           facilityPictures: uploadedFacilityPictures.map(
+//             (pic) => pic?.url || ""
+//           ),
+//           petPictures: uploadedPetPictures.map((pic) => pic?.url || ""),
+//           pricingDaycare,
+//           pricingBoarding,
+//           pricingVegMeal,
+//           pricingNonVegMeal,
+//         },
+
+//         paymentDetails: {
+//           accountHolderName,
+//           accountNumber,
+//           ifscCode,
+//           bankName,
+//           upiid,
+//         },
+//       });
+
+//       const savedHostProfile = await newHostProfile.save();
+
+//       res.status(201).json({
+//         success: true,
+//         message: "Host Profile Created Successfully",
+//         hostProfile: savedHostProfile,
+//       });
+//     } catch (error: any) {
+//       console.log("Host Profile Creation Error:", error);
+//       return next(new ErrorHandler(error.message, 400));
+//     }
+//   }
+// );
+
+export const createHostProfile = catchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check if the user already has a host profile
+    const existingHostProfile = await HostProfileModel.findOne({
+      userId: req.user?.id,
+    });
+
+    if (existingHostProfile) {
+      return res.status(400).json({
+        success: false,
+        message: "User already has a host profile",
       });
-
-      if (existingHostProfile) {
-        return res.status(400).json({
-          success: false,
-          message: "User already has a host profile",
-        });
-      }
-
-      // Destructure request body
-      const {
-        fullName,
-        phoneNumber,
-        email,
-        age,
-        gender,
-        dateOfBirth,
-        profession,
-        location,
-        line1,
-        line2,
-        city,
-        pincode,
-        residenceType,
-        builtUpArea,
-        petSize,
-        petGender,
-        petCount,
-        willingToWalk,
-        hasAreaRestrictions,
-        areaRestrictions,
-        walkFrequency,
-        walkDuration,
-        willingToCook,
-        cookingOptions,
-        groomPet,
-        hasPet,
-        pets,
-        hasVetNearby,
-        vetInfo,
-        HostProfile: {
-          profileImage,
-          bio,
-          idProof,
-          facilityPictures,
-          petPictures,
-          pricingDaycare,
-          pricingBoarding,
-          pricingVegMeal,
-          pricingNonVegMeal,
-        },
-        paymentDetails: {
-          accountHolderName,
-          accountNumber,
-          ifscCode,
-          bankName,
-          upiid,
-        },
-      } = req.body;
-
-      // Upload images to Cloudinary
-      const uploadedProfileImage = profileImage
-        ? await uploadImage(profileImage, "host_profiles/profile_Image")
-        : null;
-
-      const uploadedIdProof = idProof
-        ? await uploadImage(idProof, "host_profiles/host_idproof")
-        : null;
-
-      const uploadedFacilityPictures = await Promise.all(
-        facilityPictures.map(async (base64Image: string) => {
-          if (base64Image && base64Image.trim() !== "") {
-            return await uploadImage(
-              base64Image,
-              "host_profiles/facility_pictures"
-            );
-          }
-          return null;
-        })
-      ).then((pictures) => pictures.filter((picture) => picture !== null));
-
-      const uploadedPetPictures = await Promise.all(
-        petPictures.map(async (base64Image: string) => {
-          if (base64Image && base64Image.trim() !== "") {
-            return await uploadImage(base64Image, "host_profiles/pet_pictures");
-          }
-          return null;
-        })
-      ).then((pictures) => pictures.filter((picture) => picture !== null));
-
-      // Create the host profile
-      const newHostProfile = new HostProfileModel({
-        userId: req.user?.id,
-        fullName,
-        phoneNumber,
-        email,
-        age,
-        gender,
-        dateOfBirth,
-        profession,
-        location,
-        line1,
-        line2,
-        city,
-        pincode,
-        residenceType,
-        builtUpArea,
-        petSize,
-        petGender,
-        petCount,
-        willingToWalk,
-        hasAreaRestrictions,
-        areaRestrictions,
-        walkFrequency,
-        walkDuration,
-        willingToCook,
-        cookingOptions,
-        groomPet,
-        hasPet,
-        pets,
-        hasVetNearby,
-        vetInfo,
-
-        hostProfile: {
-          profileImage: uploadedProfileImage?.url || "",
-          bio,
-          idProof: uploadedIdProof?.url || "",
-          facilityPictures: uploadedFacilityPictures.map(
-            (pic) => pic?.url || ""
-          ),
-          petPictures: uploadedPetPictures.map((pic) => pic?.url || ""),
-          pricingDaycare,
-          pricingBoarding,
-          pricingVegMeal,
-          pricingNonVegMeal,
-        },
-
-        paymentDetails: {
-          accountHolderName,
-          accountNumber,
-          ifscCode,
-          bankName,
-          upiid,
-        },
-      });
-
-      const savedHostProfile = await newHostProfile.save();
-
-      res.status(201).json({
-        success: true,
-        message: "Host Profile Created Successfully",
-        hostProfile: savedHostProfile,
-      });
-    } catch (error: any) {
-      console.log("Host Profile Creation Error:", error);
-      return next(new ErrorHandler(error.message, 400));
     }
+
+    // Destructure request body
+    const {
+      fullName,
+      phoneNumber,
+      email,
+      age,
+      gender,
+      dateOfBirth,
+      profession,
+      location,
+      line1,
+      line2,
+      city,
+      pincode,
+      residenceType,
+      builtUpArea,
+      petSize,
+      petGender,
+      petCount,
+      willingToWalk,
+      hasAreaRestrictions,
+      areaRestrictions,
+      walkFrequency,
+      walkDuration,
+      willingToCook,
+      cookingOptions,
+      groomPet,
+      hasPet,
+      pets,
+      hasVetNearby,
+      vetInfo,
+      HostProfile: {
+        profileImage,
+        bio,
+        idProof,
+        facilityPictures,
+        petPictures,
+        pricingDaycare,
+        pricingBoarding,
+        pricingVegMeal,
+        pricingNonVegMeal,
+      },
+      paymentDetails: {
+        accountHolderName,
+        accountNumber,
+        ifscCode,
+        bankName,
+        upiid,
+      },
+    } = req.body;
+
+    // Upload images to Cloudinary
+    const uploadedProfileImage = profileImage
+      ? await uploadImage(profileImage, "host_profiles/profile_Image")
+      : null;
+
+    const uploadedIdProof = idProof
+      ? await uploadImage(idProof, "host_profiles/host_idproof")
+      : null;
+
+    const uploadedFacilityPictures = await Promise.all(
+      facilityPictures.map(async (base64Image: string) => {
+        if (base64Image && base64Image.trim() !== "") {
+          return await uploadImage(
+            base64Image,
+            "host_profiles/facility_pictures"
+          );
+        }
+        return null;
+      })
+    ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+    const uploadedPetPictures = await Promise.all(
+      petPictures.map(async (base64Image: string) => {
+        if (base64Image && base64Image.trim() !== "") {
+          return await uploadImage(base64Image, "host_profiles/pet_pictures");
+        }
+        return null;
+      })
+    ).then((pictures) => pictures.filter((picture) => picture !== null));
+
+    // Create the host profile
+    const newHostProfile = new HostProfileModel({
+      userId: req.user?.id,
+      fullName,
+      phoneNumber,
+      email,
+      age,
+      gender,
+      dateOfBirth,
+      profession,
+      location,
+      line1,
+      line2,
+      city,
+      pincode,
+      residenceType,
+      builtUpArea,
+      petSize,
+      petGender,
+      petCount,
+      willingToWalk,
+      hasAreaRestrictions,
+      areaRestrictions,
+      walkFrequency,
+      walkDuration,
+      willingToCook,
+      cookingOptions,
+      groomPet,
+      hasPet,
+      pets, // This now includes petType field and temperament with humans instead of human
+      hasVetNearby,
+      vetInfo,
+
+      hostProfile: {
+        profileImage: uploadedProfileImage?.url || "",
+        bio,
+        idProof: uploadedIdProof?.url || "",
+        facilityPictures: uploadedFacilityPictures.map((pic) => pic?.url || ""),
+        petPictures: uploadedPetPictures.map((pic) => pic?.url || ""),
+        pricingDaycare,
+        pricingBoarding,
+        pricingVegMeal,
+        pricingNonVegMeal,
+      },
+
+      paymentDetails: {
+        accountHolderName,
+        accountNumber,
+        ifscCode,
+        bankName,
+        upiid,
+      },
+    });
+
+    const savedHostProfile = await newHostProfile.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Host Profile Created Successfully",
+      hostProfile: savedHostProfile,
+    });
+  } catch (error: any) {
+    console.log("Host Profile Creation Error:", error);
+    return next(new ErrorHandler(error.message, 400));
   }
-);
+});
 
 export const getHostBookings = async (req: Request, res: Response) => {
   try {
@@ -507,6 +669,51 @@ export const updatehostpushtoken = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Error updating push token",
+    });
+  }
+};
+
+// Get host details by ID
+export const getHostDetails = async (req: Request, res: Response) => {
+  try {
+    const { hostId } = req.params;
+
+
+    // Find host by ID
+    const host = await HostProfileModel.findOne({userId: hostId}); // Exclude version key
+
+    if (!host) {
+      return res.status(404).json({
+        success: false,
+        message: 'Host not found'
+      });
+    }
+
+    const rating = 0;
+    
+    // Return host details
+    return res.status(200).json({
+      success: true,
+      host: {
+        userId: host._id,
+        fullName: host.fullName,
+        city: host.city || host.line1, // Using line1 as fallback if city is empty
+        profileImage: host.hostProfile.profileImage,
+        rating: rating,
+        bio: host.hostProfile.bio || "No bio provided",
+        phoneNumber: host.phoneNumber,
+        email: host.email,
+        // Additional details you might want to expose
+        pricingBoarding: host.hostProfile.pricingBoarding,
+        facilityPictures: host.hostProfile.facilityPictures,
+      },
+    });
+
+  } catch (error) {
+    console.error('Error fetching host details:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching host details'
     });
   }
 };

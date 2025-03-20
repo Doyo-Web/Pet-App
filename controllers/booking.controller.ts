@@ -342,7 +342,10 @@ export const getBookingById = async (req: Request, res: Response) => {
     }
 
     // Find the booking by ID
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      paymentStatus: "pending",
+    });
 
     if (!booking) {
       return res.status(404).json({
@@ -654,7 +657,7 @@ export const updateBookingWithSelectedHost = catchAsyncError(
       console.log(
         `Updating booking ${bookingId} with selected host profile ${selectedHostProfile._id}...`
       );
-      booking.selectedHost = selectedHostProfile._id;
+      booking.selectedHost = selectedHostProfile.userId;
       await booking.save();
       console.log("Booking updated successfully.");
 
@@ -738,8 +741,9 @@ export const getBilling = async (req: Request, res: Response) => {
     // Step 2: Fetch host profile if selectedHost exists
     let selectedHostDetails = null;
     if (booking.selectedHost) {
+      // Query HostProfileModel using userId instead of _id
       const host = await HostProfileModel.findOne({
-        _id: booking.selectedHost,
+        userId: booking.selectedHost, // Match the userId field
       }).lean();
 
       if (host) {
@@ -751,6 +755,10 @@ export const getBilling = async (req: Request, res: Response) => {
             pricingNonVegMeal: host.hostProfile.pricingNonVegMeal,
           },
         };
+      } else {
+        console.log(
+          `No host profile found for userId: ${booking.selectedHost}`
+        );
       }
     }
 

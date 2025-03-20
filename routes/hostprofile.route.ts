@@ -5,6 +5,7 @@ import {
   deleteHostProfile,
   getHost,
   getHostBookings,
+  getHostDetails,
   updatehostpushtoken,
 } from "../controllers/hostprofile.controller";
 
@@ -43,5 +44,11 @@ hostProfileRouter.put(
   "/update-host-push-token",
   isAuthenticated,
   updatehostpushtoken
+);
+
+hostProfileRouter.get(
+  "/get-host-details/:hostId",
+  isAuthenticated,
+  getHostDetails
 );
 export default hostProfileRouter;

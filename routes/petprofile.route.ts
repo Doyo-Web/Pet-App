@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated } from "../middleware/auth";
 import {
   CreatePetProfile,
+  deletePetProfile,
   GetPetProfile,
   GetSinglePetProfile,
   UpdatePetProfile,
@@ -27,6 +28,12 @@ petprofileRouter.post(
   "/petprofile-update/:id",
   isAuthenticated,
   UpdatePetProfile
+);
+
+petprofileRouter.delete(
+  "/petprofile-delete/:id",
+  isAuthenticated,
+  deletePetProfile
 );
 
 export default petprofileRouter;

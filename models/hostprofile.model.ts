@@ -8,13 +8,20 @@ interface IVetInfo {
   address: string;
 }
 
-// Interface for individual Pet
+// Interface for individual Pet with updated fields
 interface IPet {
-  petName: string;
-  petType: string;
-  petBreed: string;
-  petAge: number;
-  // Add additional fields as per your initialPet structure.
+  name: string;
+  petType: string; // New field for pet type (e.g., Dog, Cat)
+  breed: string;
+  age: string;
+  gender: "Male" | "Female" | "";
+  isSterlized: "Yes" | "No" | ""; // Changed from boolean to string
+  temperament: {
+    dogs: "Friendly" | "Neutral" | "Aggressive" | "";
+    humans: "Friendly" | "Neutral" | "Aggressive" | ""; // Changed from human to humans
+    cats: "Friendly" | "Neutral" | "Aggressive" | "";
+  };
+  uncomfortableWith: string;
 }
 
 // Interface for Host Profile specific details
@@ -84,13 +91,44 @@ const VetInfoSchema = new Schema<IVetInfo>({
   address: { type: String, required: false },
 });
 
-// Schema for individual Pet
+// Schema for Temperament
+const TemperamentSchema = new Schema({
+  dogs: {
+    type: String,
+    enum: ["Friendly", "Neutral", "Aggressive", ""],
+    default: "",
+  },
+  humans: {
+    // Changed from human to humans
+    type: String,
+    enum: ["Friendly", "Neutral", "Aggressive", ""],
+    default: "",
+  },
+  cats: {
+    type: String,
+    enum: ["Friendly", "Neutral", "Aggressive", ""],
+    default: "",
+  },
+});
+
+// Schema for individual Pet with updated fields
 const PetSchema = new Schema<IPet>({
-  petName: { type: String, required: false },
-  petType: { type: String, required: false },
-  petBreed: { type: String, required: false },
-  petAge: { type: Number, required: false },
-  // Add other pet-specific fields as per the initialPet state.
+  name: { type: String, required: false },
+  petType: { type: String, required: false }, // New field for pet type
+  breed: { type: String, required: false },
+  age: { type: String, required: false },
+  gender: {
+    type: String,
+    enum: ["Male", "Female", ""],
+    default: "",
+  },
+  isSterlized: {
+    type: String,
+    enum: ["Yes", "No", ""],
+    default: "",
+  }, // Changed from boolean to string
+  temperament: { type: TemperamentSchema, default: () => ({}) },
+  uncomfortableWith: { type: String, required: false },
 });
 
 // Schema for Host Profile specific details

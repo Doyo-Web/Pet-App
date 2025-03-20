@@ -338,3 +338,61 @@ export const UpdatePetProfile = catchAsyncError(
     }
   }
 );
+
+interface CloudinaryImage {
+  public_id: string;
+}
+
+// Add this new controller method for deleting a pet profile
+export const deletePetProfile = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const userId = req.user?.id;
+
+    // Find the pet profile
+    const petProfile = await PetProfileModel.findById(id);
+
+    if (!petProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet profile not found",
+      })
+    }
+
+    // Check if the pet profile belongs to the authenticated user
+    if (petProfile.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this pet profile",
+      })
+    }
+
+
+function isCloudinaryImage(image: any): image is CloudinaryImage {
+  return image && typeof image === "object" && "public_id" in image;
+}
+
+if (petProfile.petImages && petProfile.petImages.length > 0) {
+  for (const image of petProfile.petImages) {
+    if (isCloudinaryImage(image) && image.public_id) {
+      await cloudinary.uploader.destroy(image.public_id);
+    }
+  }
+}
+
+    // Delete the pet profile from the database
+    await PetProfileModel.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Pet profile deleted successfully",
+    })
+  } catch (error: any) {
+    console.error("Delete pet profile error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting the pet profile",
+      error: error.message,
+    })
+  }
+}
