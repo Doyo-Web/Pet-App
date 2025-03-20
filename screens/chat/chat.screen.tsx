@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { RectButton } from "react-native-gesture-handler";
 
 type User = {
   userId: string;
@@ -31,6 +32,7 @@ type User = {
   };
   lastMessage?: string;
   lastMessageTime?: string;
+  chatStatus: "active" | "expired";
 };
 
 type Participant = {
@@ -44,6 +46,13 @@ type Participant = {
   };
 };
 
+type BookingResponse = {
+  booking?: {
+    endDateTime: string;
+    paymentStatus: string;
+  }[];
+};
+
 const ChatListScreen: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Participant | null>(null);
   const [relatedUsers, setRelatedUsers] = useState<User[]>([]);
@@ -51,7 +60,53 @@ const ChatListScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userType, setUserType] = useState<"host" | "petParent" | null>(null);
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const router = useRouter();
+
+  const checkBookingStatus = async (userId: string): Promise<boolean> => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) throw new Error("No access token found");
+
+      const bookingResponse = await axios.post<BookingResponse>(
+        `${SERVER_URI}/booking-enddate`,
+        { participantId: userId },
+        { headers: { access_token: accessToken } }
+      );
+
+      console.log(`Booking status for ${userId}:`, bookingResponse.data); // Debug log
+
+      const endDateTime = bookingResponse.data.booking?.[0]?.endDateTime;
+      if (endDateTime) {
+        // Check if the booking has ended (current time is past the end date)
+        return new Date() >= new Date(endDateTime);
+      }
+
+      // If no endDateTime is found, default to not expired
+      return false;
+    } catch (error) {
+      console.error(`Error checking booking status for user ${userId}:`, error);
+      // Default to not expired in case of error
+      return false;
+    }
+  };
+
+  const fetchUserDetails = async (userId: string) => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) throw new Error("No access token found");
+
+      const response = await axios.get(`${SERVER_URI}/user/${userId}`, {
+        headers: { access_token: accessToken },
+      });
+
+      console.log(`User Details for ${userId}:`, response.data); // Debug log
+      return response.data.user; // Assuming the user data is under 'user' key
+    } catch (error) {
+      console.error(`Error fetching details for user ${userId}:`, error);
+      return null;
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -64,34 +119,65 @@ const ChatListScreen: React.FC = () => {
         headers: { access_token: accessToken },
       });
 
-      // Determine if user is host or pet parent based on response
+      console.log("API Response from /user-related-bookings:", response.data); // Debug log
+
       const isHost = !!response.data.petParents;
       const isPetParent = !!response.data.hosts;
 
       setUserType(isHost ? "host" : isPetParent ? "petParent" : null);
 
-      // Set current user
       setCurrentUser({
         ...response.data.loggedInUser,
         userType: isHost ? "host" : "petParent",
       });
 
-      // Format the related users with mock data for UI display
-      const mockTimeData = ["11:27 Am", "9:02 Am", "Sunday", "12/01/25"];
-      const mockPetNames = ["Jack's", "Toddy's", "Bruno's", "Chokie's"];
+      const usersList = response.data.hosts || response.data.petParents || [];
+      console.log("Users List:", usersList); // Debug log
 
-      const formattedUsers = (
-        response.data.hosts ||
-        response.data.petParents ||
-        []
-      ).map((user: User, index: number) => ({
-        ...user,
-        lastMessageTime: mockTimeData[index % mockTimeData.length],
-        petName: isHost
-          ? `${mockPetNames[index % mockPetNames.length]} Pet Parent`
-          : `Pet ${isPetParent ? "Boarding" : "DayCare"}`,
-      }));
+      const formattedUsers = await Promise.all(
+        usersList.map(async (user: User) => {
+          const userDetails = await fetchUserDetails(user.userId);
+          const currentDate = new Date();
+          const chatDate = new Date(user.lastMessageTime || currentDate);
 
+          // Check booking status from API instead of time-based calculation
+          const isExpired = await checkBookingStatus(user.userId);
+
+          let formattedTime: string;
+          const timeDiff =
+            (currentDate.getTime() - chatDate.getTime()) /
+            (1000 * 60 * 60 * 24);
+
+          if (timeDiff < 1) {
+            formattedTime = chatDate
+              .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              .replace(/:\d{2}\s/, " ")
+              .toUpperCase();
+          } else if (timeDiff < 7) {
+            formattedTime = chatDate.toLocaleDateString("en-US", {
+              weekday: "long",
+            });
+          } else {
+            formattedTime = chatDate.toLocaleDateString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+              year: "2-digit",
+            });
+          }
+
+          return {
+            ...user,
+            ...(userDetails || {}), // Merge user details if available
+            lastMessageTime: formattedTime,
+            petName: isHost
+              ? `${user.petName || userDetails?.petName || "Pet"}'s Pet Parent`
+              : `Pet ${isPetParent ? "Boarding" : "DayCare"}`,
+            chatStatus: isExpired ? "expired" : "active",
+          };
+        })
+      );
+
+      console.log("Formatted Users:", formattedUsers); // Debug log
       setRelatedUsers(formattedUsers);
       setFilteredUsers(formattedUsers);
     } catch (error: any) {
@@ -104,7 +190,7 @@ const ChatListScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [router]); // Added router to dependencies
+  }, [router]);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,6 +215,7 @@ const ChatListScreen: React.FC = () => {
   const openChat = (relatedUserId: string) => {
     if (!currentUser) return;
 
+    setSelectedChat(relatedUserId);
     router.push({
       pathname: "/chat/chattwo",
       params: {
@@ -145,18 +232,17 @@ const ChatListScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
+          <RectButton
             onPress={handleGoBack}
             style={[
               styles.backButton,
               {
-                backgroundColor:
-                  userType === "petParent" ? "#F96247" : "#00D0C3",
+                backgroundColor: "#F96247",
               },
             ]}
           >
             <Feather name="arrow-left" size={24} color="white" />
-          </TouchableOpacity>
+          </RectButton>
           <Text style={styles.headerTitle}>Chat Box</Text>
         </View>
 
@@ -189,10 +275,11 @@ const ChatListScreen: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.chatItem,
-                  {
-                    backgroundColor:
-                      userType === "petParent" ? "#FEE1E1" : "#E1F5F5",
-                  },
+                  item.chatStatus === "active" && selectedChat === item.userId
+                    ? styles.activeSelectedChat
+                    : item.chatStatus === "active"
+                    ? styles.activeChat
+                    : styles.expiredChat,
                 ]}
                 onPress={() => openChat(item.userId)}
               >
@@ -205,7 +292,7 @@ const ChatListScreen: React.FC = () => {
                 <View style={styles.chatDetails}>
                   <View style={styles.chatHeader}>
                     <Text style={styles.userName}>
-                      {item.email.split("@")[0]}
+                      {item.fullname || item.email.split("@")[0]}
                     </Text>
                     <Text style={styles.timeStamp}>{item.lastMessageTime}</Text>
                   </View>
@@ -283,6 +370,16 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
+  },
+  activeSelectedChat: {
+    backgroundColor: "#FEE1E1",
+  },
+  activeChat: {
+    backgroundColor: "#FFFFFF",
+  },
+  expiredChat: {
+    backgroundColor: "#F5F5F5",
+    opacity: 0.7,
   },
   avatar: {
     width: 50,

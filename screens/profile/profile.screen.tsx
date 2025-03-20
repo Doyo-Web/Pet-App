@@ -36,6 +36,7 @@ import {
   setError,
 } from "@/store/petProfileSlice";
 import type { RootState } from "@/store/store";
+import { RectButton } from "react-native-gesture-handler";
 
 // Define the ImageFile interface to represent the structure of pet images
 interface ImageFile {
@@ -456,9 +457,12 @@ export default function ProfileScreen() {
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prevStep) => prevStep - 1); // Use functional state update for reliable results
+    if (currentStep === 1) {
+      router.push("/");
     }
+      if (currentStep > 1) {
+        setCurrentStep((prevStep) => prevStep - 1); // Use functional state update for reliable results
+      }
   };
 
   const Checkbox: React.FC<CheckboxProps> = ({ label, checked, onCheck }) => (
@@ -893,24 +897,24 @@ export default function ProfileScreen() {
             <Text style={styles.subtitle}>Walks per day:*</Text>
             <View style={styles.radiobuttonbbox}>
               <RadioButton
-                label="Not Trained"
-                checked={formState.walkPerDay === "not trained"}
-                onCheck={() => updateFormState("walkPerDay", "not trained")}
+                label="One time"
+                checked={formState.walkPerDay === "one time"}
+                onCheck={() => updateFormState("walkPerDay", "one time")}
               />
               <RadioButton
-                label="Indoors"
-                checked={formState.walkPerDay === "indoors"}
-                onCheck={() => updateFormState("walkPerDay", "indoors")}
+                label="Two time"
+                checked={formState.walkPerDay === "two time"}
+                onCheck={() => updateFormState("walkPerDay", "two time")}
               />
               <RadioButton
-                label="Outdoors"
-                checked={formState.walkPerDay === "outdoors"}
-                onCheck={() => updateFormState("walkPerDay", "outdoors")}
+                label="Three time"
+                checked={formState.walkPerDay === "three time"}
+                onCheck={() => updateFormState("walkPerDay", "three time")}
               />
               <RadioButton
-                label="Both Indoors and Outdoors"
-                checked={formState.walkPerDay === "both"}
-                onCheck={() => updateFormState("walkPerDay", "both")}
+                label="Four time"
+                checked={formState.walkPerDay === "four time"}
+                onCheck={() => updateFormState("walkPerDay", "four time")}
               />
             </View>
             <Checkbox
@@ -923,30 +927,25 @@ export default function ProfileScreen() {
                 <Text style={styles.subtitle}>Bathing frequency:</Text>
                 <View style={styles.bathingFrequencyboxinnner}>
                   <RadioButton
-                    label="Not Trained"
-                    checked={formState.bathingFrequency === "not trained"}
+                    label="Once a week"
+                    checked={formState.bathingFrequency === "once a week"}
                     onCheck={() =>
-                      updateFormState("bathingFrequency", "not trained")
+                      updateFormState("bathingFrequency", "once a week")
                     }
                   />
                   <RadioButton
-                    label="Indoors"
-                    checked={formState.bathingFrequency === "indoors"}
+                    label="Once a fortnight"
+                    checked={formState.bathingFrequency === "once a fortnight"}
                     onCheck={() =>
-                      updateFormState("bathingFrequency", "indoors")
+                      updateFormState("bathingFrequency", "once a fortnight")
                     }
                   />
                   <RadioButton
-                    label="Outdoors"
-                    checked={formState.bathingFrequency === "outdoors"}
+                    label="Once a month"
+                    checked={formState.bathingFrequency === "once a month"}
                     onCheck={() =>
-                      updateFormState("bathingFrequency", "outdoors")
+                      updateFormState("bathingFrequency", "once a month")
                     }
-                  />
-                  <RadioButton
-                    label="Both Indoors and Outdoors"
-                    checked={formState.bathingFrequency === "both"}
-                    onCheck={() => updateFormState("bathingFrequency", "both")}
                   />
                 </View>
               </View>
@@ -1391,11 +1390,11 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity onPress={prevStep}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={prevStep} style={styles.arrowTouchable}>
+          <RectButton onPress={prevStep} style={styles.arrowTouchable}>
             <View style={styles.arrowcontainer}>
               <Icon name="arrow-back" size={24} color="#000" />
             </View>
-          </TouchableOpacity>
+          </RectButton>
           <Text style={styles.headerTitle}>Pet Profile</Text>
           <View style={styles.progressContainer}>
             {Array.from({ length: totalSteps }, (_, i) => (

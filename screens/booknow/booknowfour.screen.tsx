@@ -24,6 +24,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import WebView from "react-native-webview";
 import React from "react";
+import { RectButton } from "react-native-gesture-handler";
 
 const { width } = Dimensions.get("window");
 
@@ -452,12 +453,12 @@ export default function BillingScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
-          <TouchableOpacity
+          <RectButton
             style={styles.backButton}
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </RectButton>
           <Text style={styles.headerTitle}>Boarding</Text>
         </View>
 

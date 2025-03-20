@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { fontPixel, s, vs } from "../../utils/responsive";
+import { RectButton } from "react-native-gesture-handler";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -114,69 +115,78 @@ export default function BookingsScreen() {
         setBookings(response.data.bookings);
         console.log("get host bookings Data", response.data.bookings);
       } else {
-        Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+        console.log("Error", "Failed to fetch bookings. Please try again.");
       }
     } catch (error: any) {
       if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
+        await AsyncStorage.removeItem("refresh_token");
+        router.replace("/(routes)/login");
       }
       console.log("Error fetching bookings:", error);
-      Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+      console.log("Error", "Failed to fetch bookings. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const renderBookingItem = (item: Booking) => (
-    <View key={item._id} style={styles.bookingItem}>
-      <View style={styles.yellowStrip} />
-      <View style={styles.bookingContent}>
-        <View style={styles.imageContainer}>
-          <Image
-            source={{
-              uri: item.pets[0]?.image || "https://placekitten.com/100/100",
-            }}
-            style={styles.petImage}
-          />
-        </View>
-        <View style={styles.bookingInfo}>
-          <View style={styles.dateContainer}>
-            <CalendarIcon
-              size={16}
-              color="#666666"
-              style={styles.calendarIcon}
+  // Function to determine if booking is completed based on end date
+  const isBookingCompleted = (booking: Booking): boolean => {
+    const currentDate = new Date();
+    const endDate = new Date(booking.endDateTime);
+    return endDate < currentDate && booking.paymentStatus === "completed";
+  };
+
+  const renderBookingItem = (item: Booking) => {
+    const isCompleted = isBookingCompleted(item);
+
+    return (
+      <View key={item._id} style={styles.bookingItem}>
+        <View style={styles.yellowStrip} />
+        <View style={styles.bookingContent}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={{
+                uri: item.pets[0]?.image || "https://placekitten.com/100/100",
+              }}
+              style={styles.petImage}
             />
-            <Text style={styles.dateText}>
-              {new Date(item.startDateTime).getDate()}/
-              {new Date(item.startDateTime).getMonth() + 1} -{" "}
-              {new Date(item.endDateTime).getDate()}/
-              {new Date(item.endDateTime).getMonth() + 1}
-            </Text>
           </View>
-          <Text style={styles.petName}>{item.pets[0]?.name}</Text>
-          <Text style={styles.serviceType}>Pet Boarding</Text>
-          <View style={styles.statusContainer}>
-            <Text
-              style={[
-                styles.statusText,
-                item.paymentStatus === "completed"
-                  ? styles.completedStatus
-                  : styles.pendingStatus,
-              ]}
-            >
-              {item.paymentStatus === "completed" ? "Completed" : "Pending"}
-            </Text>
+          <View style={styles.bookingInfo}>
+            <View style={styles.dateContainer}>
+              <CalendarIcon
+                size={16}
+                color="#666666"
+                style={styles.calendarIcon}
+              />
+              <Text style={styles.dateText}>
+                {new Date(item.startDateTime).getDate()}/
+                {new Date(item.startDateTime).getMonth() + 1} -{" "}
+                {new Date(item.endDateTime).getDate()}/
+                {new Date(item.endDateTime).getMonth() + 1}
+              </Text>
+            </View>
+            <Text style={styles.petName}>{item.pets[0]?.name}</Text>
+            <Text style={styles.serviceType}>Pet Boarding</Text>
+            <View style={styles.statusContainer}>
+              <Text
+                style={[
+                  styles.statusText,
+                  isCompleted ? styles.completedStatus : styles.pendingStatus,
+                ]}
+              >
+                {isCompleted ? "Completed" : "Pending"}
+              </Text>
+            </View>
           </View>
+          <TouchableOpacity style={styles.detailsButton}>
+            <Text style={styles.detailsText}>View Details {">"}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.detailsButton}>
-          <Text style={styles.detailsText}>View Details {">"}</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
 
   const getMarkedDates = (): MarkedDates => {
     const markedDates: MarkedDates = {};
@@ -221,22 +231,50 @@ export default function BookingsScreen() {
     />
   );
 
-  const renderCompletedBookings = () => (
-    <ScrollView style={styles.sectionContent}>
-      {bookings
-        .filter((booking) => booking.paymentStatus === "completed")
-        .map(renderBookingItem)}
-    </ScrollView>
-  );
+  const renderCompletedBookings = () => {
+    const completedBookings = bookings.filter((booking) =>
+      isBookingCompleted(booking)
+    );
 
-  const renderUpcomingBookings = () => (
-    <ScrollView style={styles.sectionContent}>
-      {renderCalendar()}
-      {bookings
-        .filter((booking) => booking.paymentStatus === "pending")
-        .map(renderBookingItem)}
-    </ScrollView>
-  );
+    if (completedBookings.length === 0) {
+      return (
+        <View style={styles.noBookingsContainer}>
+          <Text style={styles.noBookingsText}>
+            No completed bookings at the moment
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.sectionContent}>
+        {completedBookings.map(renderBookingItem)}
+      </ScrollView>
+    );
+  };
+
+  const renderUpcomingBookings = () => {
+    const upcomingBookings = bookings.filter(
+      (booking) => !isBookingCompleted(booking)
+    );
+
+    if (upcomingBookings.length === 0) {
+      return (
+        <View style={styles.noBookingsContainer}>
+          <Text style={styles.noBookingsText}>
+            No upcoming bookings at the moment
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.sectionContent}>
+        {renderCalendar()}
+        {upcomingBookings.map(renderBookingItem)}
+      </ScrollView>
+    );
+  };
 
   const prevStep = () => {
     router.push("/(drawer)/(tabs)/petparents");
@@ -245,15 +283,11 @@ export default function BookingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          onPress={prevStep}
-        >
+        <RectButton style={styles.backButton} onPress={prevStep}>
           <View style={styles.backButtonCircle}>
             <ArrowLeft color="#000" size={24} />
           </View>
-        </TouchableOpacity>
+        </RectButton>
         <Text style={styles.title}>My Bookings</Text>
       </View>
 
@@ -324,10 +358,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  backButtonText: {
-    fontSize: fontPixel(24),
-    fontWeight: "bold",
-  },
   title: {
     fontSize: fontPixel(24),
     fontWeight: "bold",
@@ -365,6 +395,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  noBookingsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: s(20),
+  },
+  noBookingsText: {
+    fontSize: fontPixel(18),
+    color: "#666",
+    textAlign: "center",
   },
   calendar: {
     marginBottom: vs(16),

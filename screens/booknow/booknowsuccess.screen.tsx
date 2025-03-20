@@ -18,6 +18,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
+import { RectButton } from "react-native-gesture-handler";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -33,9 +34,9 @@ const BookSuccessScreen = () => {
         source={require("@/assets/images/bookingsuccessbackground.png")}
       />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <RectButton style={styles.backButton} onPress={()=>router.push("/")}>
           <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
+        </RectButton>
       </View>
       <View style={styles.content}>
         <Image

@@ -24,6 +24,7 @@ import {
   pixelSizeHorizontal,
 } from "../../utils/responsive";
 import React from "react";
+import { RectButton } from "react-native-gesture-handler";
 
 // Define interfaces
 interface Wallet {
@@ -221,9 +222,9 @@ export default function WithdrawScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <RectButton onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#00BFA6" />
-        </TouchableOpacity>
+        </RectButton>
         <Text style={styles.headerTitle}>Withdraw Money</Text>
         <View style={{ width: 24 }} />
       </View>

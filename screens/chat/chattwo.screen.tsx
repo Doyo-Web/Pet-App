@@ -31,6 +31,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { Audio, Video, ResizeMode } from "expo-av";
 import * as ImageManipulator from "expo-image-manipulator";
+import { RectButton } from "react-native-gesture-handler";
 
 interface Message {
   _id: string;
@@ -714,7 +715,7 @@ const ChatScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar hidden={true} />
-      <TouchableOpacity
+      <RectButton
         style={[
           styles.headerContainer,
           { backgroundColor: themeColors.primary },
@@ -754,7 +755,7 @@ const ChatScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </RectButton>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -815,7 +816,7 @@ const ChatScreen: React.FC = () => {
                         },
                       ],
                       opacity: mediaOptionsAnim,
-                      bottom: keyboardVisible ? keyboardHeight + 56 : 56,
+                      bottom: 56,
                     },
                   ]}
                 >

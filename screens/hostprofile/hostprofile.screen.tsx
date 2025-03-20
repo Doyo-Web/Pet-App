@@ -27,6 +27,7 @@ import {
   pixelSizeHorizontal,
 } from "../../utils/responsive";
 import React from "react";
+import { RectButton } from "react-native-gesture-handler";
 
 // Define the Host interface
 interface Host {
@@ -312,9 +313,9 @@ export default function HostProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <RectButton onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#00BFA6" />
-          </TouchableOpacity>
+          </RectButton>
           <TouchableOpacity
             style={styles.earningsContainer}
             onPress={navigateToWallet}

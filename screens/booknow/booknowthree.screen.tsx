@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  RefreshControl,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -18,7 +18,6 @@ import { router } from "expo-router";
 import { SERVER_URI } from "@/utils/uri";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
-import { useFocusEffect } from "@react-navigation/native";
 import {
   widthPixel,
   heightPixel,
@@ -26,6 +25,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
+import { RectButton } from "react-native-gesture-handler";
 
 interface Host {
   userId: string;
@@ -35,6 +35,8 @@ interface Host {
   profileImage: string;
   rating: number;
   bio: string;
+  phoneNumber?: string;
+  email?: string;
 }
 
 interface Booking {
@@ -102,8 +104,11 @@ export default function BookingScreenThree() {
   );
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedHostIds, setSelectedHostIds] = useState<string[]>([]);
+  const [selectedHostDetails, setSelectedHostDetails] = useState<Host | null>(
+    null
+  );
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     fetchBooking();
@@ -136,24 +141,53 @@ export default function BookingScreenThree() {
 
       if (response.data.success && response.data.booking) {
         setBooking(response.data.booking);
-      } else {
-        console.log("Error", "Failed to fetch booking. Please try again.");
       }
     } catch (error: any) {
-      if (error.response?.status === 413) {
-        await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
-      }
-      console.log("Error fetching booking:", error);
+      handleAuthError(error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
+  const fetchHostDetails = async (hostId: string) => {
+    try {
+      const accessToken = await AsyncStorage.getItem("access_token");
+      if (!accessToken) {
+        Alert.alert("Error", "Please log in to view host details");
+        return;
+      }
+
+      setLoading(true);
+      const response = await axios.get<{ host: Host; success: boolean }>(
+        `${SERVER_URI}/get-host-details/${hostId}`,
+        {
+          headers: { access_token: accessToken },
+        }
+      );
+
+      if (response.data.success && response.data.host) {
+        setSelectedHostDetails(response.data.host);
+        setModalVisible(true);
+      }
+    } catch (error: any) {
+      console.log("Error fetching host details:", error);
+      Alert.alert("Error", "Failed to fetch host details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuthError = async (error: any) => {
+    if (error.response?.status === 413) {
+      await AsyncStorage.removeItem("access_token");
+      await AsyncStorage.removeItem("refresh_token");
+      router.replace("/(routes)/login");
+    }
+    console.log("Error:", error);
+  };
+
   const handleKnowMore = (host: Host) => {
-    Alert.alert("Host Details", `Name: ${host.fullName}\nBio: ${host.bio}`);
+    fetchHostDetails(host.userId);
   };
 
   const handleSelectHost = (hostId: string) => {
@@ -205,27 +239,16 @@ export default function BookingScreenThree() {
         Alert.alert("Success", "Booking confirmed successfully!", [
           { text: "OK", onPress: () => router.push("./booknowfour") },
         ]);
-      } else {
-        Alert.alert(
-          "Error",
-          response.data.message ||
-            "Failed to confirm booking. Please try again."
-        );
       }
     } catch (error: any) {
-      if (error.response?.status === 413) {
-        await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
-      }
-      console.log("Error confirming booking:", error);
-      Alert.alert("Error", "An error occurred. Please try again.");
+      handleAuthError(error);
+      Alert.alert("Error", "Failed to confirm booking. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading && !modalVisible) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator
@@ -239,30 +262,23 @@ export default function BookingScreenThree() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        onPress={() => router.push("/(drawer)/(tabs)/booknow/booknowtwo")}
-        accessibilityLabel="Go back to previous screen"
-      >
-        <View style={styles.boardingboxtwo}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/(drawer)/(tabs)/booknow/booknowtwo")}
-            accessibilityLabel="Go back"
-          >
-            <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerboardingbox}>Boarding</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.boardingboxtwo}>
+        <RectButton
+          style={styles.backButton}
+          onPress={() => router.push("/(drawer)/(tabs)/booknow/booknowtwo")}
+        >
+          <Icon name="arrow-back" size={24} color="#fff" />
+        </RectButton>
+        <Text style={styles.headerboardingbox}>Boarding</Text>
+      </View>
 
       <Text style={styles.subtitle}>Select Host(s) for your pet</Text>
 
       {booking && booking.acceptedHosts.length > 0 ? (
         booking.acceptedHosts.map((host) => (
-          <View style={styles.profilecardcontainer}>
+          <View style={styles.profilecardcontainer} key={host.userId}>
             <View style={styles.profilecardbackground}></View>
             <HostCard
-              key={host.userId}
               host={host}
               onKnowMore={() => handleKnowMore(host)}
               isSelected={selectedHostIds.includes(host.userId)}
@@ -283,12 +299,59 @@ export default function BookingScreenThree() {
         disabled={selectedHostIds.length === 0 || loading}
         accessibilityLabel="Confirm booking with selected host(s)"
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.confirmButtonText}>Confirm Booking</Text>
-        )}
+        <Text style={styles.confirmButtonText}>Confirm Booking</Text>
       </TouchableOpacity>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedHostDetails && (
+              <>
+                <Text style={styles.modalTitle}>
+                  {selectedHostDetails.fullName}
+                </Text>
+                <Image
+                  source={{ uri: selectedHostDetails.profileImage }}
+                  style={styles.modalAvatar}
+                />
+                <View style={styles.modalDetails}>
+                  <Text style={styles.modalText}>
+                    Location: {selectedHostDetails.city}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Bio: {selectedHostDetails.bio || "Not provided"}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Rating: {selectedHostDetails.rating}/5
+                  </Text>
+                  {selectedHostDetails.phoneNumber && (
+                    <Text style={styles.modalText}>
+                      Phone: {selectedHostDetails.phoneNumber}
+                    </Text>
+                  )}
+                  {selectedHostDetails.email && (
+                    <Text style={styles.modalText}>
+                      Email: {selectedHostDetails.email}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {loading && <ActivityIndicator size="large" color="#FF6B6B" />}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -334,10 +397,6 @@ const styles = StyleSheet.create({
     marginBottom: pixelSizeVertical(20),
     marginTop: pixelSizeVertical(20),
   },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: pixelSizeHorizontal(16),
-  },
   card: {
     borderWidth: 1,
     borderColor: "#FF6B4A",
@@ -364,10 +423,8 @@ const styles = StyleSheet.create({
     left: pixelSizeHorizontal(9),
     backgroundColor: "#FF6B6B",
     borderRadius: widthPixel(12),
-    transform: [],
   },
   cardContent: {
-    position: "relative",
     flexDirection: "row",
     alignItems: "center",
   },
@@ -419,5 +476,48 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: "#ccc",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: widthPixel(300),
+    padding: pixelSizeVertical(20),
+    backgroundColor: "#fff",
+    borderRadius: widthPixel(12),
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: fontPixel(20),
+    fontWeight: "bold",
+    marginBottom: pixelSizeVertical(10),
+  },
+  modalAvatar: {
+    width: widthPixel(80),
+    height: heightPixel(80),
+    borderRadius: widthPixel(40),
+    marginBottom: pixelSizeVertical(10),
+  },
+  modalDetails: {
+    width: "100%",
+  },
+  modalText: {
+    fontSize: fontPixel(16),
+    marginBottom: pixelSizeVertical(5),
+  },
+  closeButton: {
+    backgroundColor: "#FF6B4A",
+    borderRadius: widthPixel(8),
+    paddingVertical: pixelSizeVertical(10),
+    paddingHorizontal: pixelSizeHorizontal(20),
+    marginTop: pixelSizeVertical(15),
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: fontPixel(16),
+    fontWeight: "bold",
   },
 });

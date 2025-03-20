@@ -20,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import { router } from "expo-router";
+import { RectButton } from "react-native-gesture-handler";
 
 // Responsive utilities
 const { width, height } = Dimensions.get("window");
@@ -258,15 +259,14 @@ export default function RequestsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity
+            <RectButton
               onPress={() => navigation.goBack()}
               style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <View style={styles.backButtonCircle}>
                 <ArrowLeft size={24} color="#20B2AA" strokeWidth={2.5} />
               </View>
-            </TouchableOpacity>
+            </RectButton>
             <Text style={styles.title}>Requests</Text>
           </View>
 

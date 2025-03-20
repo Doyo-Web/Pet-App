@@ -27,6 +27,7 @@ import {
   vs,
   ms,
 } from "../../utils/responsive";
+import { RectButton } from "react-native-gesture-handler";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -122,16 +123,16 @@ export default function BookingsScreen() {
       if (response.data.success) {
         setBookings(response.data.bookings);
       } else {
-        Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+        console.log("Error", "Failed to fetch bookings. Please try again.");
       }
     } catch (error: any) {
       if (error.response?.status === 413) {
         await AsyncStorage.removeItem("access_token");
-        await AsyncStorage.removeItem("refresh_token"); // Clear token
-        router.replace("/(routes)/login"); // Redirect to login page
+        await AsyncStorage.removeItem("refresh_token");
+        router.replace("/(routes)/login");
       }
       console.log("Error fetching bookings:", error);
-      Alert.alert("Error", "Failed to fetch bookings. Please try again.");
+      console.log("Error", "Failed to fetch bookings. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -229,22 +230,50 @@ export default function BookingsScreen() {
     />
   );
 
-  const renderCompletedBookings = () => (
-    <ScrollView style={styles.sectionContent}>
-      {bookings
-        .filter((booking) => booking.paymentStatus === "completed")
-        .map(renderBookingItem)}
-    </ScrollView>
-  );
+  const renderCompletedBookings = () => {
+    const completedBookings = bookings.filter(
+      (booking) => booking.paymentStatus === "completed"
+    );
 
-  const renderUpcomingBookings = () => (
-    <ScrollView style={styles.sectionContent}>
-      {renderCalendar()}
-      {bookings
-        .filter((booking) => booking.paymentStatus === "pending")
-        .map(renderBookingItem)}
-    </ScrollView>
-  );
+    if (completedBookings.length === 0) {
+      return (
+        <View style={styles.noBookingsContainer}>
+          <Text style={styles.noBookingsText}>
+            No booking requests at the moment
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.sectionContent}>
+        {completedBookings.map(renderBookingItem)}
+      </ScrollView>
+    );
+  };
+
+  const renderUpcomingBookings = () => {
+    const upcomingBookings = bookings.filter(
+      (booking) => booking.paymentStatus === "pending"
+    );
+
+    if (upcomingBookings.length === 0) {
+      return (
+        <View style={styles.noBookingsContainer}>
+          <Text style={styles.noBookingsText}>
+            No booking requests at the moment
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.sectionContent}>
+        {renderCalendar()}
+        {upcomingBookings.map(renderBookingItem)}
+      </ScrollView>
+    );
+  };
 
   const prevStep = () => {
     router.push("/(drawer)/(tabs)/petparents");
@@ -253,15 +282,11 @@ export default function BookingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          onPress={prevStep}
-        >
+        <RectButton style={styles.backButton} onPress={prevStep}>
           <View style={styles.backButtonCircle}>
             <ArrowLeft color="#000" size={24} />
           </View>
-        </TouchableOpacity>
+        </RectButton>
         <Text style={styles.title}>My Bookings</Text>
       </View>
 
@@ -332,10 +357,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  backButtonText: {
-    fontSize: fontPixel(24),
-    fontWeight: "bold",
-  },
   title: {
     fontSize: fontPixel(24),
     fontWeight: "bold",
@@ -373,6 +394,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  noBookingsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: s(20),
+  },
+  noBookingsText: {
+    fontSize: fontPixel(18),
+    color: "#666",
+    textAlign: "center",
   },
   calendar: {
     marginBottom: vs(16),

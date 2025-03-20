@@ -32,6 +32,8 @@ import {
   pixelSizeHorizontal,
 } from "../../utils/responsive";
 import { Toast } from "react-native-toast-notifications";
+import { RectButton } from "react-native-gesture-handler";
+import CityDropdown from "@/components/CityDropdown/CityDropdown";
 
 interface Pet {
   petName: string;
@@ -302,9 +304,9 @@ export default function BookingScreen(): JSX.Element {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.boardingbox}>
-          <TouchableOpacity style={styles.backButton}>
+          <RectButton style={styles.backButton} onPress={() => router.back()}>
             <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </RectButton>
           <Text style={styles.header}>Boarding</Text>
         </View>
 
@@ -397,15 +399,11 @@ export default function BookingScreen(): JSX.Element {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>City</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              value={bookData.city}
-              onChangeText={(text) => handleInputChange(text)}
-              placeholder="Enter city"
-            />
-            <Icon name="business" size={20} color="#999" style={styles.icon} />
-          </View>
+          <CityDropdown
+            selectedCity={bookData.city}
+            onSelectCity={(city) => handleInputChange(city)}
+            placeholder="Select city"
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Pick your Location</Text>

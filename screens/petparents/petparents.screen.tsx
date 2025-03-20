@@ -1,6 +1,6 @@
 "use client";
 
-import { type Key, useCallback, useState } from "react";
+import { type Key, useCallback, useState, useEffect } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,6 +11,8 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  BackHandler,
+  Alert,
 } from "react-native";
 import {
   ArrowLeft,
@@ -23,7 +25,8 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react-native";
-import { router } from "expo-router";
+// Import the Href type from expo-router
+import { router, useRouter, usePathname } from "expo-router";
 import { useSelector } from "react-redux";
 import useUser from "@/hooks/auth/useUser";
 import {
@@ -37,6 +40,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  RectButton,
+  LongPressGestureHandler,
+  State,
+} from "react-native-gesture-handler";
 import React from "react";
 
 const { width, height } = Dimensions.get("window");
@@ -57,6 +66,37 @@ export default function PetParentProfile() {
   const [petProfiles, setPetProfiles] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Enhanced navigation hooks
+  const expoRouter = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+
+  // Navigation history tracking
+  const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
+
+  // Track navigation history
+  useEffect(() => {
+    if (pathname) {
+      setNavigationHistory((prev) => [...prev, pathname]);
+    }
+  }, [pathname]);
+
+  // Handle hardware back button on Android
+  useEffect(() => {
+    const backAction = () => {
+      handleGoBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigationHistory]);
 
   const handlelogout = async () => {
     await AsyncStorage.removeItem("access_token");
@@ -64,33 +104,38 @@ export default function PetParentProfile() {
     router.push("/(routes)/login");
   };
 
+  // Enhanced back navigation with history tracking
+  const handleGoBack = () => {
+    expoRouter.replace("/");
+  };
+
+  const fetchPetProfiles = async () => {
+    try {
+      setIsLoading(true);
+      const accessToken = await AsyncStorage.getItem("access_token");
+      const response = await axios.get(`${SERVER_URI}/petprofile-get`, {
+        headers: { access_token: accessToken },
+      });
+
+      if (response.data.success) {
+        setPetProfiles(response.data.data);
+      } else {
+        setError("Failed to fetch pet profiles");
+      }
+    } catch (error: any) {
+      if (error.response?.status === 413) {
+        await AsyncStorage.removeItem("access_token");
+        await AsyncStorage.removeItem("refresh_token");
+        router.replace("/(routes)/login");
+      }
+      setError("An error occurred while fetching pet profiles");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
-      const fetchPetProfiles = async () => {
-        try {
-          setIsLoading(true);
-          const accessToken = await AsyncStorage.getItem("access_token");
-          const response = await axios.get(`${SERVER_URI}/petprofile-get`, {
-            headers: { access_token: accessToken },
-          });
-
-          if (response.data.success) {
-            setPetProfiles(response.data.data);
-          } else {
-            setError("Failed to fetch pet profiles");
-          }
-        } catch (error: any) {
-          if (error.response?.status === 413) {
-            await AsyncStorage.removeItem("access_token");
-            await AsyncStorage.removeItem("refresh_token");
-            router.replace("/(routes)/login");
-          }
-          setError("An error occurred while fetching pet profiles");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
       fetchPetProfiles();
     }, [])
   );
@@ -125,21 +170,77 @@ export default function PetParentProfile() {
     });
   };
 
+  // Handle delete pet profile
+  const handleDeletePetProfile = async (petId: string) => {
+    Alert.alert(
+      "Delete Pet Profile",
+      "Are you sure you want to delete this pet profile? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              const accessToken = await AsyncStorage.getItem("access_token");
+              const response = await axios.delete(
+                `${SERVER_URI}/petprofile-delete/${petId}`,
+                {
+                  headers: { access_token: accessToken },
+                }
+              );
+
+              if (response.data.success) {
+                // Update the pet profiles list after successful deletion
+                setPetProfiles(petProfiles.filter((pet) => pet._id !== petId));
+                Alert.alert("Success", "Pet profile deleted successfully");
+              } else {
+                Alert.alert(
+                  "Error",
+                  response.data.message || "Failed to delete pet profile"
+                );
+              }
+            } catch (error: any) {
+              console.error("Delete error:", error);
+              Alert.alert(
+                "Error",
+                error.response?.data?.message ||
+                  "An error occurred while deleting the pet profile"
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Flatten all pet images into a single array
   const allPetImages = petProfiles.flatMap((pet) =>
     pet.petImages.map((img) => ({ url: img.url, petName: pet.petName }))
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+          {/* Enhanced back button with RectButton for better touch handling */}
+          <RectButton
+            style={styles.backButtonWrapper}
+            onPress={handleGoBack}
+            rippleColor="#fff"
+            activeOpacity={0.6}
+          >
             <View style={styles.backButtonCircle}>
               <ArrowLeft color="#000" size={24} />
             </View>
-          </TouchableOpacity>
+          </RectButton>
           <View style={styles.profilecardcontainer}>
             <View style={styles.profilecardbackground}></View>
             <View style={styles.profile}>
@@ -205,23 +306,33 @@ export default function PetParentProfile() {
               <View style={styles.petList}>
                 {petProfiles &&
                   petProfiles.map((pet) => (
-                    <View key={pet._id} style={styles.petItem}>
-                      <Image
-                        source={{
-                          uri:
-                            pet.petImages[0]?.url ||
-                            "https://placekitten.com/200/200",
-                        }}
-                        style={styles.petImage}
-                      />
-                      <Text style={styles.petName}>{pet.petName}</Text>
-                      <TouchableOpacity
-                        style={styles.editButton}
-                        onPress={() => editPetProfile(pet._id as string)}
-                      >
-                        <Pencil color="#666" size={16} />
-                      </TouchableOpacity>
-                    </View>
+                    <LongPressGestureHandler
+                      key={pet._id}
+                      onHandlerStateChange={({ nativeEvent }) => {
+                        if (nativeEvent.state === State.ACTIVE) {
+                          handleDeletePetProfile(pet._id as string);
+                        }
+                      }}
+                      minDurationMs={800}
+                    >
+                      <View style={styles.petItem}>
+                        <Image
+                          source={{
+                            uri:
+                              pet.petImages[0]?.url ||
+                              "https://placekitten.com/200/200",
+                          }}
+                          style={styles.petImage}
+                        />
+                        <Text style={styles.petName}>{pet.petName}</Text>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => editPetProfile(pet._id as string)}
+                        >
+                          <Pencil color="#666" size={16} />
+                        </TouchableOpacity>
+                      </View>
+                    </LongPressGestureHandler>
                   ))}
                 <TouchableOpacity style={styles.addButton} onPress={addNewPet}>
                   <View style={styles.plusCircle}>
@@ -306,7 +417,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingBottom: heightPixel(160),
-    paddingTop: heightPixel(20),
   },
   header: {
     padding: pixelSizeHorizontal(16),
@@ -314,6 +424,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: pixelSizeVertical(16),
+  },
+  backButtonWrapper: {
+    marginBottom: pixelSizeVertical(16),
+    borderRadius: widthPixel(20),
+    overflow: "hidden",
   },
   backButtonCircle: {
     width: widthPixel(40),

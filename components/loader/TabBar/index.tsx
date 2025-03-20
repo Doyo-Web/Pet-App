@@ -1,22 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-// Define the props type for the Icon component
 type IconProps = {
   color: string;
 };
 
-// Define the type for the icons object
 type IconsType = {
   [key: string]: (props: IconProps) => JSX.Element;
 };
 
-export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+interface ExtendedTabBarProps extends BottomTabBarProps {
+  checkHostStatus: () => Promise<boolean>;
+}
 
-  // Define the icons for each route
+export function TabBar({
+  state,
+  descriptors,
+  navigation,
+  checkHostStatus,
+}: ExtendedTabBarProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number>(state.index);
+
+  // Update selectedIndex when the route changes
+  useEffect(() => {
+    setSelectedIndex(state.index);
+  }, [state.index]);
+
   const icons: IconsType = {
     index: (props: IconProps) => (
       <Image
@@ -114,7 +126,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
             const isFocused = state.index === index;
 
-            const onPress = () => {
+            const onPress = async () => {
               const event = navigation.emit({
                 type: "tabPress",
                 target: route.key,
@@ -122,7 +134,16 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               });
 
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
+                if (route.name === "host/index") {
+                  const isHost = await checkHostStatus();
+                  if (isHost) {
+                    router.push("/(drawer)/(tabs)/hostprofile");
+                  } else {
+                    navigation.navigate(route.name, route.params);
+                  }
+                } else {
+                  navigation.navigate(route.name, route.params);
+                }
               }
               setSelectedIndex(index);
             };
@@ -135,7 +156,6 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             };
 
             const IconComponent = icons[route.name];
-
             const customIconStyle =
               route.name === "booknow/index" ? styles.bookNowIcon : {};
 
@@ -181,8 +201,6 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 >
                   {label}
                 </Text>
-
-                {/* Conditionally render the white half-circle icon for the selected tab */}
                 {selectedIndex === index && <View style={styles.halfCircle} />}
               </View>
             );
@@ -267,23 +285,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  circleIndicator: {
-    position: "absolute",
-    bottom: 5,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#F96247",
-  },
-  // Add a new style for the half-circle
   halfCircle: {
     position: "absolute",
-    bottom: -13, // Place it at the bottom of the tab
-    width: 20, // Set the width of the half-circle
-    height: 10, // Set the height of the half-circle
-    backgroundColor: "#fff", // White color for the half-circle
-    borderTopLeftRadius: 25, // Make it a half-circle
+    bottom: -13,
+    width: 20,
+    height: 10,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    zIndex: -1, // Ensure it is behind the text
+    zIndex: -1,
   },
 });

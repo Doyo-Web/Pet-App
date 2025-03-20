@@ -27,6 +27,7 @@ import {
   pixelSizeVertical,
   pixelSizeHorizontal,
 } from "../../utils/responsive";
+import { RectButton } from "react-native-gesture-handler";
 
 interface Host {
   _id: string;
@@ -177,12 +178,12 @@ export default function BookingScreenTwo() {
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.boardingboxtwo}>
-          <TouchableOpacity
+          <RectButton
             style={styles.backButton}
             onPress={() => router.push("/(drawer)/(tabs)/booknow")}
           >
             <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </RectButton>
           <Text style={styles.headerboardingbox}>Boarding</Text>
         </View>
 
@@ -266,7 +267,7 @@ export default function BookingScreenTwo() {
             </>
           ) : (
             <Text style={styles.noHostsText}>
-              No matched hosts available yet.
+              After host confirmation we will notify you
             </Text>
           )}
         </ScrollView>
